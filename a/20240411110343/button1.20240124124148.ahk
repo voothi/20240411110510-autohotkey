@@ -1,0 +1,2 @@
+﻿Send, ^c^c
+Exit

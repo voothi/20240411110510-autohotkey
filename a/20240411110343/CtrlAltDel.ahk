@@ -1,0 +1,2 @@
+﻿send ^!{Delete}
+exit
