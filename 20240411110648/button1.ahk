@@ -16,7 +16,7 @@ GetScrollCount() {
     }
 }
 
-^+':: ; Привязываем к комбинации клавиш Ctrl + Shift + Quote
+^!':: ; Привязываем к комбинации клавиш Ctrl + Alt + Quote
     ScrollDownCount := GetScrollCount() ; Получаем количество строк для прокрутки
     Loop, %ScrollDownCount% ; Прокручиваем указанное количество строк вниз
     {
