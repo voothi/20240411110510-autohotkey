@@ -3,6 +3,9 @@
 #Persistent
 
 ^+!S::
+    ; Нажимаем левую кнопку мыши
+    Click
+
     ; Нажимаем Home
     Send, {Home}
     Sleep, 200 ; Пауза 200 мс
