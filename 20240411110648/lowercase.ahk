@@ -1,16 +1,19 @@
-﻿#Persistent
+﻿; JoyToKey settings: Ctrl, C-> Ctrl, Shift, Alt, L-> Ctrl, V -> None
+
+#Persistent
 
 ^+!L::
     ; Шаг 1: Копируем выделенный фрагмент текста в буфер обмена
-    Send, ^c
-    ClipWait, 1 ; Ожидаем, пока данные будут скопированы
+    ;Send, ^c
+    ;ClipWait, 1 ; Ожидаем, пока данные будут скопированы
 
     ; Шаг 2: Запускаем утилиту lowercase_util_v1 в тихом режиме
     RunWait, C:\Tools\lowercase_util\dist\lowercase_util_v1.exe,, Hide
 
     ; Шаг 3: Вставляем содержимое буфера обмена
-    Send, ^v
+    ;Send, ^v
 
     ; Шаг 4: Ждем некоторое время, чтобы утилита обработала вставленные данные
-    Sleep, 1000 ; Можно изменить задержку по вашему желанию
+    ;Sleep, 1000 ; Можно изменить задержку по вашему желанию
+    
 return
