@@ -3,13 +3,17 @@
 #Persistent
 
 ^+!S::
+    ; Нажимаем Home
+    Send, {Home}
+    Sleep, 200 ; Пауза 200 мс
+
     ; Нажимаем Ctrl+A
     Send, ^a
-    ;Sleep, 200 ; Пауза 200 мс
+    Sleep, 200 ; Пауза 200 мс
 
     ; Нажимаем Ctrl+C
     Send, ^c
-    ;Sleep, 200 ; Пауза 200 мс
+    Sleep, 200 ; Пауза 200 мс
 
     ; Нажимаем Ctrl+S
     Send, ^s
