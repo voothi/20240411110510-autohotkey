@@ -17,6 +17,8 @@
 
     ; Нажимаем Space
     Send, {Space}
+    ; Нажимаем Backspace
+    Send, {Backspace}
     Sleep, 1000 ; Пауза 200 мс
 
     ; Вставляем в окно
