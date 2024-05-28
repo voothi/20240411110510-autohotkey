@@ -1,6 +1,7 @@
 ﻿#Persistent
 
-^!O::
+; Ctrl Alt O
+^!sc018::
     Sleep, 200 ; Пауза 200 мс
 
     ; Нажимаем Alt
