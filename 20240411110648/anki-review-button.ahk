@@ -1,5 +1,6 @@
 ﻿#Persistent
 
+#IfWinActive, ahk_exe anki.exe
 ^!R::
     ; Шаг 1: Эмулируем нажатие средней кнопки мыши
     Click, Middle
@@ -10,3 +11,4 @@
     ; Шаг 3: Задержка перед отправкой комбинации клавиш (например, 500 миллисекунд)
     Sleep, 500
 return
+#IfWinActive
