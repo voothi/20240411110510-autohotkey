@@ -1,20 +1,19 @@
 ﻿; JoyToKey settings: Ctrl, C-> Ctrl, Alt, N -> Ctrl, V -> None
 
-#Persistent
+; #Persistent
 
-^!N::
+^!N:: {
     ; Шаг 1: Копируем выделенный фрагмент текста в буфер обмена
-    Send, ^c
-    ClipWait, 1 ; Ожидаем, пока данные будут скопированы
+    Send("^c")
+    ClipWait(1) ; Ожидаем, пока данные будут скопированы
 
     ; Шаг 2: Запускаем утилиту в тихом режиме
-    RunWait, C:\Tools\remove_newline_util\dist\remove_newline_util.stable.exe,, Hide
-    Sleep, 1000 ; Можно изменить задержку по вашему желанию
+    RunWait("C:\Python\Python312\python.exe C:\Tools\remove_newline_util\remove_newline_util.py", "", "Hide")
+    Sleep(1000) ; Можно изменить задержку по вашему желанию
 
     ; Шаг 3: Вставляем содержимое буфера обмена
-    Send, ^v
+    Send("^v")
 
     ; Шаг 4: Ждем некоторое время, чтобы утилита обработала вставленные данные
-    ;Sleep, 1000 ; Можно изменить задержку по вашему желанию
-    
-return
+    ; Sleep(1000) ; Можно изменить задержку по вашему желанию
+}
