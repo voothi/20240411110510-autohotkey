@@ -1,57 +1,60 @@
-﻿#Persistent
+﻿; #Persistent
 
 ; Ctrl + Alt + O
-^!sc018::
-    ; Проверяем, активно ли окно app.exe
-    IfWinActive, ahk_exe app.exe
-    {
-        Sleep, 200 ; Пауза 200 мс
+^!sc018:: {
+    ; Check if the window app.exe is active
+    if WinActive("ahk_exe app.exe") || WinActive("ahk_exe app_win32.exe") {
+        Sleep(200) ; Pause for 200 ms
+        
+        ; Press Alt
+        ; Send("{Alt}")
+        ; Sleep(200) ; Pause for 200 ms
+        
+        ; ; Press Right Arrow
+        ; Send("{Right}")
+        ; Sleep(200) ; Pause for 200 ms
 
-        ; Нажимаем Alt
-        Send, {Alt}
-        Sleep, 200 ; Пауза 200 мс
-
-        ; Нажимаем стрелку вправо
-        Send, {Right}
-        Sleep, 200 ; Пауза 200 мс
-
-        ; Нажимаем Enter
-        Send, {Enter}
-        Sleep, 200 ; Пауза 200 мс
-
-        ; Нажимаем Enter снова
-        Send, {Enter}
-        Sleep, 200 ; Пауза 200 мс
-
-        ; Ожидание открытия окна
-        Sleep, 200 ; Пауза 200 мс
-
-        ; Нажимаем стрелку вправо
-        Send, {Right}
-        Sleep, 200 ; Пауза 200 мс
-
-        ; Нажимаем стрелку вправо
-        Send, {Right}
-        Sleep, 200 ; Пауза 200 мс
-
-        ; Нажимаем стрелку вправо
-        Send, {Right}
-        Sleep, 200 ; Пауза 200 мс
-
-        ; Нажимаем Tab
-        Send, {Tab}
-        Sleep, 200 ; Пауза 200 мс
-
-        ; Нажимаем Tab
-        Send, {Tab}
-        Sleep, 200 ; Пауза 200 мс
-
-        ; Нажимаем Tab
-        Send, {Tab}
-        Sleep, 200 ; Пауза 200 мс
-
-        ; Нажимаем Alt + стрелка вниз
-        Send, !{Down}
-        Sleep, 200 ; Пауза 200 мс
+        ; Press Ctrl+C
+        Send("!{c}")
+        Sleep(200) ; Pause for 200 ms
+        
+        ; Press Enter
+        Send("{Enter}")
+        Sleep(200) ; Pause for 200 ms
+        
+        ; Press Enter again
+        ; Send("{Enter}")
+        ; Sleep(200) ; Pause for 200 ms
+        
+        ; Wait for the window to open
+        ; Sleep(200) ; Pause for 200 ms
+        
+        ; Press Right Arrow
+        Send("{Right}")
+        Sleep(200) ; Pause for 200 ms
+        
+        ; Press Right Arrow
+        Send("{Right}")
+        Sleep(200) ; Pause for 200 ms
+        
+        ; Press Right Arrow
+        Send("{Right}")
+        Sleep(200) ; Pause for 200 ms
+        
+        ; Press Tab
+        Send("{Tab}")
+        Sleep(200) ; Pause for 200 ms
+        
+        ; Press Tab
+        Send("{Tab}")
+        Sleep(200) ; Pause for 200 ms
+        
+        ; Press Tab
+        Send("{Tab}")
+        Sleep(200) ; Pause for 200 ms
+        
+        ; Press Alt + Down Arrow
+        Send("!{Down}")
+        Sleep(200) ; Pause for 200 ms
     }
-return
+}

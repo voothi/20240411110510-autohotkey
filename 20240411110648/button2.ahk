@@ -1,26 +1,22 @@
-﻿#Persistent
+﻿; #Persistent  ; This line can be omitted in v2 if no persistent state is needed
 
-; Создаем функцию для определения количества строк для прокрутки в зависимости от активного окна
+; Create a function to determine the number of lines to scroll based on the active window
 GetScrollCount() {
-    IfWinActive, ahk_exe app.exe ; Проверяем, активно ли окно app1.exe
-    {
-        return 1 ; Количество строк для прокрутки вниз для app1.exe
-    }
-    else IfWinActive, ahk_exe chrome.exe ; Проверяем, активно ли окно app2.exe
-    {
-        return 3 ; Количество строк для прокрутки вниз для app2.exe
-    }
-    else ; Если ни одно из указанных окон не активно
-    {
-        return 3 ; По умолчанию прокрутка на одну строку
+    if WinActive("ahk_exe app.exe") {  ; Check if app.exe is active
+        return 1  ; Number of lines to scroll up for app.exe
+    } 
+    else if WinActive("ahk_exe chrome.exe") {  ; Check if chrome.exe is active
+        return 3  ; Number of lines to scroll up for chrome.exe
+    } 
+    else {  ; If neither of the specified windows is active
+        return 1  ; Default scroll up by three lines
     }
 }
 
-^![:: ; Привязываем к комбинации клавиш Ctrl + Shift + [
-    ScrollUpCount := GetScrollCount() ; Получаем количество строк для прокрутки
-    Loop, %ScrollUpCount% ; Прокручиваем указанное количество строк вниз
-    {
-        Send {WheelUp} ; Эмулируем действие прокрутки колеса мыши вниз
-        Sleep 50 ; Подождите немного между каждым действием прокрутки
+^![:: {  ; Bind to the hotkey Ctrl + Shift + [
+    ScrollUpCount := GetScrollCount()  ; Get the number of lines to scroll
+    Loop(ScrollUpCount) {  ; Scroll the specified number of lines up
+        Send("{WheelUp}")  ; Simulate mouse wheel scrolling up
+        Sleep(50)  ; Pause a bit between each scroll action
     }
-return
+}
