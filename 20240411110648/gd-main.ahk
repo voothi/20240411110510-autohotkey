@@ -1,4 +1,4 @@
-﻿^!1::
+﻿^!+1::
 {
     Send("^c")
     ClipWait(1) ; Wait until the clipboard contains data

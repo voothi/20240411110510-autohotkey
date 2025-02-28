@@ -11,6 +11,6 @@ RunPythonScript(lang) {
     Sleep(1000) ; Можно изменить задержку по вашему желанию
 }
 
-^!2::RunPythonScript("en")
-^!3::RunPythonScript("de")
-^!4::RunPythonScript("ru")
+^!+2::RunPythonScript("en")
+^!+3::RunPythonScript("de")
+^!+4::RunPythonScript("ru")
