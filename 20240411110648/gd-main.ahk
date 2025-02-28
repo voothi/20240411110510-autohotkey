@@ -4,7 +4,7 @@
     ClipWait(1) ; Wait until the clipboard contains data
     Sleep(100) ; Wait for 100 ms
 
-    Send("^!q")
+    Send("^!+w")
     Sleep(100) ; Wait for 100 ms
 
     Send("^v")
