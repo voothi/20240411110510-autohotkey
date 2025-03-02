@@ -17,7 +17,17 @@
         Sleep(100) ; Wait for 100 ms
     }
 
+    ; Default option. As in the original, with line breaks.
+    ; Send("^v")
+    ; Sleep(100) ; Wait for 100 ms
+
+    ; Variant with removal of line breaks. After processing.
+    RunWait("C:\Python\Python312\python.exe C:\Tools\remove_newline_util\remove_newline_util.py", "", "Hide")
+    Sleep(1000)
+
     Send("^v")
     Sleep(100) ; Wait for 100 ms
+
+    ; Common code for both options. Sending data from the field.
     Send("{Enter}")
 }
