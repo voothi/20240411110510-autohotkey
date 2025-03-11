@@ -1,298 +1,249 @@
 ﻿^!+F1:: {
-    ; Проверяем, активен ли Chrome
-    if WinActive("ahk_exe chrome.exe") {
-        ; Получаем заголовок активного окна
-        title := WinGetTitle("A")
+    if (WinActive("ahk_exe chrome.exe") && (InStr(WinGetTitle("A"), "Reading") || InStr(WinGetTitle("A"), "Translate"))) {
+        ; Шаг 1: Задержка перед отправкой комбинации клавиш (например, 500 миллисекунд)
+        ; Sleep(500)
 
-        ; Проверяем, содержит ли заголовок слово "Reading"
-        if InStr(title, "Reading", false) || InStr(title, "Translate", false) {
-            ; Шаг 1: Задержка перед отправкой комбинации клавиш (например, 500 миллисекунд)
-            ; Sleep(500)
+        ; ; Шаг 4: Получаем текущую позицию мыши
+        ; MouseGetPos(&xpos, &ypos)
 
-            ; ; Шаг 4: Получаем текущую позицию мыши
-            ; MouseGetPos(&xpos, &ypos)
+        ; ; Шаг 5: Двигаем указатель мыши на 1024 пикселя вправо
+        ; MouseMove(xpos + 1024, ypos, 0)
 
-            ; ; Шаг 5: Двигаем указатель мыши на 1024 пикселя вправо
-            ; MouseMove(xpos + 1024, ypos, 0)
+        ; ; Шаг 6: Возвращаем указатель в исходное положение
+        ; MouseMove(xpos, ypos, 0)
+        ; Sleep(500)
 
-            ; ; Шаг 6: Возвращаем указатель в исходное положение
-            ; MouseMove(xpos, ypos, 0)
-            ; Sleep(500)
+        ; Кликаем по координатам (15, 200)
+        ; Click 15, 540
+        ; Sleep(100)
 
-            ; Кликаем по координатам (15, 200)
-            ; Click 15, 540
-            ; Sleep(100)
+        Click 1000, 500
+        ; Sleep(100)
 
-            Click 1000, 500
-            ; Sleep(100)
+        Send("+!s")
+        Sleep(500)
 
-            Send("+!s")
-            Sleep(500)
-
-            ; Отправляем клавишу "1"
-            Send("1")
-        }
+        ; Отправляем клавишу "1"
+        Send("1")
     }
 }
 
 ^!+F2:: {
-    ; Проверяем, активен ли Chrome
-    if WinActive("ahk_exe chrome.exe") || InStr(title, "Translate", false) {
-        ; Получаем заголовок активного окна
-        title := WinGetTitle("A")
+    if (WinActive("ahk_exe chrome.exe") && (InStr(WinGetTitle("A"), "Reading") || InStr(WinGetTitle("A"),
+    "Translate"))) {
+        ; Шаг 1: Задержка перед отправкой комбинации клавиш (например, 500 миллисекунд)
+        ; Sleep(500)
 
-        ; Проверяем, содержит ли заголовок слово "Reading"
-        if InStr(title, "Reading", false) {
-            ; Шаг 1: Задержка перед отправкой комбинации клавиш (например, 500 миллисекунд)
-            ; Sleep(500)
+        ; ; Шаг 4: Получаем текущую позицию мыши
+        ; MouseGetPos(&xpos, &ypos)
 
-            ; ; Шаг 4: Получаем текущую позицию мыши
-            ; MouseGetPos(&xpos, &ypos)
+        ; ; Шаг 5: Двигаем указатель мыши на 1024 пикселя вправо
+        ; MouseMove(xpos + 1024, ypos, 0)
 
-            ; ; Шаг 5: Двигаем указатель мыши на 1024 пикселя вправо
-            ; MouseMove(xpos + 1024, ypos, 0)
+        ; ; Шаг 6: Возвращаем указатель в исходное положение
+        ; MouseMove(xpos, ypos, 0)
+        ; Sleep(500)
 
-            ; ; Шаг 6: Возвращаем указатель в исходное положение
-            ; MouseMove(xpos, ypos, 0)
-            ; Sleep(500)
+        ; Кликаем по координатам (15, 200)
+        ; Click 15, 540
+        ; Sleep(100)
 
-            ; Кликаем по координатам (15, 200)
-            ; Click 15, 540
-            ; Sleep(100)
+        Click 1000, 500
+        ; Sleep(100)
 
-            Click 1000, 500
-            ; Sleep(100)
+        Send("+!s")
+        Sleep(500)
 
-            Send("+!s")
-            Sleep(500)
-
-            Send("2")
-        }
+        Send("2")
     }
 }
 
 ^!+F3:: {
-    ; Проверяем, активен ли Chrome
-    if WinActive("ahk_exe chrome.exe") || InStr(title, "Translate", false) {
-        ; Получаем заголовок активного окна
-        title := WinGetTitle("A")
+    if (WinActive("ahk_exe chrome.exe") && (InStr(WinGetTitle("A"), "Reading") || InStr(WinGetTitle("A"),
+    "Translate"))) {
+        ; Шаг 1: Задержка перед отправкой комбинации клавиш (например, 500 миллисекунд)
+        ; Sleep(500)
 
-        ; Проверяем, содержит ли заголовок слово "Reading"
-        if InStr(title, "Reading", false) {
-            ; Шаг 1: Задержка перед отправкой комбинации клавиш (например, 500 миллисекунд)
-            ; Sleep(500)
+        ; ; Шаг 4: Получаем текущую позицию мыши
+        ; MouseGetPos(&xpos, &ypos)
 
-            ; ; Шаг 4: Получаем текущую позицию мыши
-            ; MouseGetPos(&xpos, &ypos)
+        ; ; Шаг 5: Двигаем указатель мыши на 1024 пикселя вправо
+        ; MouseMove(xpos + 1024, ypos, 0)
 
-            ; ; Шаг 5: Двигаем указатель мыши на 1024 пикселя вправо
-            ; MouseMove(xpos + 1024, ypos, 0)
+        ; ; Шаг 6: Возвращаем указатель в исходное положение
+        ; MouseMove(xpos, ypos, 0)
+        ; Sleep(500)
 
-            ; ; Шаг 6: Возвращаем указатель в исходное положение
-            ; MouseMove(xpos, ypos, 0)
-            ; Sleep(500)
+        ; Кликаем по координатам (15, 200)
+        ; Click 15, 540
+        ; Sleep(100)
 
-            ; Кликаем по координатам (15, 200)
-            ; Click 15, 540
-            ; Sleep(100)
+        Click 1000, 500
+        ; Sleep(100)
 
-            Click 1000, 500
-            ; Sleep(100)
+        Send("+!s")
+        Sleep(500)
 
-            Send("+!s")
-            Sleep(500)
-
-            Send("3")
-        }
+        Send("3")
     }
 }
 
 ^!+F4:: {
-    ; Проверяем, активен ли Chrome
-    if WinActive("ahk_exe chrome.exe") || InStr(title, "Translate", false) {
-        ; Получаем заголовок активного окна
-        title := WinGetTitle("A")
+    if (WinActive("ahk_exe chrome.exe") && (InStr(WinGetTitle("A"), "Reading") || InStr(WinGetTitle("A"),
+    "Translate"))) {
+        ; Шаг 1: Задержка перед отправкой комбинации клавиш (например, 500 миллисекунд)
+        ; Sleep(500)
 
-        ; Проверяем, содержит ли заголовок слово "Reading"
-        if InStr(title, "Reading", false) {
-            ; Шаг 1: Задержка перед отправкой комбинации клавиш (например, 500 миллисекунд)
-            ; Sleep(500)
+        ; ; Шаг 4: Получаем текущую позицию мыши
+        ; MouseGetPos(&xpos, &ypos)
 
-            ; ; Шаг 4: Получаем текущую позицию мыши
-            ; MouseGetPos(&xpos, &ypos)
+        ; ; Шаг 5: Двигаем указатель мыши на 1024 пикселя вправо
+        ; MouseMove(xpos + 1024, ypos, 0)
 
-            ; ; Шаг 5: Двигаем указатель мыши на 1024 пикселя вправо
-            ; MouseMove(xpos + 1024, ypos, 0)
+        ; ; Шаг 6: Возвращаем указатель в исходное положение
+        ; MouseMove(xpos, ypos, 0)
+        ; Sleep(500)
 
-            ; ; Шаг 6: Возвращаем указатель в исходное положение
-            ; MouseMove(xpos, ypos, 0)
-            ; Sleep(500)
+        ; Кликаем по координатам (15, 200)
+        ; Click 15, 540
+        ; Sleep(100)
 
-            ; Кликаем по координатам (15, 200)
-            ; Click 15, 540
-            ; Sleep(100)
+        Click 1000, 500
+        ; Sleep(100)
 
-            Click 1000, 500
-            ; Sleep(100)
+        Send("+!s")
+        Sleep(500)
 
-            Send("+!s")
-            Sleep(500)
-
-            Send("4")
-        }
+        Send("4")
     }
 }
 
 ^!+F5:: {
-    ; Проверяем, активен ли Chrome
-    if WinActive("ahk_exe chrome.exe") || InStr(title, "Translate", false) {
-        ; Получаем заголовок активного окна
-        title := WinGetTitle("A")
+    if (WinActive("ahk_exe chrome.exe") && (InStr(WinGetTitle("A"), "Reading") || InStr(WinGetTitle("A"),
+    "Translate"))) {
+        ; Шаг 1: Задержка перед отправкой комбинации клавиш (например, 500 миллисекунд)
+        ; Sleep(500)
 
-        ; Проверяем, содержит ли заголовок слово "Reading"
-        if InStr(title, "Reading", false) {
-            ; Шаг 1: Задержка перед отправкой комбинации клавиш (например, 500 миллисекунд)
-            ; Sleep(500)
+        ; ; Шаг 4: Получаем текущую позицию мыши
+        ; MouseGetPos(&xpos, &ypos)
 
-            ; ; Шаг 4: Получаем текущую позицию мыши
-            ; MouseGetPos(&xpos, &ypos)
+        ; ; Шаг 5: Двигаем указатель мыши на 1024 пикселя вправо
+        ; MouseMove(xpos + 1024, ypos, 0)
 
-            ; ; Шаг 5: Двигаем указатель мыши на 1024 пикселя вправо
-            ; MouseMove(xpos + 1024, ypos, 0)
+        ; ; Шаг 6: Возвращаем указатель в исходное положение
+        ; MouseMove(xpos, ypos, 0)
+        ; Sleep(500)
 
-            ; ; Шаг 6: Возвращаем указатель в исходное положение
-            ; MouseMove(xpos, ypos, 0)
-            ; Sleep(500)
+        ; Кликаем по координатам (15, 200)
+        ; Click 15, 540
+        ; Sleep(100)
 
-            ; Кликаем по координатам (15, 200)
-            ; Click 15, 540
-            ; Sleep(100)
+        Click 1000, 500
+        ; Sleep(100)
 
-            Click 1000, 500
-            ; Sleep(100)
+        Send("+!s")
+        Sleep(500)
 
-            Send("+!s")
-            Sleep(500)
-
-            Send("5")
-        }
+        Send("5")
     }
 }
 
 ^!+F6:: {
-    ; Проверяем, активен ли Chrome
-    if WinActive("ahk_exe chrome.exe") {
-        ; Получаем заголовок активного окна
-        title := WinGetTitle("A")
+    if (WinActive("ahk_exe chrome.exe") && (InStr(WinGetTitle("A"), "Reading") || InStr(WinGetTitle("A"),
+    "Translate"))) {
+        ; Шаг 1: Задержка перед отправкой комбинации клавиш (например, 500 миллисекунд)
+        ; Sleep(500)
 
-        ; Проверяем, содержит ли заголовок слово "Reading"
-        if InStr(title, "Reading", false) || InStr(title, "Translate", false) {
-            ; Шаг 1: Задержка перед отправкой комбинации клавиш (например, 500 миллисекунд)
-            ; Sleep(500)
+        ; ; Шаг 4: Получаем текущую позицию мыши
+        ; MouseGetPos(&xpos, &ypos)
 
-            ; ; Шаг 4: Получаем текущую позицию мыши
-            ; MouseGetPos(&xpos, &ypos)
+        ; ; Шаг 5: Двигаем указатель мыши на 1024 пикселя вправо
+        ; MouseMove(xpos + 1024, ypos, 0)
 
-            ; ; Шаг 5: Двигаем указатель мыши на 1024 пикселя вправо
-            ; MouseMove(xpos + 1024, ypos, 0)
+        ; ; Шаг 6: Возвращаем указатель в исходное положение
+        ; MouseMove(xpos, ypos, 0)
+        ; Sleep(500)
 
-            ; ; Шаг 6: Возвращаем указатель в исходное положение
-            ; MouseMove(xpos, ypos, 0)
-            ; Sleep(500)
+        ; Кликаем по координатам (15, 200)
+        ; Click 15, 540
+        ; Sleep(100)
 
-            ; Кликаем по координатам (15, 200)
-            ; Click 15, 540
-            ; Sleep(100)
+        ; Click 1000, 500
+        ; Sleep(100)
 
-            ; Click 1000, 500
-            ; Sleep(100)
+        ; Send("+!s")
+        ; Sleep(500)
 
-            ; Send("+!s")
-            ; Sleep(500)
+        Click 15, 540
+        Send("w")
 
-            Click 15, 540
-            Send("w")
-
-            Click 1000, 500
-        }
+        Click 1000, 500
     }
 }
 
 ^!+F7:: {
-    ; Проверяем, активен ли Chrome
-    if WinActive("ahk_exe chrome.exe") || InStr(title, "Translate", false) {
-        ; Получаем заголовок активного окна
-        title := WinGetTitle("A")
+    if (WinActive("ahk_exe chrome.exe") && (InStr(WinGetTitle("A"), "Reading") || InStr(WinGetTitle("A"),
+    "Translate"))) {
+        ; Шаг 1: Задержка перед отправкой комбинации клавиш (например, 500 миллисекунд)
+        ; Sleep(500)
 
-        ; Проверяем, содержит ли заголовок слово "Reading"
-        if InStr(title, "Reading", false) {
-            ; Шаг 1: Задержка перед отправкой комбинации клавиш (например, 500 миллисекунд)
-            ; Sleep(500)
+        ; ; Шаг 4: Получаем текущую позицию мыши
+        ; MouseGetPos(&xpos, &ypos)
 
-            ; ; Шаг 4: Получаем текущую позицию мыши
-            ; MouseGetPos(&xpos, &ypos)
+        ; ; Шаг 5: Двигаем указатель мыши на 1024 пикселя вправо
+        ; MouseMove(xpos + 1024, ypos, 0)
 
-            ; ; Шаг 5: Двигаем указатель мыши на 1024 пикселя вправо
-            ; MouseMove(xpos + 1024, ypos, 0)
+        ; ; Шаг 6: Возвращаем указатель в исходное положение
+        ; MouseMove(xpos, ypos, 0)
+        ; Sleep(500)
 
-            ; ; Шаг 6: Возвращаем указатель в исходное положение
-            ; MouseMove(xpos, ypos, 0)
-            ; Sleep(500)
+        ; Кликаем по координатам (15, 200)
+        ; Click 15, 540
+        ; Sleep(100)
 
-            ; Кликаем по координатам (15, 200)
-            ; Click 15, 540
-            ; Sleep(100)
+        ; Click 1000, 500
+        ; Sleep(100)
 
-            ; Click 1000, 500
-            ; Sleep(100)
+        ; Send("+!s")
+        ; Sleep(500)
 
-            ; Send("+!s")
-            ; Sleep(500)
+        Click 15, 540
+        Send("i")
 
-            Click 15, 540
-            Send("i")
-
-            Click 1000, 500
-        }
+        Click 1000, 500
     }
 }
 
 ^!+F8:: {
-    ; Проверяем, активен ли Chrome
-    if WinActive("ahk_exe chrome.exe") || InStr(title, "Translate", false) {
-        ; Получаем заголовок активного окна
-        title := WinGetTitle("A")
+    if (WinActive("ahk_exe chrome.exe") && (InStr(WinGetTitle("A"), "Reading") || InStr(WinGetTitle("A"),
+    "Translate"))) {
+        ; Шаг 1: Задержка перед отправкой комбинации клавиш (например, 500 миллисекунд)
+        ; Sleep(500)
 
-        ; Проверяем, содержит ли заголовок слово "Reading"
-        if InStr(title, "Reading", false) {
-            ; Шаг 1: Задержка перед отправкой комбинации клавиш (например, 500 миллисекунд)
-            ; Sleep(500)
+        ; Шаг 4: Получаем текущую позицию мыши
+        ; MouseGetPos(&xpos, &ypos)
 
-            ; Шаг 4: Получаем текущую позицию мыши
-            ; MouseGetPos(&xpos, &ypos)
+        ; Шаг 5: Двигаем указатель мыши на 1024 пикселя вправо
+        ; MouseMove(xpos + 1024, ypos, 0)
 
-            ; Шаг 5: Двигаем указатель мыши на 1024 пикселя вправо
-            ; MouseMove(xpos + 1024, ypos, 0)
+        ; Шаг 6: Возвращаем указатель в исходное положение
+        ; MouseMove(xpos, ypos, 0)
+        ; Sleep(500)
 
-            ; Шаг 6: Возвращаем указатель в исходное положение
-            ; MouseMove(xpos, ypos, 0)
-            ; Sleep(500)
+        ; Кликаем по координатам (15, 200)
+        ; Click 15, 540
+        ; Sleep(100)
 
-            ; Кликаем по координатам (15, 200)
-            ; Click 15, 540
-            ; Sleep(100)
+        ; Click 1000, 500
+        ; Sleep(100)
 
-            ; Click 1000, 500
-            ; Sleep(100)
+        ; Send("+!s")
+        ; Sleep(500)
 
-            ; Send("+!s")
-            ; Sleep(500)
+        Click 15, 540
+        Send("x")
 
-            Click 15, 540
-            Send("x")
-
-            Click 1000, 500
-        }
+        Click 1000, 500
     }
 }
 ; ^!+:: {
