@@ -20,7 +20,7 @@
         Click 1000, 500
         ; Sleep(100)
 
-        Send("+!s")
+        ; Send("+!s")
         Sleep(500)
 
         ; Отправляем клавишу "1"
@@ -51,7 +51,7 @@
         Click 1000, 500
         ; Sleep(100)
 
-        Send("+!s")
+        ; Send("+!s")
         Sleep(500)
 
         Send("2")
@@ -81,7 +81,7 @@
         Click 1000, 500
         ; Sleep(100)
 
-        Send("+!s")
+        ; Send("+!s")
         Sleep(500)
 
         Send("3")
@@ -111,7 +111,7 @@
         Click 1000, 500
         ; Sleep(100)
 
-        Send("+!s")
+        ; Send("+!s")
         Sleep(500)
 
         Send("4")
@@ -141,7 +141,7 @@
         Click 1000, 500
         ; Sleep(100)
 
-        Send("+!s")
+        ; Send("+!s")
         Sleep(500)
 
         Send("5")
