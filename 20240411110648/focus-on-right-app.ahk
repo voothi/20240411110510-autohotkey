@@ -7,7 +7,7 @@
         MouseGetPos(&xpos, &ypos)
 
         ; Step 5: Move the mouse pointer 1024 pixels to the right
-        MouseMove(xpos + 1380, ypos, 0)
+        MouseMove(xpos + 1417, ypos, 0)
 
         ; Step 6: Return the pointer to the original position
         ; MouseMove(xpos, ypos, 0)
