@@ -16,9 +16,11 @@ GetScrollCount() {
 ^![:: {  ; Bind to the hotkey Ctrl + Alt + [
     ; Store the current time
     CurrentTime := A_TimeSincePriorHotkey
-    ; Check if the hotkey was pressed again within 1... second
-    if (CurrentTime != "" && CurrentTime < 500) {
-        Send("!{Up}")  ; Send Alt + Up
+    ; Check if the hotkey was pressed again within 500 milliseconds
+    if (CurrentTime != "" && CurrentTime < 250) {
+        if WinActive("ahk_exe goldendict.exe") {  ; Check if goldendict.exe is active
+            Send("!{Up}")  ; Send Alt + Up only if goldendict.exe is active
+        }
     } else {
         SetTimer(ScrollDownTimer, 50)
     }
