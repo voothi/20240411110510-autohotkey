@@ -104,7 +104,7 @@
         }
         Send("a")
         
-        Sleep(500)
+        Sleep(1000)
 
         if !InStr(WinGetTitle("A"), "Reading") {
             Send("!{Tab}")
@@ -124,7 +124,7 @@
         }
         Send("d")
 
-        Sleep(500)
+        Sleep(1000)
         
         if !InStr(WinGetTitle("A"), "Reading") {
             Send("!{Tab}")
