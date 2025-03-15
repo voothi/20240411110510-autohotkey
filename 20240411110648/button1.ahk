@@ -16,6 +16,18 @@ GetScrollCount() {
 ^!':: {  ; Bind to the hotkey Ctrl + Alt + '
     SetTimer(ScrollDownTimer, 50)
     return
+    ; Store the current time
+}
+
+^![:: {  ; Bind to the hotkey Ctrl + Alt + [
+    CurrentTime := A_TimeSincePriorHotkey
+    ; Check if the hotkey was pressed again within ... second
+    if (CurrentTime != "" && CurrentTime < 500) {
+        Send("!{Down}")  ; Send Alt + Down
+    } else {
+        SetTimer(ScrollDownTimer, 50)
+    }
+    return
 }
 
 ^!' up:: {  ; When Ctrl + Alt + ' is released
@@ -25,7 +37,7 @@ GetScrollCount() {
 
 ScrollDownTimer() {  ; Function to execute on each timer tick
     ScrollDownCount := GetScrollCount()  ; Get the number of lines to scroll
-    Loop(ScrollDownCount) {  ; Scroll the specified number of lines down
+    loop (ScrollDownCount) {  ; Scroll the specified number of lines down
         Send("{WheelDown}")  ; Simulate mouse wheel scrolling down
         Sleep(50)  ; Pause a bit between each scroll action
     }

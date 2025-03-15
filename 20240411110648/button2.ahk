@@ -9,12 +9,19 @@ GetScrollCount() {
         return 3  ; Number of lines to scroll up for chrome.exe
     }
     else {  ; If neither of the specified windows is active
-        return 1  ; Default scroll up by three lines
+        return 1  ; Default scroll up by one line
     }
 }
 
 ^![:: {  ; Bind to the hotkey Ctrl + Alt + [
-    SetTimer(ScrollDownTimer, 50)
+    ; Store the current time
+    CurrentTime := A_TimeSincePriorHotkey
+    ; Check if the hotkey was pressed again within 1... second
+    if (CurrentTime != "" && CurrentTime < 500) {
+        Send("!{Up}")  ; Send Alt + Up
+    } else {
+        SetTimer(ScrollDownTimer, 50)
+    }
     return
 }
 
@@ -25,7 +32,7 @@ GetScrollCount() {
 
 ScrollDownTimer() {  ; Function to execute on each timer tick
     ScrollUpCount := GetScrollCount()  ; Get the number of lines to scroll
-    Loop(ScrollUpCount) {  ; Scroll the specified number of lines up
+    loop (ScrollUpCount) {  ; Scroll the specified number of lines up
         Send("{WheelUp}")  ; Simulate mouse wheel scrolling up
         Sleep(50)  ; Pause a bit between each scroll action
     }
