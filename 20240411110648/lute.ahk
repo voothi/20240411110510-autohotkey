@@ -100,7 +100,7 @@
         ; Проверяем, не содержит ли название окна "Reading"
         if !InStr(WinGetTitle("A"), "Reading") {
             Send("!{Tab}")
-            Sleep(500)
+            Sleep(1000)
         }
         Send("a")
         
@@ -108,7 +108,7 @@
 
         if !InStr(WinGetTitle("A"), "Reading") {
             Send("!{Tab}")
-            Sleep(500)
+            Sleep(1000)
         }
         Send("c")
     }
@@ -120,7 +120,7 @@
         ; Проверяем, не содержит ли название окна "Reading"
         if !InStr(WinGetTitle("A"), "Reading") {
             Send("!{Tab}")
-            Sleep(500)
+            Sleep(1000)
         }
         Send("d")
 
@@ -128,7 +128,7 @@
         
         if !InStr(WinGetTitle("A"), "Reading") {
             Send("!{Tab}")
-            Sleep(500)
+            Sleep(1000)
         }
         Send("c")
     }
