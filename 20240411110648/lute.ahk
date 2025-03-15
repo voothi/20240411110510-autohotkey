@@ -93,3 +93,43 @@
         Send("x")
     }
 }
+
+^!+a:: {
+    if (WinActive("ahk_exe chrome.exe") && (InStr(WinGetTitle("A"), "Reading") || InStr(WinGetTitle("A"), "Translate") ||
+    InStr(WinGetTitle("A"), "Text Input"))) {
+        ; Проверяем, не содержит ли название окна "Reading"
+        if !InStr(WinGetTitle("A"), "Reading") {
+            Send("!{Tab}")
+            Sleep(500)
+        }
+        Send("a")
+        
+        Sleep(500)
+
+        if !InStr(WinGetTitle("A"), "Reading") {
+            Send("!{Tab}")
+            Sleep(500)
+        }
+        Send("c")
+    }
+}
+
+^!+d:: {
+    if (WinActive("ahk_exe chrome.exe") && (InStr(WinGetTitle("A"), "Reading") || InStr(WinGetTitle("A"), "Translate") ||
+    InStr(WinGetTitle("A"), "Text Input"))) {
+        ; Проверяем, не содержит ли название окна "Reading"
+        if !InStr(WinGetTitle("A"), "Reading") {
+            Send("!{Tab}")
+            Sleep(500)
+        }
+        Send("d")
+
+        Sleep(500)
+        
+        if !InStr(WinGetTitle("A"), "Reading") {
+            Send("!{Tab}")
+            Sleep(500)
+        }
+        Send("c")
+    }
+}
