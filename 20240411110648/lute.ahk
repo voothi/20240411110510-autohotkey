@@ -22,8 +22,15 @@ SwitchToEnglishLayoutIfNeeded() {
     ; Check if the current layout is not English
     if (currentLayout != englishLayout) {
         ; Simulate the layout switch using Shift + Alt
-        ChangeKeyboardLayout("00000409") ; Load Keyboard Layout for English US (Hex representation)
+        ChangeKeyboardLayout("00000409") ; 67699721 00000409 Load Keyboard Layout for English US (Hex representation)
         Sleep(100) ; Wait a little for the layout to change
+        ; Get the new keyboard layout after the change
+        newLayout := GetKeyboardLayout()
+
+        ; Display the new layout code for debugging
+        Tooltip("New Layout Code: " newLayout)
+        Sleep(2000)
+        Tooltip() ; Clear the tooltip after 2 seconds
 
         ; Get the new keyboard layout after the change
         ; newLayout := GetKeyboardLayout()
@@ -35,9 +42,11 @@ SwitchToEnglishLayoutIfNeeded() {
     }
 }
 
+SetTimer(SwitchToEnglishLayoutIfNeeded, 10000) ; Set a timer to call the function every 2 minutes 120000
+
 ^!+F1:: {
     ; First, try switching to the English layout if needed
-    SwitchToEnglishLayoutIfNeeded()
+    ; SwitchToEnglishLayoutIfNeeded()
 
     if (WinActive("ahk_exe chrome.exe") && (InStr(WinGetTitle("A"), "Reading") || InStr(WinGetTitle("A"), "Translate") ||
         InStr(WinGetTitle("A"), "Text Input"))) {
