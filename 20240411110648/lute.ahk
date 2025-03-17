@@ -15,9 +15,9 @@ SwitchToEnglishLayoutIfNeeded() {
     currentLayout := GetKeyboardLayout()
 
     ; Debugging: Display the current layout handle
-    Tooltip("Current Layout Handle: " currentLayout)
-    Sleep(2000) ; Show the tooltip for 2 секунды
-    Tooltip() ; Clear the tooltip
+    ; Tooltip("Current Layout Handle: " currentLayout)
+    ; Sleep(2000) ; Show the tooltip for 2 секунды
+    ; Tooltip() ; Clear the tooltip
 
     ; Define layout identifiers for English (US) and Italian
     englishLayout := 0x0409  ; English (United States)
@@ -35,21 +35,13 @@ SwitchToEnglishLayoutIfNeeded() {
         newLayout := GetKeyboardLayout()
 
         ; Display the new layout code for debugging
-        Tooltip("New Layout Code: " newLayout)
-        Sleep(2000)
-        Tooltip() ; Clear the tooltip after 2 seconds
-
-        ; Get the new keyboard layout after the change
-        ; newLayout := GetKeyboardLayout()
-
-        ; Display the new layout code for debugging
         ; Tooltip("New Layout Code: " newLayout)
         ; Sleep(2000)
         ; Tooltip() ; Clear the tooltip after 2 seconds
     }
 }
 
-SetTimer(SwitchToEnglishLayoutIfNeeded, 10000) ; Set a timer to call the function every 2 minutes 120000
+SetTimer(SwitchToEnglishLayoutIfNeeded, 120000) ; Set a timer to call the function every 2 minutes 120000
 
 ^!+F2:: {
     if (WinActive("ahk_exe chrome.exe") && (InStr(WinGetTitle("A"), "Reading") || InStr(WinGetTitle("A"), "Translate") ||
@@ -72,6 +64,16 @@ SetTimer(SwitchToEnglishLayoutIfNeeded, 10000) ; Set a timer to call the functio
             Sleep(500)
         }
         Send("3")
+    }
+}
+
+^!+F3:: {
+    if (WinActive("ahk_exe chrome.exe") && (InStr(WinGetTitle("A"), "Reading") || InStr(WinGetTitle("A"), "Translate") ||
+    InStr(WinGetTitle("A"), "Text Input"))) {
+        if !InStr(WinGetTitle("A"), "Reading") {
+
+
+        }
     }
 }
 
