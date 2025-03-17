@@ -1,65 +1,49 @@
 ﻿GetKeyboardLayout() {
-    ; This function returns the current keyboard layout handle
+    ; This function returns the current keyboard layout identifier
+    ; We use DllCall to retrieve the layout
     return DllCall("GetKeyboardLayout", "UInt", 0, "UInt")
 }
 
-GetLanguageID(layoutHandle) {
-    ; Extract the language identifier (high-word) from the layout handle
-    return layoutHandle >> 16
+ChangeKeyboardLayout(layout) {
+    ; Change the keyboard layout by using the DllCall to LoadKeyboardLayout
+    ; DllCall("LoadKeyboardLayout", "Str", layout, "UInt", 1)
+    PostMessage(0x50, 0, 0x4090409,, "A")  ; 0x50 is WM_INPUTLANGCHANGEREQUEST. Switch the active window's keyboard layout/language to English:
 }
 
-SwitchToEnglishLanguageIfNeeded() {
-    ; Get the current keyboard layout handle
+SwitchToEnglishLayoutIfNeeded() {
+    ; Get the current keyboard layout
     currentLayout := GetKeyboardLayout()
-    
-    ; Debugging: Display the current layout handle
-    Tooltip("Current Layout Handle: " currentLayout)
-    Sleep(2000) ; Show the tooltip for 2 секунды
-    Tooltip() ; Clear the tooltip
-    
-    ; Get the language identifier from the current layout handle
-    currentLanguage := GetLanguageID(currentLayout)
-    
-    ; Debugging: Display the current language identifier
-    Tooltip("Current Language ID: " currentLanguage)
-    Sleep(2000) ; Show the tooltip for 2 секунды
-    Tooltip() ; Clear the tooltip
-    
-    ; Define language identifiers for English (US) and Russian
-    englishLanguage := 0x0409  ; English (United States)
-    russianLanguage := 0x0419  ; Russian (Russia)
-    
-    ; Check if the current language is not English
-    if (currentLanguage != englishLanguage) {
-        ; Attempt to change to English language using Alt+Shift
-        Send("{Shift down}{Alt down}{Shift up}{Alt up}")
-        
-        ; Optionally, wait a short time to ensure the change has been applied
-        Sleep(100)
-        
-        ; Get the new keyboard layout handle after switching
+    ; Define layout identifiers for English (US) and Italian
+    englishLayout := 0x0409  ; English (United States)
+
+    ; Display the current layout code for debugging
+    ; Tooltip("Current Layout Code: " currentLayout)
+    ; Sleep(2000)
+
+    ; Check if the current layout is not English
+    if (currentLayout != englishLayout) {
+        ; Simulate the layout switch using Shift + Alt
+        ChangeKeyboardLayout("00000409") ; 67699721 00000409 Load Keyboard Layout for English US (Hex representation)
+        Sleep(100) ; Wait a little for the layout to change
+        ; Get the new keyboard layout after the change
         newLayout := GetKeyboardLayout()
-        
-        ; Retrieve the language identifier from the newly obtained layout handle
-        newLanguage := GetLanguageID(newLayout)
 
-        ; Debugging: Show the new layout handle and associated language identifier
-        Tooltip("Switched to New Layout Handle: " newLayout "`nNew Language ID: " newLanguage)
-        Sleep(2000) ; Display the tooltip for 2 seconds
-        Tooltip() ; Clear the tooltip
+        ; Display the new layout code for debugging
+        Tooltip("New Layout Code: " newLayout)
+        Sleep(2000)
+        Tooltip() ; Clear the tooltip after 2 seconds
 
-        ; Optionally, log the layout change for future reference
-        FileAppend("Switched Layout - Current: " currentLayout " New: " newLayout "`n", "LayoutSwitchLog.txt")
-    } else {
-        ; Debugging: Indicate that no change was necessary
-        Tooltip("No change needed. Current Language ID: " currentLanguage)
-        Sleep(2000) ; Display the tooltip for 2 seconds
-        Tooltip() ; Clear the tooltip
+        ; Get the new keyboard layout after the change
+        ; newLayout := GetKeyboardLayout()
+
+        ; Display the new layout code for debugging
+        ; Tooltip("New Layout Code: " newLayout)
+        ; Sleep(2000)
+        ; Tooltip() ; Clear the tooltip after 2 seconds
     }
 }
 
-; Optional: Set a timer to check every 10 секунд as a fallback; adjust as needed
-SetTimer(SwitchToEnglishLanguageIfNeeded, 10000) ; Set a timer to call the function every 10 секунд
+SetTimer(SwitchToEnglishLayoutIfNeeded, 10000) ; Set a timer to call the function every 2 minutes 120000
 
 ^!+F2:: {
     if (WinActive("ahk_exe chrome.exe") && (InStr(WinGetTitle("A"), "Reading") || InStr(WinGetTitle("A"), "Translate") ||
