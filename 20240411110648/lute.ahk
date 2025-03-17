@@ -1,4 +1,28 @@
-﻿GetKeyboardLayout() {
+﻿; Initialize a flag to track if the timer is set
+global TimerIsSet := false
+
+; Function to check the conditions and manage the timer
+CheckConditions() {
+    ; Check if the active window is Chrome and if the title contains "Reading", "Translate", or "Text Input"
+    if (WinActive("ahk_exe chrome.exe") && (InStr(WinGetTitle("A"), "Reading") || InStr(WinGetTitle("A"), "Translate") || InStr(WinGetTitle("A"), "Text Input"))) {
+        ; If the timer is not already set, set it
+        if (!TimerIsSet) {
+            SetTimer(SwitchToEnglishLayoutIfNeeded, 120000) ; Set the timer to call the function every 2 minutes
+            TimerIsSet := true
+        }
+    } else {
+        ; If the active window does not meet the conditions, stop the timer
+        if (TimerIsSet) {
+            SetTimer(SwitchToEnglishLayoutIfNeeded, "Off") ; Turn off the timer
+            TimerIsSet := false
+        }
+    }
+}
+
+; Set a timer to check the conditions every 500 milliseconds
+SetTimer(CheckConditions, 1000)
+
+GetKeyboardLayout() {
     ; This function returns the current keyboard layout identifier
     ; We use DllCall to retrieve the layout
     return DllCall("GetKeyboardLayout", "UInt", 0, "UInt")
@@ -41,7 +65,19 @@ SwitchToEnglishLayoutIfNeeded() {
     }
 }
 
-SetTimer(SwitchToEnglishLayoutIfNeeded, 120000) ; Set a timer to call the function every 2 minutes 120000
+; SetTimer(SwitchToEnglishLayoutIfNeeded, 120000) ; Set a timer to call the function every 2 minutes 120000
+
+^!+F1:: {
+    if (WinActive("ahk_exe chrome.exe") && (InStr(WinGetTitle("A"), "Reading") || InStr(WinGetTitle("A"), "Translate") ||
+    InStr(WinGetTitle("A"), "Text Input"))) {
+        ; Проверяем, не содержит ли название окна "Reading"
+        if !InStr(WinGetTitle("A"), "Reading") {
+            Send("!{Tab}")
+            Sleep(500)
+        }
+        Send("1")
+    }
+}
 
 ^!+F2:: {
     if (WinActive("ahk_exe chrome.exe") && (InStr(WinGetTitle("A"), "Reading") || InStr(WinGetTitle("A"), "Translate") ||
@@ -64,16 +100,6 @@ SetTimer(SwitchToEnglishLayoutIfNeeded, 120000) ; Set a timer to call the functi
             Sleep(500)
         }
         Send("3")
-    }
-}
-
-^!+F3:: {
-    if (WinActive("ahk_exe chrome.exe") && (InStr(WinGetTitle("A"), "Reading") || InStr(WinGetTitle("A"), "Translate") ||
-    InStr(WinGetTitle("A"), "Text Input"))) {
-        if !InStr(WinGetTitle("A"), "Reading") {
-
-
-        }
     }
 }
 
