@@ -7,7 +7,7 @@
 ChangeKeyboardLayout(layout) {
     ; Change the keyboard layout by using the DllCall to LoadKeyboardLayout
     ; DllCall("LoadKeyboardLayout", "Str", layout, "UInt", 1)
-    PostMessage(0x50, 0, 0x4090409,, "A")  ; 0x50 is WM_INPUTLANGCHANGEREQUEST. Switch the active window's keyboard layout/language to English:
+    PostMessage(0x50, 0, layout,, "A")  ; 0x50 is WM_INPUTLANGCHANGEREQUEST. Switch the active window's keyboard layout/language to English:
 }
 
 SwitchToEnglishLayoutIfNeeded() {
@@ -23,7 +23,7 @@ SwitchToEnglishLayoutIfNeeded() {
     ; Check if the current layout is not English
     if (currentLayout != englishLayout) {
         ; Simulate the layout switch using Shift + Alt
-        ChangeKeyboardLayout("00000409") ; 67699721 00000409 Load Keyboard Layout for English US (Hex representation)
+        ChangeKeyboardLayout(englishLayout) ; 67699721 00000409 Load Keyboard Layout for English US (Hex representation)
         Sleep(100) ; Wait a little for the layout to change
         ; Get the new keyboard layout after the change
         newLayout := GetKeyboardLayout()
