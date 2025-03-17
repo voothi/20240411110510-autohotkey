@@ -4,6 +4,11 @@
     return DllCall("GetKeyboardLayout", "UInt", 0, "UInt")
 }
 
+ChangeKeyboardLayout(layout) {
+    ; Change the keyboard layout by using the DllCall to LoadKeyboardLayout
+    DllCall("LoadKeyboardLayout", "Str", layout, "UInt", 1)
+}
+
 SwitchToEnglishLayoutIfNeeded() {
     ; Get the current keyboard layout
     currentLayout := GetKeyboardLayout()
@@ -17,7 +22,7 @@ SwitchToEnglishLayoutIfNeeded() {
     ; Check if the current layout is not English
     if (currentLayout != englishLayout) {
         ; Simulate the layout switch using Shift + Alt
-        Send("{Shift}{Alt}")
+        ChangeKeyboardLayout("00000409") ; Load Keyboard Layout for English US (Hex representation)
         Sleep(100) ; Wait a little for the layout to change
 
         ; Get the new keyboard layout after the change
