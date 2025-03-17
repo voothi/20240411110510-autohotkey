@@ -1,8 +1,43 @@
-﻿^!+F1:: {
+﻿GetKeyboardLayout() {
+    ; This function returns the current keyboard layout identifier
+    ; We use DllCall to retrieve the layout
+    return DllCall("GetKeyboardLayout", "UInt", 0, "UInt")
+}
+
+SwitchToEnglishLayoutIfNeeded() {
+    ; Get the current keyboard layout
+    currentLayout := GetKeyboardLayout()
+    ; Define layout identifiers for English (US) and Italian
+    englishLayout := 0x0409  ; English (United States)
+
+    ; Display the current layout code for debugging
+    ; Tooltip("Current Layout Code: " currentLayout)
+    ; Sleep(2000)
+
+    ; Check if the current layout is not English
+    if (currentLayout != englishLayout) {
+        ; Simulate the layout switch using Shift + Alt
+        Send("{Shift}{Alt}")
+        Sleep(100) ; Wait a little for the layout to change
+
+        ; Get the new keyboard layout after the change
+        ; newLayout := GetKeyboardLayout()
+
+        ; Display the new layout code for debugging
+        ; Tooltip("New Layout Code: " newLayout)
+        ; Sleep(2000)
+        ; Tooltip() ; Clear the tooltip after 2 seconds
+    }
+}
+
+^!+F1:: {
+    ; First, try switching to the English layout if needed
+    SwitchToEnglishLayoutIfNeeded()
+
     if (WinActive("ahk_exe chrome.exe") && (InStr(WinGetTitle("A"), "Reading") || InStr(WinGetTitle("A"), "Translate") ||
-    InStr(WinGetTitle("A"), "Text Input"))) {
-        ; Проверяем, не содержит ли название окна "Reading"
-        if !InStr(WinGetTitle("A"), "Reading") {
+        InStr(WinGetTitle("A"), "Text Input"))) {
+            ; Проверяем, не содержит ли название окна "Reading"
+            if !InStr(WinGetTitle("A"), "Reading") {
             Send("!{Tab}")
             Sleep(500)
         }
@@ -103,7 +138,7 @@
             Sleep(1000)
         }
         Send("a")
-        
+
         Sleep(1000)
 
         if !InStr(WinGetTitle("A"), "Reading") {
@@ -125,7 +160,7 @@
         Send("d")
 
         Sleep(1000)
-        
+
         if !InStr(WinGetTitle("A"), "Reading") {
             Send("!{Tab}")
             Sleep(1000)
