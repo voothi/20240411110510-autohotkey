@@ -13,6 +13,12 @@ ChangeKeyboardLayout(layout) {
 SwitchToEnglishLayoutIfNeeded() {
     ; Get the current keyboard layout
     currentLayout := GetKeyboardLayout()
+
+    ; Debugging: Display the current layout handle
+    Tooltip("Current Layout Handle: " currentLayout)
+    Sleep(2000) ; Show the tooltip for 2 секунды
+    Tooltip() ; Clear the tooltip
+
     ; Define layout identifiers for English (US) and Italian
     englishLayout := 0x0409  ; English (United States)
 
