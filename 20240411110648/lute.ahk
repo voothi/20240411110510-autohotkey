@@ -3,6 +3,8 @@ global TimerIsSet := false
 
 ; Function to check the conditions and manage the timer
 CheckConditions() {
+    global TimerIsSet ; Declare TimerIsSet as global to use the global variable
+
     ; Check if the active window is Chrome and if the title contains "Reading", "Translate", or "Text Input"
     if (WinActive("ahk_exe chrome.exe") && (InStr(WinGetTitle("A"), "Reading") || InStr(WinGetTitle("A"), "Translate") || InStr(WinGetTitle("A"), "Text Input"))) {
         ; If the timer is not already set, set it
