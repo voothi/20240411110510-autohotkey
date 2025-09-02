@@ -1,14 +1,13 @@
-﻿^!+1::
+﻿; AHK v2 syntax
+
+^!+1::
 {
     Send("^c")
-    ClipWait(1) ; Wait until the clipboard contains data
-    Sleep(100) ; Wait for 100 ms
+    ClipWait(1)
+    Sleep(100)
 
-    active_id := WinGetID("A")
     main_gd_id := 0
-    gd_windows := WinGetList("ahk_exe goldendict.exe")
-
-    for id in gd_windows
+    for id in WinGetList("ahk_exe goldendict.exe")
     {
         WinGetPos(,, &width,, id)
         if (width > 800)
@@ -18,49 +17,31 @@
         }
     }
 
-    ; Check if the current active window is goldendict.exe and the window title contains "GoldenDict-ng"
-    ; if WinActive("ahk_exe goldendict.exe") && InStr(WinGetTitle("A"), "GoldenDict-ng") {
-        ; Send the shortcut twice
-        
-        ; 20250513085430 New version of GD
-        ; Send("^!+w")
-        ; Sleep(100) ; Wait for 100 ms
-
-        ; Send("^m")
-        ; Sleep(100); Wait for 100 ms
-
-    ; if main_gd_id
-    ; {
-    ;     if (active_id = main_gd_id)
-    ;     {
-    ;         Sleep(100)
-    ;     }
-    ; } else {
-    ;     ; If it's not goldendict, send the shortcut once
-    ;     Send("^m")
-    ;     Sleep(100) ; Wait for 100 ms
-    ; }
-
-    if (active_id = main_gd_id)
+    if (main_gd_id && WinGetID("A") == main_gd_id)
     {
-        Sleep(100)
-    } else {
-        ; If it's not goldendict, send the shortcut once
+        ; Case 1: The main window is found and already active. Do nothing.
+    }
+    else if (main_gd_id)
+    {
+        ; Case 2: The main window exists but is not active. Activate it.
+        WinActivate(main_gd_id)
+        WinWaitActive(main_gd_id,, 2)
+    }
+    else
+    {
+        ; Case 3: The main window does not exist (app is in tray).
+        ; Send the global hotkey to make it appear.
         Send("^m")
-        Sleep(100) ; Wait for 100 ms
+        WinWait("ahk_exe goldendict.exe",, 2)
+        WinActivate()
+        ; Sleep(100)
     }
 
-    ; Default option. As in the original, with line breaks.
-    ; Send("^v")
-    ; Sleep(100) ; Wait for 100 ms
-
-    ; Variant with removal of line breaks. After processing.
-    RunWait("C:\Python\Python312\python.exe C:\Tools\remove_newline_util\remove_newline_util.py", "", "Hide")
+    RunWait('C:\Python\Python312\python.exe "C:\Tools\remove_newline_util\remove_newline_util.py"', '', 'Hide')
     Sleep(750)
 
     Send("^v")
-    Sleep(100) ; Wait for 100 ms
+    Sleep(100)
 
-    ; Common code for both options. Sending data from the field.
     Send("{Enter}")
 }
