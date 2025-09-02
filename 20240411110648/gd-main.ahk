@@ -13,7 +13,7 @@
     for id in gd_windows
     {
         WinGetPos(,, &width,, id)
-        if (width > 400)
+        if (width > 800)
         {
             main_gd_id := id
             break
@@ -26,15 +26,17 @@
         {
             WinActivate(main_gd_id)
             WinWaitActive(main_gd_id,, 2)
+            Send("^m")
+            Sleep(100)
         }
     }
     else
     {
         WinActivate("ahk_exe goldendict.exe")
+        WinWaitActive("ahk_exe goldendict.exe",, 2)
+        Send("^m")
+        Sleep(100)
     }
-
-    Send("^m")
-    Sleep(100)
 
     RunWait('C:\Python\Python312\python.exe "C:\Tools\remove_newline_util\remove_newline_util.py"', '', 'Hide')
     Sleep(750)
