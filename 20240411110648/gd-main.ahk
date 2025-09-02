@@ -6,6 +6,7 @@
     ClipWait(1)
     Sleep(100)
 
+    active_id := WinGetID("A")
     main_gd_id := 0
     gd_windows := WinGetList("ahk_exe goldendict.exe")
 
@@ -21,8 +22,11 @@
 
     if main_gd_id
     {
-        WinActivate(main_gd_id)
-        WinWaitActive(main_gd_id,, 2)
+        if (active_id != main_gd_id)
+        {
+            WinActivate(main_gd_id)
+            WinWaitActive(main_gd_id,, 2)
+        }
     }
     else
     {
