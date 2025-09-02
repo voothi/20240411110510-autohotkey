@@ -12,7 +12,7 @@
         ; Send("^!+w")
         ; Sleep(100) ; Wait for 100 ms
 
-        ; Send("^m")
+        Send("^m")
         Sleep(100) ; Wait for 100 ms
     } else {
         ; If it's not goldendict, send the shortcut once
