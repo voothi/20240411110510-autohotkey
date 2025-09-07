@@ -23,7 +23,8 @@ FindNextInGoldenDict()
     
     savedClip := A_Clipboard
     A_Clipboard := ""
-    
+
+    Sleep(500)
     Send("^c")
     
     if ClipWait(0.5)
