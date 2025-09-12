@@ -2,19 +2,16 @@
 ; --- User Configuration ---
 ; ====================================================================================
 
-; Delay in ms before scrolling starts if the cursor is held still.
-scrollDelay := 500
-
-; Deadzone for scrolling in pixels. Movement less than this will trigger scroll.
-dragThreshold := 15
+; Delay in ms to hold the key before scrolling starts.
+scrollDelay := 250 
 
 
 ; ====================================================================================
 ; --- Script Logic ---
 ; ====================================================================================
 global isScrolling := false
-global startX := 0, startY := 0
 
+; Determines the number of lines to scroll up.
 GetScrollCount() {
     if WinActive("ahk_exe chrome.exe") {
         return 3
@@ -22,50 +19,45 @@ GetScrollCount() {
     return 1
 }
 
-ScrollDownTimer() {
+; Performs the continuous scroll-up action.
+ScrollUpTimer() {
     loop GetScrollCount() {
-        Send("{WheelDown}")
+        Send("{WheelUp}")
         Sleep(50)
     }
 }
 
-CheckForScroll() {
-    global isScrolling, startX, startY, dragThreshold
-    MouseGetPos(&endX, &endY)
-    
-    if (Abs(startX - endX) < dragThreshold) && (Abs(startY - endY) < dragThreshold)
-    {
-        isScrolling := true
-        Send("{LButton Up}")
-        SetTimer(ScrollDownTimer, 50)
-    }
+; This function is triggered by a timer and starts the scroll.
+LongPressAction() {
+    global isScrolling
+    isScrolling := true
+    SetTimer(ScrollUpTimer, 50)
 }
+
 
 ; --- Hotkeys ---
 
-$^!sc028::
+; Triggers on KEY DOWN for the physical key `[` (sc01A).
+$^!sc01A::
 {
-    global isScrolling, startX, startY, scrollDelay
+    global isScrolling, scrollDelay
     
-    isScrolling := false
-    MouseGetPos(&startX, &startY)
-    
-    Send("{LButton Down}")
-    SetTimer(CheckForScroll, -scrollDelay)
+    isScrolling := false ; Reset the flag on each new press.
+    SetTimer(LongPressAction, -scrollDelay) ; Start a one-time timer that will trigger the scroll.
 }
 
-$^!sc028 up::
+; Triggers on KEY UP for the physical key `[` (sc01A).
+$^!sc01A up::
 {
     global isScrolling
     
-    SetTimer(CheckForScroll, 0) 
+    ; Immediately disable all timers.
+    SetTimer(LongPressAction, 0)
+    SetTimer(ScrollUpTimer, 0)
     
-    if isScrolling
+    ; If the scroll timer never had a chance to run, it was a short press.
+    if !isScrolling
     {
-        SetTimer(ScrollDownTimer, 0)
-    }
-    else
-    {
-        Send("{LButton Up}")
+        Click("Right")
     }
 }
