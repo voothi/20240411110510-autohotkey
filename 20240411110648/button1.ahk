@@ -56,6 +56,10 @@ ScrollDownTimer() {
     ; Если клавиша была зажата менее 500 мс, выполняем клик левой кнопкой мыши
     if (PressDuration < 500) {
         ; ИЗМЕНЕНИЕ: Используем SendInput для более надежной эмуляции клика
+        KeyWait("Control")
+        KeyWait("Alt")
+        ; Делаем небольшую паузу на всякий случай
+        Sleep(20) 
         SendInput("{LButton}")
     }
     return
