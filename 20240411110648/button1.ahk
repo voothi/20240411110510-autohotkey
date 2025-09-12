@@ -8,6 +8,10 @@ scrollDelay := 500
 ; Deadzone for scrolling in pixels. Movement less than this will trigger scroll.
 dragThreshold := 15
 
+; NEW: Deadzone for a "clean click" in pixels. Prevents accidental drags on sensitive elements.
+; A small value like 5-10 is recommended.
+clickThreshold := 7
+
 
 ; ====================================================================================
 ; --- Script Logic ---
@@ -56,7 +60,7 @@ $^!sc028::
 
 $^!sc028 up::
 {
-    global isScrolling
+    global isScrolling, startX, startY, clickThreshold
     
     SetTimer(CheckForScroll, 0) 
     
@@ -66,6 +70,22 @@ $^!sc028 up::
     }
     else
     {
-        Send("{LButton Up}")
+        ; --- MODIFIED LOGIC: Differentiate between a clean click and a drag ---
+        MouseGetPos(&endX, &endY)
+        
+        ; Check if the cursor moved less than the click threshold
+        if (Abs(startX - endX) < clickThreshold) && (Abs(startY - endY) < clickThreshold)
+        {
+            ; This is a "clean click".
+            ; First, release the LButton to end the current drag state.
+            Send("{LButton Up}")
+            ; Then, perform a new, precise click at the original start point to ensure accuracy.
+            Click(startX, startY)
+        }
+        else
+        {
+            ; This is an intentional drag. Just release the button to complete it.
+            Send("{LButton Up}")
+        }
     }
 }
