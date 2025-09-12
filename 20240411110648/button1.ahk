@@ -56,7 +56,7 @@ ScrollDownTimer() {
 
     ; Если клавиша была зажата менее 500 мс, выполняем клик левой кнопкой мыши
     if (PressDuration < 500) {
-        Send("{LButton}")
+        Click ; ИЗМЕНЕНИЕ: Заменено Send("{LButton}") на Click для большей надежности
     }
     return
 }
