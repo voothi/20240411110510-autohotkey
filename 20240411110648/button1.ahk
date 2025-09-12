@@ -9,10 +9,10 @@ scrollDelay := 500
 dragThreshold := 15
 
 ; Deadzone for a "clean click" in pixels. Prevents accidental drags.
-clickThreshold := 7
+clickThreshold := 10
 
 ; Maximum time between clicks to register a double-click (in ms).
-doubleClickSpeed := 400
+doubleClickSpeed := 500
 
 ; Deadzone for double-clicking in pixels.
 doubleClickThreshold := 10
