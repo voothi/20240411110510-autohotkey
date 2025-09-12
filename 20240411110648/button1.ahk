@@ -2,12 +2,17 @@
 ; --- User Configuration ---
 ; ====================================================================================
 
-; Задержка в миллисекундах, после которой скрипт проверит, нужно ли включать прокрутку.
+; Delay in ms before scrolling starts if the cursor is held still.
 scrollDelay := 250 
 
-; "Мертвая зона" в пикселях. Если курсор сдвинулся меньше этого значения по X или Y,
-; будет включена прокрутка. Поэкспериментируйте со значением от 10 до 30.
+; Deadzone for scrolling in pixels. Movement less than this will trigger scroll.
 dragThreshold := 15 
+
+; Maximum time between clicks to register a double-click (in ms).
+doubleClickSpeed := 400
+
+; Deadzone for double-clicking in pixels.
+doubleClickThreshold := 10
 
 
 ; ====================================================================================
@@ -15,6 +20,8 @@ dragThreshold := 15
 ; ====================================================================================
 global isScrolling := false
 global startX := 0, startY := 0
+global lastClickTimestamp := 0, lastClickX := 0, lastClickY := 0
+global ignoreUpEvent := false
 
 GetScrollCount() {
     if WinActive("ahk_exe chrome.exe") {
@@ -30,48 +37,62 @@ ScrollDownTimer() {
     }
 }
 
-; Функция, которая проверяет, нужно ли начинать прокрутку.
 CheckForScroll() {
     global isScrolling, startX, startY, dragThreshold
-    
     MouseGetPos(&endX, &endY)
-    
-    ; Проверяем, что курсор почти не сдвинулся с начальной точки.
-    if (Abs(startX - endX) < dragThreshold) && (Abs(startY - endY) < dragThreshold)
-    {
+    if (Abs(startX - endX) < dragThreshold) && (Abs(startY - endY) < dragThreshold) {
         isScrolling := true
-        Send("{LButton Up}") ; Отменяем зажатие, чтобы начать скролл.
+        Send("{LButton Up}")
         SetTimer(ScrollDownTimer, 50)
     }
 }
 
 ; --- Hotkeys ---
 
-; "$" нужен, чтобы хоткей не запускал сам себя через команду Send.
 $^!sc028::
 {
-    global isScrolling, startX, startY, scrollDelay
+    global isScrolling, startX, startY, scrollDelay, lastClickTimestamp, lastClickX, lastClickY
+    global doubleClickSpeed, doubleClickThreshold, ignoreUpEvent
+    
+    ignoreUpEvent := false
+    currentTime := A_TickCount
+    MouseGetPos(&currentX, &currentY)
+    
+    ; Double-click logic
+    timeDiff := currentTime - lastClickTimestamp
+    if (timeDiff < doubleClickSpeed) && (Abs(currentX - lastClickX) < doubleClickThreshold) && (Abs(currentY - lastClickY) < doubleClickThreshold) {
+        SetTimer(CheckForScroll, 0)
+        Send("{LButton}")
+        ignoreUpEvent := true
+        return
+    }
+    
+    ; Single-click / Drag / Scroll logic
+    lastClickTimestamp := currentTime
+    lastClickX := currentX
+    lastClickY := currentY
     
     isScrolling := false
-    MouseGetPos(&startX, &startY) ; Запоминаем начальную позицию.
+    startX := currentX
+    startY := currentY
     
-    Send("{LButton Down}") ; Немедленно зажимаем ЛКМ для выделения.
-    SetTimer(CheckForScroll, -scrollDelay) ; Запускаем одноразовую проверку на скролл.
+    Send("{LButton Down}")
+    SetTimer(CheckForScroll, -scrollDelay)
 }
 
 $^!sc028 up::
 {
-    global isScrolling
+    global isScrolling, ignoreUpEvent
     
-    ; Отключаем таймер проверки на случай, если кнопка была отпущена очень быстро.
+    if ignoreUpEvent {
+        return
+    }
+    
     SetTimer(CheckForScroll, 0) 
     
-    if isScrolling
-    {
-        SetTimer(ScrollDownTimer, 0) ; Если скроллили, останавливаем скролл.
-    }
-    else
-    {
-        Send("{LButton Up}") ; Если выделяли, отпускаем ЛКМ.
+    if isScrolling {
+        SetTimer(ScrollDownTimer, 0)
+    } else {
+        Send("{LButton Up}")
     }
 }
