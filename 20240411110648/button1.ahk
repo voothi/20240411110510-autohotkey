@@ -4,7 +4,7 @@
 
 ; The time in milliseconds you need to hold the key before scrolling starts.
 ; 500 = half a second.
-longPressThreshold := 500
+longPressThreshold := 1000
 
 
 ; ====================================================================================
