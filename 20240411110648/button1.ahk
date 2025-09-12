@@ -1,9 +1,7 @@
-﻿; --- Глобальные переменные ---
-isShortPress := true ; Флаг для определения типа нажатия
+﻿; Global flag to differentiate between a short press and a long press.
+isShortPress := true
 
-; --- Функции ---
-
-; Функция для определения количества строк для прокрутки
+; Determines the number of lines to scroll based on the active window.
 GetScrollCount() {
     if WinActive("ahk_exe app.exe") {
         return 1
@@ -16,7 +14,7 @@ GetScrollCount() {
     }
 }
 
-; Функция, выполняющая саму прокрутку
+; Performs the continuous scroll action.
 ScrollDownTimer() {
     ScrollDownCount := GetScrollCount()
     loop ScrollDownCount {
@@ -25,29 +23,29 @@ ScrollDownTimer() {
     }
 }
 
-; Эта функция сработает через 500 мс после нажатия
+; This function is triggered after 500ms, defining the action as a "long press".
 LongPressAction() {
-    isShortPress := false      ; Опускаем флаг, теперь нажатие считается долгим
-    SetTimer(ScrollDownTimer, 50) ; Включаем непрерывную прокрутку
+    isShortPress := false
+    SetTimer(ScrollDownTimer, 50) ; Starts the continuous scroll.
 }
 
-; --- Основные горячие клавиши ---
+; --- Hotkeys ---
 
-; Срабатывает при НАЖАТИИ физической клавиши sc028
+; Triggers on KEY DOWN for the physical key sc028 (' key in US layout).
 ^!sc028::
 {
-    isShortPress := true ; Взводим флаг при каждом новом нажатии
-    SetTimer(LongPressAction, -500) ; Запускаем одноразовый таймер на 500 мс
+    isShortPress := true ; Assume a short press until the timer completes.
+    SetTimer(LongPressAction, -500) ; Start a one-time timer for 500ms.
 }
 
-; Срабатывает при ОТПУСКАНИИ физической клавиши sc028
+; Triggers on KEY UP for the physical key sc028.
 ^!sc028 up::
 {
-    ; Немедленно отключаем все таймеры
-    SetTimer(LongPressAction, 0)  ; Отключаем таймер долгого нажатия
-    SetTimer(ScrollDownTimer, 0) ; Отключаем прокрутку (если она была запущена)
+    ; Immediately disable all related timers.
+    SetTimer(LongPressAction, 0)
+    SetTimer(ScrollDownTimer, 0)
 
-    ; Если флаг не успел опуститься, значит, это было короткое нажатие
+    ; If the timer didn't have time to run, it was a short press.
     if isShortPress
     {
         Click()
