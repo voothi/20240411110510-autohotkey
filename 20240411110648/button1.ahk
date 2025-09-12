@@ -3,7 +3,7 @@
 ; ====================================================================================
 
 ; Delay in ms before scrolling starts if the cursor is held still.
-scrollDelay := 300
+scrollDelay := 500
 
 ; Deadzone for scrolling in pixels. Movement less than this will trigger scroll.
 dragThreshold := 15
