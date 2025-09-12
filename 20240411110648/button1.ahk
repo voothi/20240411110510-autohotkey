@@ -1,41 +1,62 @@
-﻿; #Persistent  ; This line can be omitted in v2 if no persistent state is needed
+﻿; #Persistent
 
-; Create a function to determine the number of lines to scroll based on the active window
+; Глобальная переменная для хранения времени нажатия клавиши
+global KeyDownTime := 0
+
+; --- Функции ---
+
+; Функция для определения количества строк для прокрутки в зависимости от активного окна
 GetScrollCount() {
-    if WinActive("ahk_exe app.exe") {  ; Check if app.exe is active
-        return 1  ; Number of lines to scroll down for app.exe
+    if WinActive("ahk_exe app.exe") {
+        return 1
     }
-    else if WinActive("ahk_exe chrome.exe") {  ; Check if chrome.exe is active
-        return 3  ; Number of lines to scroll down for chrome.exe
+    else if WinActive("ahk_exe chrome.exe") {
+        return 3
     }
-    else {  ; If none of the specified windows are active
-        return 1  ; Default scroll down by one line
+    else {
+        return 1
     }
 }
 
-^!':: {  ; Bind to the hotkey Ctrl + Alt + '
-    ; Store the current time
-    CurrentTime := A_TimeSincePriorHotkey
-    ; Check if the hotkey was pressed again within 500 milliseconds
-    if (CurrentTime != "" && CurrentTime < 250) {
-        if WinActive("ahk_exe goldendict.exe") {  ; Check if goldendict.exe is active
-            Send("!{Down}")  ; Send Alt + Down only if goldendict.exe is active
-        }
-    } else {
-        SetTimer(ScrollDownTimer, 50)
+; Функция, которая запускает непрерывную прокрутку (срабатывает по таймеру)
+StartScroll() {
+    SetTimer(ScrollDownTimer, 50) ; Включаем повторяющийся таймер для прокрутки
+}
+
+; Функция, выполняющая саму прокрутку
+ScrollDownTimer() {
+    ScrollDownCount := GetScrollCount()
+    loop (ScrollDownCount) {
+        Send("{WheelDown}")
+        Sleep(50)
     }
+}
+
+; --- Горячие клавиши ---
+
+; Срабатывает при НАЖАТИИ Ctrl + Alt + '
+^!':: {
+    ; Запоминаем точное время нажатия
+    KeyDownTime := A_TickCount
+    ; Устанавливаем таймер, который сработает ОДИН РАЗ через 500 мс и запустит прокрутку
+    SetTimer(StartScroll, -500)
     return
 }
 
-^!' up:: {  ; When Ctrl + Alt + ' is released
-    SetTimer(ScrollDownTimer, 0)  ; Stop the timer
-    return
-}
+; Срабатывает при ОТПУСКАНИИ Ctrl + Alt + '
+^!' up:: {
+    ; Отключаем таймер, который должен был запустить прокрутку.
+    ; Если он еще не сработал, прокрутка не начнется.
+    SetTimer(StartScroll, 0)
+    ; Также останавливаем саму прокрутку, если она уже была запущена
+    SetTimer(ScrollDownTimer, 0)
 
-ScrollDownTimer() {  ; Function to execute on each timer tick
-    ScrollDownCount := GetScrollCount()  ; Get the number of lines to scroll
-    loop (ScrollDownCount) {  ; Scroll the specified number of lines down
-        Send("{WheelDown}")  ; Simulate mouse wheel scrolling down
-        Sleep(50)  ; Pause a bit between each scroll action
+    ; Вычисляем, как долго была зажата клавиша
+    PressDuration := A_TickCount - KeyDownTime
+
+    ; Если клавиша была зажата менее 500 мс, выполняем клик левой кнопкой мыши
+    if (PressDuration < 500) {
+        Send("{LButton}")
     }
+    return
 }
