@@ -9,6 +9,7 @@ scrollDelay := 250
 ; ====================================================================================
 ; --- Script Logic ---
 ; ====================================================================================
+global isScrolling := false
 
 ; Determines the number of lines to scroll up.
 GetScrollCount() {
@@ -26,30 +27,35 @@ ScrollUpTimer() {
     }
 }
 
-; --- Hotkey ---
+; This function is triggered by a timer and starts the scroll.
+LongPressAction() {
+    global isScrolling
+    isScrolling := true
+    SetTimer(ScrollUpTimer, 50)
+}
 
-; Using a single, self-contained hotkey to prevent race conditions.
+
+; --- Hotkeys ---
+
+; The "$" prefix installs a keyboard hook, which prevents the hotkey from triggering itself
+; and ensures it blocks the native function of the key combination.
 $^!sc01A::
 {
-    ; KeyWait expects the timeout in seconds (T0.25 = 250ms).
-    timedOut := KeyWait("sc01A", "T" . (scrollDelay / 1000))
+    global isScrolling, scrollDelay
+    
+    isScrolling := false
+    SetTimer(LongPressAction, -scrollDelay)
+}
 
-    ; If the key was released BEFORE the timeout (short press).
-    if !timedOut
+$^!sc01A up::
+{
+    global isScrolling
+    
+    SetTimer(LongPressAction, 0)
+    SetTimer(ScrollUpTimer, 0)
+    
+    if !isScrolling
     {
         Click("Right")
-        return
-    }
-    ; If the timeout was reached (long press).
-    else
-    {
-        SetTimer(ScrollUpTimer, 50)
-        
-        ; Wait indefinitely for the key to be released.
-        KeyWait("sc01A")
-        
-        ; Stop scrolling once the key is up.
-        SetTimer(ScrollUpTimer, 0)
-        return
     }
 }
