@@ -75,8 +75,14 @@ $^!sc028 up::
 {
     global isScrolling_Btn1
     SetTimer(CheckForScroll_Btn1, 0) 
-    if isScrolling_Btn1 { SetTimer(ScrollDownTimer, 0) }
-    else { Send("{LButton Up}") }
+    if isScrolling_Btn1
+    {
+        SetTimer(ScrollDownTimer, 0)
+    }
+    else
+    {
+        Send("{LButton Up}")
+    }
 }
 
 ; --- Hotkey for Button 2: Ctrl+Alt+[ (sc01A) -> RButton / WheelUp ---
@@ -91,7 +97,12 @@ $^!sc01A::
 $^!sc01A up::
 {
     global isScrolling_Btn2
-    SetTimer(CheckForScroll_Btn2, 0) 
-    if isScrolling_Btn2 { SetTimer(ScrollUpTimer, 0) }
-    else { Send("{RButton Up}") }
+    SetTimer(CheckForScroll_Btn2, 0)
+    if isScrolling_Btn2
+    {
+        SetTimer(ScrollUpTimer, 0)
+    }
+    else {
+        Send("{RButton Up}")
+    }
 }
