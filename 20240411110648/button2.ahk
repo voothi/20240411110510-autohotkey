@@ -2,19 +2,15 @@
 ; --- User Configuration ---
 ; ====================================================================================
 
-; Delay in ms before scrolling starts if the cursor is held still.
-scrollDelay := 500
-
-; Deadzone for scrolling in pixels. Movement less than this will trigger scroll.
-dragThreshold := 15
+; Delay in ms to hold the key before scrolling starts.
+scrollDelay := 250 
 
 
 ; ====================================================================================
 ; --- Script Logic ---
 ; ====================================================================================
-global isScrolling := false
-global startX := 0, startY := 0
 
+; Determines the number of lines to scroll up.
 GetScrollCount() {
     if WinActive("ahk_exe chrome.exe") {
         return 3
@@ -22,6 +18,7 @@ GetScrollCount() {
     return 1
 }
 
+; Performs the continuous scroll-up action.
 ScrollUpTimer() {
     loop GetScrollCount() {
         Send("{WheelUp}")
@@ -29,43 +26,30 @@ ScrollUpTimer() {
     }
 }
 
-CheckForScroll() {
-    global isScrolling, startX, startY, dragThreshold
-    MouseGetPos(&endX, &endY)
-    
-    if (Abs(startX - endX) < dragThreshold) && (Abs(startY - endY) < dragThreshold)
-    {
-        isScrolling := true
-        Send("{RButton Up}")
-        SetTimer(ScrollUpTimer, 50)
-    }
-}
+; --- Hotkey ---
 
-; --- Hotkeys ---
-
+; Using a single, self-contained hotkey to prevent race conditions.
 $^!sc01A::
 {
-    global isScrolling, startX, startY, scrollDelay
-    
-    isScrolling := false
-    MouseGetPos(&startX, &startY)
-    
-    Send("{RButton Down}")
-    SetTimer(CheckForScroll, -scrollDelay)
-}
+    ; KeyWait expects the timeout in seconds (T0.25 = 250ms).
+    timedOut := KeyWait("sc01A", "T" . (scrollDelay / 1000))
 
-$^!sc01A up::
-{
-    global isScrolling
-    
-    SetTimer(CheckForScroll, 0) 
-    
-    if isScrolling
+    ; If the key was released BEFORE the timeout (short press).
+    if !timedOut
     {
-        SetTimer(ScrollUpTimer, 0)
+        Click("Right")
+        return
     }
+    ; If the timeout was reached (long press).
     else
     {
-        Send("{RButton Up}")
+        SetTimer(ScrollUpTimer, 50)
+        
+        ; Wait indefinitely for the key to be released.
+        KeyWait("sc01A")
+        
+        ; Stop scrolling once the key is up.
+        SetTimer(ScrollUpTimer, 0)
+        return
     }
 }
