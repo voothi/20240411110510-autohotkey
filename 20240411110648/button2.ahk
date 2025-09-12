@@ -50,7 +50,7 @@ $^!sc01A::
     isScrolling := false
     MouseGetPos(&startX, &startY)
     
-    Send("{RButton Down}") ; Immediately press the Right Mouse Button.
+    Send("{RButton Down}")
     SetTimer(CheckForScroll, -scrollDelay)
 }
 
@@ -62,10 +62,10 @@ $^!sc01A up::
     
     if isScrolling
     {
-        SetTimer(ScrollUpTimer, 0) ; If scrolling, stop the scroll timer.
+        SetTimer(ScrollUpTimer, 0)
     }
     else
     {
-        Send("{RButton Up}") ; If not scrolling, complete the right-click/drag.
+        Send("{RButton Up}")
     }
 }
