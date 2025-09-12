@@ -1,4 +1,17 @@
-﻿; Global flag to differentiate between a short press and a long press.
+﻿; ====================================================================================
+; --- User Configuration ---
+; ====================================================================================
+
+; The time in milliseconds you need to hold the key before scrolling starts.
+; 500 = half a second.
+longPressThreshold := 500
+
+
+; ====================================================================================
+; --- Script Logic ---
+; ====================================================================================
+
+; Global flag to differentiate between a short press and a long press.
 isShortPress := true
 
 ; Determines the number of lines to scroll based on the active window.
@@ -23,7 +36,7 @@ ScrollDownTimer() {
     }
 }
 
-; This function is triggered after 500ms, defining the action as a "long press".
+; This function is triggered after the threshold, defining the action as a "long press".
 LongPressAction() {
     isShortPress := false
     SetTimer(ScrollDownTimer, 50) ; Starts the continuous scroll.
@@ -35,7 +48,8 @@ LongPressAction() {
 ^!sc028::
 {
     isShortPress := true ; Assume a short press until the timer completes.
-    SetTimer(LongPressAction, -500) ; Start a one-time timer for 500ms.
+    ; Start a one-time timer using the user-defined threshold.
+    SetTimer(LongPressAction, -longPressThreshold)
 }
 
 ; Triggers on KEY UP for the physical key sc028.
