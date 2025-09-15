@@ -1,4 +1,4 @@
-﻿^!+j:: {
+﻿^!+]:: {
     If WinActive("ahk_exe anki.exe") {
         Click()
         Sleep(150)
