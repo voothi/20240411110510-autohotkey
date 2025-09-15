@@ -6,7 +6,7 @@
 scrollDelay := 500
 
 ; Deadzone for scrolling in pixels. Movement less than this will trigger scroll.
-dragThreshold := 5
+dragThreshold := 7
 
 ; Deadzone for a "clean click" in pixels. Prevents accidental drags.
 clickThreshold := 10
