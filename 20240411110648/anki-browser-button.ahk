@@ -5,7 +5,7 @@
         Send("^a")
         Sleep(150)
         Send("^j")
-        Sleep(300)
+        Sleep(600)
         Click()
         Sleep(150)
         Send("^!r")
