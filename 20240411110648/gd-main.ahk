@@ -2,7 +2,7 @@
 
 ^!+1::
 {
-    Send("^c")
+    SendInput("^c")
     ClipWait(1)
     Sleep(100)
 
@@ -31,17 +31,19 @@
     {
         ; Case 3: The main window does not exist (app is in tray).
         ; Send the global hotkey to make it appear.
-        Send("^m")
+        SendInput("^m")
         WinWait("ahk_exe goldendict.exe",, 2)
         WinActivate()
         ; Sleep(100)
     }
 
-    RunWait('C:\Python\Python312\python.exe "C:\Tools\remove_newline_util\remove_newline_util.py"', '', 'Hide')
-    Sleep(750)
+    SendInput("!d") 
 
-    Send("^v")
+    RunWait('C:\Python\Python312\python.exe "C:\Tools\remove_newline_util\remove_newline_util.py"', '', 'Hide')
     Sleep(100)
 
-    Send("{Enter}")
+    SendInput("^v")
+    Sleep(100)
+
+    SendInput("{Enter}")
 }
