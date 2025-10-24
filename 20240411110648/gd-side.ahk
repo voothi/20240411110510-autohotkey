@@ -1,16 +1,14 @@
-﻿$<^c::
+﻿^!+q::
 {
-    A_Clipboard := ""
-    Send("{LControl Down}c{LControl Up}")
+    ; A_Clipboard := ""
+    ; SendInput("{LControl Down}c{LControl Up}")
+    SendInput("^c")
+    RunWait('C:\Python\Python312\python.exe "C:\Tools\remove_newline_util\remove_newline_util.py"', '', 'Hide')
 
-    if !ClipWait(0.5)
+    if ClipWait(1)
     {
-        KeyWait("LCtrl")
-        return
+        ; Sleep(100)
+        ; SendInput("{LControl Down}c{LControl Up}")
+        SendInput("^c")
     }
-
-    Sleep(80)
-    Send("{LControl Down}c{LControl Up}")
-    
-    KeyWait("LCtrl")
 }
