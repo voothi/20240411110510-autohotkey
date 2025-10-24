@@ -1,13 +1,16 @@
-﻿^!+q:: ; Сочетание клавиш: Ctrl + Alt + Shift + W
+﻿$<^c::
 {
-    Sleep(200)  ; Ждем немного для надежности
+    A_Clipboard := ""
+    Send("{LControl Down}c{LControl Up}")
 
-    SendInput("^c")  ; Первое копирование
-    ClipWait(1) ; Ждем, пока буфер обмена наполнится
+    if !ClipWait(0.5)
+    {
+        KeyWait("LCtrl")
+        return
+    }
+
+    Sleep(80)
+    Send("{LControl Down}c{LControl Up}")
     
-    Sleep(200)  ; Ждем немного для надежности
-
-    SendInput("^c")  ; Второе копирование
-    ; ClipWait(1) ; Ждем, пока буфер обмена наполнится
-    ; Sleep(100)  ; Ждем немного для надежности
+    KeyWait("LCtrl")
 }
