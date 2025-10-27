@@ -110,7 +110,8 @@
             Send("!{Tab}")
             Sleep(1000)
         }
-        Send("c")
+        ; Send("c")
+        Send("^!+1")
     }
 }
 
@@ -130,6 +131,7 @@
             Send("!{Tab}")
             Sleep(1000)
         }
-        Send("c")
+        ; Send("c")
+        Send("^!+1")
     }
 }

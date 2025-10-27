@@ -31,7 +31,7 @@
     {
         ; Case 3: The main window does not exist (app is in tray).
         ; Send the global hotkey to make it appear.
-        SendInput("^m")
+        SendInput("^!+m")
         WinWait("ahk_exe goldendict.exe",, 2)
         WinActivate()
         ; Sleep(100)
