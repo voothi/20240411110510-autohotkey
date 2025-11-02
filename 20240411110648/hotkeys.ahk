@@ -7,16 +7,3 @@
     ^Enter::Send "{Enter}"
 
 #HotIf
-
-; Hotkey: Shift + Win + C
-+#c::
-{
-    textToInsert := "
-    (
-    ```
-
-    ```
-    )"
-    Send(textToInsert)
-    Send("{Up 2}")
-}
