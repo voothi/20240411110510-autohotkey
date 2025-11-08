@@ -27,7 +27,7 @@
 ; Hotkey is only active when the "Preview" window is in focus.
 #HotIf WinActive("Preview ahk_exe anki.exe")
 
-^!i::
+^k::
 {
     ; Step 1: Save the unique ID of the starting "Preview" window.
     previewWinID := WinGetID("A")
