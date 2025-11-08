@@ -15,29 +15,45 @@
 #Requires AutoHotkey v2.0
 
 ; ===================================================================================
-; Script:       Switch to Anki Browser Window
+; Script:       Switch to Anki Browser Window (Robust Version)
 ; Hotkey:       Ctrl + Alt + I
 ;
-; Description:  When the Anki "Preview" window is active, this script allows you
-;               to quickly switch back to the main "Browse" window using the
-;               hotkey.
+; Description:  When the Anki "Preview" window is active, this script reliably
+;               switches back to the main "Browse" window. It works even if the
+;               Browser window is inactive.
 ; ===================================================================================
 
-; The #HotIf directive makes the hotkey below active ONLY when a window
-; with the title "Preview" belonging to the "anki.exe" process is active.
+; This hotkey is only active when the "Preview" window is in focus.
 #HotIf WinActive("Preview ahk_exe anki.exe")
 
 ^!i::
 {
-    ; This command finds and activates the Anki "Browse" window.
-    ;
-    ; We use "RegEx:^Browse" because the full title of the browser window
-    ; can change (e.g., "Browse (1 of 2014 cards selected)").
-    ; This regular expression matches any window title that *starts with* "Browse"
-    ; and belongs to the anki.exe process, making the script reliable.
-    WinActivate("RegEx:^Browse ahk_exe anki.exe")
+    ; Temporarily allow the script to see hidden or inactive windows.
+    DetectHiddenWindows(true)
+
+    ; Get the Process ID (PID) of the currently active Anki window ("Preview").
+    ankiPID := WinGetPID("A")
+
+    ; Now, find the window ID of the "Browse" window that belongs to the SAME process.
+    ; This is much more reliable than just searching for the title.
+    ; We use "RegEx:^Browse" to match any title that starts with "Browse".
+    browserWinID := WinExist("RegEx:^Browse ahk_pid " ankiPID)
+
+    ; Restore the default setting for detecting windows.
+    DetectHiddenWindows(false)
+
+    ; Check if we successfully found the Browser window's ID.
+    if (browserWinID)
+    {
+        ; If we found it, activate it using its unique ID.
+        WinActivate(browserWinID)
+    }
+    else
+    {
+        ; If for some reason it's not found, show a message.
+        MsgBox("Error: Could not find the Anki 'Browse' window.", "Script Error", "Icon!")
+    }
 }
 
-; Reset the context-sensitive directive so it doesn't affect other hotkeys
-; you might add later in your script.
+; Reset the context-sensitive directive.
 #HotIf
