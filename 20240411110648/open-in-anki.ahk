@@ -1,51 +1,42 @@
 ﻿#Requires AutoHotkey v2.0
 
 ; =================================================================================
-; --- CONFIGURATION ---
-; You MUST provide the full paths to your Python executable and your script here.
+; --- НАСТРОЙКА ---
+; Пути к Python и вашему скрипту. Я использовал те, что вы указали.
 ; =================================================================================
-
-; Example: pythonPath := "C:\Users\YourName\AppData\Local\Programs\Python\Python311\python.exe"
 pythonPath := "C:\Python\Python312\python.exe"
-
-; Example: scriptPath := "D:\Scripts\anki-search.py"
 scriptPath := "C:\Tools\anki-search\anki-search.py"
 
 
 ; =================================================================================
-; --- HOTKEY ---
-; This script will only run when the GoldenDict window is active.
-; ^!a stands for Ctrl + Alt + A. You can change this to your preferred shortcut.
-; Symbols: ^ (Ctrl), ! (Alt), + (Shift), # (Win)
+; --- ГОРЯЧАЯ КЛАВИША ДЛЯ GOLDENDICT ---
+; Горячая клавиша ^!a (Ctrl + Alt + A) будет работать ТОЛЬКО в окне GoldenDict.
 ; =================================================================================
-
-#HotIf WinActive("ahk_exe goldendict.exe")
+#HotIf WinActive("ahk_class GoldenDict-ng")
 
 ^!a::
 {
-    ; 1. Save the current clipboard content to a temporary variable.
+    ; 1. Сохраняем текущее содержимое буфера обмена, чтобы не потерять его.
     local savedClipboard := A_ClipboardAll
-    A_Clipboard := "" ; Clear the clipboard to ensure ClipWait works reliably.
+    A_Clipboard := "" ; Очищаем буфер для надежного копирования.
 
-    ; 2. Send a Ctrl+C command to copy the currently selected text.
+    ; 2. Копируем выделенный текст.
     SendInput("^c")
     
-    ; 3. Wait up to 1 second for the clipboard to contain new text.
+    ; 3. Ждём до 1 секунды, пока текст не появится в буфере обмена.
     if !ClipWait(1)
     {
-        MsgBox("Error: Could not copy the selected text.")
-        Return ; Stop the script if copying failed.
+        MsgBox("Ошибка: Не удалось скопировать выделенный текст.")
+        Return ; Останавливаем скрипт, если копирование не удалось.
     }
 
-    ; 4. Build the full command to run the Python script silently.
-    ;    It uses the --browse-clipboard argument to read the copied text.
+    ; 4. Формируем и запускаем команду для Python-скрипта в скрытом режиме.
     local command := '"' . pythonPath . '" "' . scriptPath . '" --browse-clipboard'
-    Run(command,, "Hide") ; "Hide" prevents the black console window from appearing.
+    Run(command,, "Hide")
 
-    ; 5. Restore the original clipboard content.
-    ;    A short delay gives the Python script time to read the clipboard first.
-    Sleep(300) 
+    ; 5. Возвращаем исходное содержимое в буфер обмена.
+    Sleep(300) ; Небольшая задержка, чтобы Python успел прочитать буфер.
     A_Clipboard := savedClipboard
 }
 
-#HotIf ; End the context-sensitive hotkey section.
+#HotIf ; Завершаем секцию для GoldenDict.
