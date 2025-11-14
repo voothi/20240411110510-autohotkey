@@ -9,25 +9,24 @@ scriptPath := "C:\Tools\anki-search\anki-search.py"
 
 ^!a::
 {
-    ; Этот синтаксис абсолютно правильный для v2.
-    ; Предупреждение появлялось из-за запуска через v1.
-    ; local savedClipboard
-    ; savedClipboard := ClipboardAll
-
-    ; Копируем выделенный текст
+    ; 1. Копируем выделенный текст
     A_Clipboard := ""
     SendInput("^c")
     
     if !ClipWait(1)
         Return
 
-    ; Формируем команду и запускаем ее в скрытом режиме
+    ; 2. Формируем команду и запускаем Python-скрипт в скрытом режиме
     local command := '"' . pythonPath . '" "' . scriptPath . '" --browse-clipboard'
     Run(command,, "Hide")
 
-    ; Возвращаем старое содержимое буфера обмена
-    ; Sleep(300)
-    ; A_Clipboard := savedClipboard
+    ; 3. ЖДЁМ ПОЯВЛЕНИЯ ОКНА БРАУЗЕРА ANKI И АКТИВИРУЕМ ЕГО
+    ; WinWait будет ждать до 2 секунд, пока окно с заголовком "Browse" не появится.
+    if WinWait("Browse ahk_exe anki.exe",, 2)
+    {
+        ; Если окно появилось, делаем его активным.
+        WinActivate("Browse ahk_exe anki.exe")
+    }
 }
 
 #HotIf
