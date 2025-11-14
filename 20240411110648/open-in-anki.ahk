@@ -5,7 +5,7 @@ pythonPath := "C:\Python\Python312\python.exe"
 scriptPath := "C:\Tools\anki-search\anki-search.py"
 
 ; --- Горячая клавиша, активная только в окне GoldenDict ---
-; #HotIf WinActive("ahk_class GoldenDict-ng")
+#HotIf WinActive("ahk_exe goldendict.exe")
 
 ^!a::
 {
@@ -30,4 +30,4 @@ scriptPath := "C:\Tools\anki-search\anki-search.py"
     ; A_Clipboard := savedClipboard
 }
 
-; #HotIf
+#HotIf
