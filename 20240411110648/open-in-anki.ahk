@@ -1,72 +1,51 @@
-﻿; #Requires AutoHotkey v2.0
+﻿#Requires AutoHotkey v2.0
 
 ; =================================================================================
-; --- НАСТРОЙКА ---
-; Укажите полные пути к вашему интерпретатору Python и к скрипту anki-search.py
+; --- CONFIGURATION ---
+; You MUST provide the full paths to your Python executable and your script here.
 ; =================================================================================
 
-; Пример: pythonPath := "C:\Users\User\AppData\Local\Programs\Python\Python311\python.exe"
+; Example: pythonPath := "C:\Users\YourName\AppData\Local\Programs\Python\Python311\python.exe"
 pythonPath := "C:\Python\Python312\python.exe"
 
-; Пример: scriptPath := "D:\Мои Скрипты\anki-search.py"
+; Example: scriptPath := "D:\Scripts\anki-search.py"
 scriptPath := "C:\Tools\anki-search\anki-search.py"
 
 
 ; =================================================================================
-; --- ГОРЯЧАЯ КЛАВИША ---
-; ^!a означает Ctrl + Alt + A. Вы можете изменить на любую удобную комбинацию.
-; Символы: ^ (Ctrl), ! (Alt), + (Shift), # (Win)
+; --- HOTKEY ---
+; This script will only run when the GoldenDict window is active.
+; ^!a stands for Ctrl + Alt + A. You can change this to your preferred shortcut.
+; Symbols: ^ (Ctrl), ! (Alt), + (Shift), # (Win)
 ; =================================================================================
+
+#HotIf WinActive("ahk_exe goldendict.exe")
 
 ^!a::
 {
-    ; 1. Сохраняем текущее содержимое буфера обмена, чтобы не потерять его
+    ; 1. Save the current clipboard content to a temporary variable.
     local savedClipboard := A_ClipboardAll
-    A_Clipboard := "" ; Очищаем буфер для надежной работы ClipWait
+    A_Clipboard := "" ; Clear the clipboard to ensure ClipWait works reliably.
 
-    ; 2. Копируем выделенный текст (отправляем команду Ctrl+C)
-    SendInput "^c"
+    ; 2. Send a Ctrl+C command to copy the currently selected text.
+    SendInput("^c")
     
-    ; 3. Ждём, пока текст появится в буфере обмена (не дольше 1 секунды)
+    ; 3. Wait up to 1 second for the clipboard to contain new text.
     if !ClipWait(1)
     {
-        MsgBox "Не удалось скопировать выделенный текст. Пожалуйста, выделите текст и попробуйте снова."
-        Return ; Прерываем выполнение, если копирование не удалось
+        MsgBox("Error: Could not copy the selected text.")
+        Return ; Stop the script if copying failed.
     }
 
-    ; 4. Формируем и запускаем команду для Python-скрипта в скрытом режиме
-    ; Скрипт использует ключ --browse-clipboard, чтобы прочитать скопированный текст
+    ; 4. Build the full command to run the Python script silently.
+    ;    It uses the --browse-clipboard argument to read the copied text.
     local command := '"' . pythonPath . '" "' . scriptPath . '" --browse-clipboard'
-    Run(command,, "Hide")
+    Run(command,, "Hide") ; "Hide" prevents the black console window from appearing.
 
-    ; 5. Восстанавливаем исходное содержимое буфера обмена
-    ; Небольшая задержка, чтобы Python-скрипт успел прочитать буфер
+    ; 5. Restore the original clipboard content.
+    ;    A short delay gives the Python script time to read the clipboard first.
     Sleep(300) 
     A_Clipboard := savedClipboard
 }
 
-
-; =================================================================================
-; --- (ОПЦИОНАЛЬНО) Ограничение работы скрипта только для GoldenDict ---
-; Чтобы горячая клавиша ^!a работала только в окне GoldenDict,
-; раскомментируйте (удалите ;) следующие строки.
-; =================================================================================
-
-; #HotIf WinActive("ahk_class GoldenDict-ng")
-; ^!a::
-; {
-;     ; Весь код из блока выше нужно будет скопировать сюда
-;     local savedClipboard := A_ClipboardAll
-;     A_Clipboard := ""
-;     SendInput "^c"
-;     if !ClipWait(1)
-;     {
-;         MsgBox "Не удалось скопировать выделенный текст."
-;         Return
-;     }
-;     local command := '"' . pythonPath . '" "' . scriptPath . '" --browse-clipboard'
-;     Run(command,, "Hide")
-;     Sleep(300) 
-;     A_Clipboard := savedClipboard
-; }
-; #HotIf
+#HotIf ; End the context-sensitive hotkey section.
