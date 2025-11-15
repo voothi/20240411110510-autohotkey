@@ -1,19 +1,47 @@
-﻿; JoyToKey settings: Ctrl, C-> Ctrl, Alt, N -> Ctrl, V -> None
+﻿#Requires AutoHotkey v2.0
 
-; #Persistent
+; ===================================================================================
+; Script:       Remove Newlines from Selection
+; Hotkey:       Ctrl + Alt + N (^!N)
+;
+; Description:  This script takes the currently selected text, runs it through an
+;               external Python script to remove all newline characters, and then
+;               pastes the result back as a single line of text. This is extremely
+;               useful for cleaning up text copied from PDFs or websites with poor
+;               formatting.
+;
+; Dependencies:
+;   - Python 3 must be installed.
+;   - A Python script that removes newlines from clipboard content must exist.
+;   - IMPORTANT: You MUST update the paths in the RunWait command below to match
+;     your system's configuration.
+;
+; Integration Note: This AHK script encapsulates a multi-step process (Copy, Process,
+;                   Paste) into a single hotkey, which can simplify or replace
+;                   complex macros in other tools like JoyToKey.
+; ===================================================================================
 
-^!N:: {
-    ; Шаг 1: Копируем выделенный фрагмент текста в буфер обмена
+; #Persistent ; Ensures the script stays running. Note: In AHKv2, this is generally
+              ; not needed for scripts that contain hotkeys, as they make it persistent by default.
+
+^!N::
+{
+    ; Step 1: Copy the selected text to the clipboard.
     Send("^c")
-    ClipWait(1) ; Ожидаем, пока данные будут скопированы
+    ClipWait(1) ; Wait up to 1 second for the clipboard to contain the copied data.
 
-    ; Шаг 2: Запускаем утилиту в тихом режиме
+    ; Step 2: Execute the external Python script to process the clipboard content.
+    ; `RunWait` pauses this script's execution until the Python script has finished.
+    ; The `Hide` option prevents a command window from appearing.
     RunWait("C:\Python\Python312\python.exe C:\Tools\remove_newline_util\remove_newline_util.py", "", "Hide")
-    Sleep(1000) ; Можно изменить задержку по вашему желанию
+    
+    ; A pause after the external script finishes. This might be a safeguard for certain
+    ; system-specific delays. It can likely be adjusted or removed.
+    Sleep(1000)
 
-    ; Шаг 3: Вставляем содержимое буфера обмена
+    ; Step 3: Paste the modified, single-line text from the clipboard.
     Send("^v")
 
-    ; Шаг 4: Ждем некоторое время, чтобы утилита обработала вставленные данные
-    ; Sleep(1000) ; Можно изменить задержку по вашему желанию
+    ; The commented-out line below could be used to add an additional delay after pasting, if needed.
+    ; Sleep(1000)
 }
