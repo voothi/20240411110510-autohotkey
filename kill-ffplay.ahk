@@ -1,23 +1,27 @@
-﻿; AutoHotkey v2 script to terminate ffplay.exe processes with Ctrl+Alt+O
-; Author: Your Name
-; Date: 2023-10-01
+﻿#Requires AutoHotkey v2.0
 
-; Define the hotkey combination: Ctrl (^) + Alt (!) + O
+; ===================================================================================
+; Script:       Kill All ffplay Processes
+; Author:       [Your Name/Nickname Here]
+; Hotkey:       Ctrl + Alt + Shift + 0 (^!+0)
+;
+; Description:  This script provides a global hotkey to immediately terminate all
+;               running instances of `ffplay.exe`. This is particularly useful
+;               for quickly stopping audio or video previews that may be launched
+;               by other applications (e.g., dictionary tools, media scripts)
+;               and don't have an easily accessible close button.
+; ===================================================================================
+
+; Define the global hotkey.
 ^!+0::
 {
-    ; Close all instances of ffplay.exe using ProcessClose
+    ; Find and terminate all running processes with the name "ffplay.exe".
     ProcessClose("ffplay.exe")
     
-    ; Optional: Uncomment below to show confirmation message Tool ToolTip("ffplay.exe processes terminated", A_ScreenWidth//2, A_ScreenHeight//2)
+    ; --- Optional Confirmation Message ---
+    ; Uncomment the following lines to display a temporary tooltip in the
+    ; center of the screen confirming that the processes were terminated.
+    ; ToolTip("ffplay.exe processes terminated", A_ScreenWidth//2, A_ScreenHeight//2)
     ; Sleep(1000)
     ; ToolTip()
 }
-
-/*
-Explanation:
-1. ^!o:: defines the hotkey combination Ctrl+Alt+O
-2. ProcessClose() terminates all processes with matching name
-3. ToolTip() commands are disabled but show how to add visual feedback
-4. Works with both GUI and console versions of ffplay.exe
-5. Requires AutoHotkey v2.0+ to run
-*/
