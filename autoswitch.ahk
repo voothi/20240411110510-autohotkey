@@ -1,85 +1,97 @@
 #Requires AutoHotkey v2.0
 
-; Set tray icon and tooltip
-TraySetIcon(".\assets\arrow-55-16.ico")  ; Set your custom tray icon
-A_IconTip := "Press Pause Script to disable temporarily"  ; Set tooltip for the tray icon
+; ===================================================================================
+; Script:       Auto Language Switcher
+; Description:  This script automatically switches the keyboard layout to English
+;               when specific applications or browser tabs are active. This is
+;               useful for tools like dictionaries, translation websites, or media
+;               players where English input is typically preferred.
+; ===================================================================================
 
-; Your script code goes here...
+; --- Tray Menu Configuration ---
+TraySetIcon(".\assets\arrow-55-16.ico")  ; Set a custom tray icon. Assumes the icon is in an 'assets' subfolder.
+A_IconTip := "Auto Language Switcher is active. Pause script to disable." ; Set tooltip for the tray icon.
 
-; Initialize a flag to track if the timer is set
+; --- Global Variables ---
+; A global flag to track whether the layout-switching timer is currently active.
 global TimerIsSet := false
 
-; Function to check the conditions and manage the timer
-CheckConditions() {
-    global TimerIsSet ; Declare TimerIsSet as global to use the global variable
+; This is the main loop driver. It runs the CheckConditions function every second
+; to determine if the layout-switching logic should be active.
+SetTimer(CheckConditions, 1000)
 
-    ; Check if the active window is Chrome and if the title contains "Reading", "Translate", or "Text Input"
-    if (
-        (
-            WinActive("ahk_exe chrome.exe") &&
-            (InStr(WinGetTitle("A"), "Reading") ||
-            InStr(WinGetTitle("A"), "Translate") ||
-            InStr(WinGetTitle("A"), "Text Input"))
-        ) ||
-        WinActive("ahk_exe goldendict.exe") ||
-        WinActive("ahk_exe potplayermini64.exe")
-    ) {
-        ; If the timer is not already set, set it
+; ===================================================================================
+;                                   MAIN LOGIC
+; ===================================================================================
+
+; Checks the active window and decides whether to start or stop the layout-switching timer.
+CheckConditions() {
+    global TimerIsSet ; Use the global flag.
+
+    ; Define the conditions for activation.
+    isChromeActive := WinActive("ahk_exe chrome.exe")
+    isGoldenDictActive := WinActive("ahk_exe goldendict.exe")
+    isPotPlayerActive := WinActive("ahk_exe potplayermini64.exe")
+    
+    ; For Chrome, check if the title contains keywords related to translation or reading.
+    chromeTitle := isChromeActive ? WinGetTitle("A") : ""
+    isChromeTitleMatch := isChromeActive && (InStr(chromeTitle, "Reading") || InStr(chromeTitle, "Translate") || InStr(chromeTitle, "Text Input"))
+
+    if (isChromeTitleMatch || isGoldenDictActive || isPotPlayerActive) {
+        ; If conditions are met and the timer isn't already running, start it.
         if (!TimerIsSet) {
-            SetTimer(SwitchToEnglishLayoutIfNeeded, 10000) ; Set the timer to call the function every 2 minutes
+            ; This timer calls the switching function every 10 seconds (10000 ms).
+            SetTimer(SwitchToEnglishLayoutIfNeeded, 10000) 
             TimerIsSet := true
         }
     } else {
-        ; If the active window does not meet the conditions, stop the timer
+        ; If the active window no longer meets the conditions, stop the timer to save resources.
         if (TimerIsSet) {
-            SetTimer(SwitchToEnglishLayoutIfNeeded, 0) ; Turn off the timer by setting the interval to 0
+            SetTimer(SwitchToEnglishLayoutIfNeeded, 0) ; A value of 0 turns off the timer.
             TimerIsSet := false
         }
     }
 }
 
-; Set a timer to check the conditions every 500 milliseconds
-SetTimer(CheckConditions, 1000)
+; This function is called by the timer. It checks the current layout and switches to English if necessary.
+SwitchToEnglishLayoutIfNeeded() {
+    currentLayout := GetKeyboardLayout()
+    englishLayout := 0x0409  ; Language identifier for English (United States).
 
+    ; --- For debugging: uncomment these lines to see the layout codes in a tooltip ---
+    ; Tooltip("Current Layout Handle: " currentLayout)
+    ; Sleep(2000) ; Show the tooltip for 2 seconds.
+    ; Tooltip()   ; Clear the tooltip.
+
+    ; If the current layout is not English, perform the switch.
+    if (currentLayout != englishLayout) {
+        ChangeKeyboardLayout(englishLayout)
+        Sleep(100) ; A brief pause to allow the system to process the layout change.
+        
+        ; --- For debugging: check the layout code after the switch attempt ---
+        ; newLayout := GetKeyboardLayout()
+        ; Tooltip("New Layout Code: " newLayout)
+        ; Sleep(2000)
+        ; Tooltip()
+    }
+}
+
+; ===================================================================================
+;                                HELPER FUNCTIONS
+; ===================================================================================
+
+; Retrieves the keyboard layout identifier for the active window's thread.
 GetKeyboardLayout() {
-    ; This function returns the current keyboard layout identifier
-    ; We use DllCall to retrieve the layout
+    ; We use DllCall to interact with the Windows API to get the current layout.
     return DllCall("GetKeyboardLayout", "UInt", 0, "UInt")
 }
 
+; Sends a message to the active window to change its keyboard layout.
 ChangeKeyboardLayout(layout) {
-    ; Change the keyboard layout by using the DllCall to LoadKeyboardLayout
+    ; The PostMessage function sends a WM_INPUTLANGCHANGEREQUEST message (0x50)
+    ; to the active window ('A'), requesting it to switch to the specified layout.
+    PostMessage(0x50, 0, layout, , "A")
+    
+    ; The line below is an alternative method, often used for creating a new layout if it's not loaded.
     ; DllCall("LoadKeyboardLayout", "Str", layout, "UInt", 1)
-    PostMessage(0x50, 0, layout, , "A")  ; 0x50 is WM_INPUTLANGCHANGEREQUEST. Switch the active window's keyboard layout/language to English:
-}
-
-SwitchToEnglishLayoutIfNeeded() {
-    ; Get the current keyboard layout
-    currentLayout := GetKeyboardLayout()
-
-    ; Debugging: Display the current layout handle
-    ; Tooltip("Current Layout Handle: " currentLayout)
-    ; Sleep(2000) ; Show the tooltip for 2 секунды
-    ; Tooltip() ; Clear the tooltip
-
-    ; Define layout identifiers for English (US) and Italian
-    englishLayout := 0x0409  ; English (United States)
-
-    ; Display the current layout code for debugging
-    ; Tooltip("Current Layout Code: " currentLayout)
-    ; Sleep(2000)
-
-    ; Check if the current layout is not English
-    if (currentLayout != englishLayout) {
-        ; Simulate the layout switch using Shift + Alt
-        ChangeKeyboardLayout(englishLayout) ; 67699721 00000409 Load Keyboard Layout for English US (Hex representation)
-        Sleep(100) ; Wait a little for the layout to change
-        ; Get the new keyboard layout after the change
-        newLayout := GetKeyboardLayout()
-
-        ; Display the new layout code for debugging
-        ; Tooltip("New Layout Code: " newLayout)
-        ; Sleep(2000)
-        ; Tooltip() ; Clear the tooltip after 2 seconds
-    }
 }
