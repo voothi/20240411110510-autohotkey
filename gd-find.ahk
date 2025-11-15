@@ -1,62 +1,75 @@
 ﻿#Requires AutoHotkey v2.0
 
-; =================================================================
-; Умный скрипт для поиска в GoldenDict
-; Активация: Ctrl+G (можно изменить)
+; ===================================================================================
+; Script:       GoldenDict Smart Find/Find Next
+; Hotkey:       Ctrl+G
 ;
-; Логика:
-; 1. Если выделили НОВОЕ слово и нажали хоткей:
-;    - Скрипт выполнит поиск этого слова (Ctrl+C, Ctrl+F, Ctrl+V).
-; 2. Если вы нажали хоткей ПОВТОРНО (для того же слова):
-;    - Скрипт нажмет F3 (Найти далее).
-; =================================================================
+; Description:  This script overloads the Ctrl+G hotkey within GoldenDict to provide
+;               a "smart find" feature. It differentiates between initiating a new
+;               search and finding the next occurrence of the current search term.
+;
+; How it works:
+; 1. First Press (with new text selected):
+;    - The script copies the selected text and initiates a new search for it
+;      (equivalent to Ctrl+C, Ctrl+F, Ctrl+V, Enter).
+; 2. Subsequent Presses:
+;    - If you press the hotkey again without changing the selection, or if nothing
+;      is selected, the script simply presses F3 to trigger "Find Next".
+; ===================================================================================
 
+; Make the hotkey context-sensitive, active only when a GoldenDict window is active.
 #HotIf WinActive("ahk_exe goldendict.exe")
 
-; Используем функцию, чтобы хранить последнее искомое слово
+; Assign the hotkey to a function. This allows us to use a static variable 
+; to track the search term across multiple hotkey presses.
 ^g::FindNextInGoldenDict()
 
 FindNextInGoldenDict()
 {
-    ; Статическая переменная сохраняет свое значение между вызовами функции
+    ; A static variable retains its value between function calls.
+    ; This is how we remember the last thing we searched for.
     static lastSearchTerm := ""
     
+    ; Preserve the user's current clipboard content.
     savedClip := A_Clipboard
-    A_Clipboard := ""
+    A_Clipboard := "" ; Clear the clipboard to ensure ClipWait works reliably.
 
-    Sleep(500)
+    Sleep(500) ; A small delay can help ensure the active window correctly processes the ^c.
     Send("^c")
     
+    ; Wait up to 0.5 seconds for the clipboard to contain text.
     if ClipWait(0.5)
     {
         currentSelection := A_Clipboard
 
-        ; Если текущее выделение совпадает с последним поиском
-        ; (и не пустое), то просто ищем следующее вхождение
+        ; If the newly copied text is the same as our last search term (and not empty),
+        ; it means the user wants to find the next occurrence.
         if (currentSelection == lastSearchTerm && currentSelection != "")
         {
-            Send("{F3}") ; F3 - стандартная клавиша "Найти далее"
+            Send("{F3}") ; F3 is the standard key for "Find Next".
         }
-        else ; Иначе - это новый поиск
+        else ; Otherwise, this is a new search.
         {
-            lastSearchTerm := currentSelection ; Запоминаем новое слово
-            Send("^f")
+            lastSearchTerm := currentSelection ; Store the new selection as the last search term.
+            Send("^f") ; Open the find dialog.
             Sleep(150)
-            Send("^v") ; или Send(currentSelection)
+            Send("^v") ; Paste the search term. (Alternatively: Send(currentSelection))
             Send("{Enter}")
         }
     }
     else
     {
-        ; Если ничего не было скопировано (например, ничего не выделено),
-        ; но мы уже что-то искали, то тоже нажимаем F3.
+        ; This block handles cases where ClipWait timed out (e.g., no text was selected).
+        ; If there's a previous search term, we assume the user wants to "Find Next" for that term.
         if (lastSearchTerm != "")
         {
             Send("{F3}")
         }
     }
 
+    ; Restore the user's original clipboard content.
     A_Clipboard := savedClip
 }
 
+; Reset the context-sensitive hotkey directive.
 #HotIf
