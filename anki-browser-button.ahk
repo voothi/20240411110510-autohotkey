@@ -1,4 +1,5 @@
-﻿; ^!+]:: {
+﻿; This is a commented-out code block, left for reference.
+; ^!+]:: {
 ;     If WinActive("ahk_exe anki.exe") {
 ;         Click()
 ;         Sleep(150)
@@ -16,7 +17,7 @@
 
 ; ===================================================================================
 ; Script:       Anki Browser Round-Trip Action
-; Hotkey:       Ctrl + Alt + I
+; Hotkey:       Ctrl + K
 ;
 ; Description:  When the Anki "Preview" window is active, this script:
 ;               1. Finds and activates the main "Browse" window.
@@ -78,11 +79,11 @@
 
 ; ===================================================================================
 ; Script:       Anki Browser Round-Trip Action
-; Hotkey:       Ctrl + Alt + I
+; Hotkey:       Ctrl + J
 ;
 ; Description:  When the Anki "Preview" window is active, this script:
 ;               1. Finds and activates the main "Browse" window.
-;               2. Sends the key combination Ctrl+K.
+;               2. Sends the key combination Ctrl+J.
 ;               3. Returns focus back to the original "Preview" window.
 ; ===================================================================================
 
@@ -116,6 +117,7 @@
         ; Wait for it to become fully active.
         if WinWaitActive(foundBrowserID, , 1)
         {
+            ; Step 3: Send the Ctrl+J keystroke.
             SendInput("^j")
 
             ; Step 4: Add a brief pause to ensure the command is processed.
