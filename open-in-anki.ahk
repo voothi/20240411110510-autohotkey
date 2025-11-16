@@ -25,7 +25,7 @@
 ; --- User Configuration ---
 ; You must update these paths to match your system's configuration.
 pythonPath := "C:\Python\Python312\python.exe"
-scriptPath := "C:\Tools\anki-search\anki-search.py"
+scriptPath := "U:\voothi\20240408222910-goldendict-anki-search\anki-search.py"
 
 
 ; ===================================================================================
