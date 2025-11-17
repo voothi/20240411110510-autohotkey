@@ -34,7 +34,7 @@ RunPythonScript(lang) {
     ; The `--clipboard` argument tells the Python script to read its text from the clipboard.
     ; `RunWait` pauses this AHK script until the TTS playback is finished.
     ; `Hide` prevents a command window from appearing.
-    RunWait("C:\Python\Python312\python.exe C:\Tools\piper-tts\piper_tts.py --lang " lang " --clipboard", "", "Hide")
+    RunWait("C:/Python/Python312/python.exe U:/voothi/20241206010110-piper-tts/piper_tts.py --lang " lang " --clipboard", "", "Hide")
     
     ; A pause after the script finishes. This might be useful if the TTS engine needs
     ; time to release resources. Can be adjusted or removed.
