@@ -37,6 +37,8 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
   - [Kardenwort Ecosystem](#kardenwort-ecosystem)
   - [License](#license)
 
+---
+
 ## Prerequisites
 
 1.  **AutoHotkey v2.0+**: All scripts are written for AHK v2 and are not compatible with v1.
