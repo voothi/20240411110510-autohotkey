@@ -34,7 +34,10 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
     - [whisper.ahk](#whisperahk)
     - [zid-name.ahk](#zid-nameahk)
     - [zid.ahk](#zidahk)
+  - [Kardenwort Ecosystem](#kardenwort-ecosystem)
   - [License](#license)
+
+---
 
 ## Prerequisites
 
@@ -208,6 +211,12 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
 ### zid.ahk
 - **Description:** A simple utility to insert a timestamp in the format `YYYYMMDDHHMMSS`. Ideal for creating unique identifiers for notes or files.
 - **Hotkey:** `Ctrl + Shift + /`
+
+[Back to Top](#table-of-contents)
+
+## Kardenwort Ecosystem
+
+This project is part of the **[Kardenwort](https://github.com/kardenwort)** environment, designed to create a focused and efficient learning ecosystem.
 
 [Back to Top](#table-of-contents)
 
