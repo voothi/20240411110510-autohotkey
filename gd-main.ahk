@@ -62,7 +62,7 @@
         ; Wait for the window to appear. If it doesn't appear within 2 seconds, show an error.
         if !WinWait("ahk_exe goldendict.exe",, 2)
         {
-            MsgBox("GoldenDict window not found.`nPlease ensure the application is running.", "GoldenDict Error", "IconExclamation")
+            MsgBox("GoldenDict window not found.`nPlease ensure the application is running.", "GoldenDict Error", "Icon!")
             return
         }
 
