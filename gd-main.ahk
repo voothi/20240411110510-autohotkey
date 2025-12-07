@@ -58,7 +58,15 @@
         ; Send GoldenDict's global hotkey to show/hide the main window.
         ; Note: This assumes "^!+m" is configured as the global hotkey in GoldenDict.
         SendInput("^!+m")
-        WinWait("ahk_exe goldendict.exe",, 2)
+        
+        ; Wait for the window to appear. If it doesn't appear within 2 seconds, show an error.
+        if !WinWait("ahk_exe goldendict.exe",, 2)
+        {
+            MsgBox("GoldenDict window not found.`nPlease ensure the application is running.", "GoldenDict Error", "IconExclamation")
+            return
+        }
+
+        ; If WinWait succeeded, the Last Found Window is set, so we can activate it.
         WinActivate()
     }
 
