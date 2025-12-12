@@ -2,16 +2,29 @@
 
 ; ===================================================================================
 ; Script:       Google Translate Selection
-; Hotkey:       Ctrl + Alt + Shift + ` (Backtick/Tilde)
 ; Description:  Copies selected text, translates it using a local Python script
-;               via deep-translator, and replaces the selection with the translation.
+;               and replaces the selection with the translation.
+;
+; Hotkeys:
+;   Ctrl + Alt + F2: ru -> en
+;   Ctrl + Alt + F3: ru -> de
+;   Ctrl + Alt + F4: en -> ru
+;   Ctrl + Alt + F5: de -> ru
 ; ===================================================================================
 
-^!+sc029::
-{
-    ; Save the current clipboard content to restore later if needed (optional implementation)
-    ; For this specific request, we just use the clipboard for the operation.
+; Ru -> En
+^!F2:: TranslateSelection("ru", "en")
 
+; Ru -> De
+^!F3:: TranslateSelection("ru", "de")
+
+; En -> Ru
+^!F4:: TranslateSelection("en", "ru")
+
+; De -> Ru
+^!F5:: TranslateSelection("de", "ru")
+
+TranslateSelection(SourceLang, TargetLang) {
     ; Clear clipboard for ClipWait detection
     A_Clipboard := ""
 
@@ -22,11 +35,10 @@
         return
     }
 
-    ; Get text and prepare valid command line argument
+    ; Get text
     InputText := A_Clipboard
 
-    ; Flatten text to single line to prevent command line errors (simple approach)
-    ; Replacing newlines with spaces.
+    ; Flatten text to single line
     InputText := StrReplace(InputText, "`r`n", " ")
     InputText := StrReplace(InputText, "`n", " ")
     InputText := StrReplace(InputText, "`r", " ")
@@ -44,14 +56,8 @@
         FileDelete OutputFile
 
     ; Construct the command line.
-    ; We use cmd.exe /c to handle stdout redirection to the temp file.
-    ; Note: Standard CMD might require backslashes for the executable path,
-    ; but we strictly follow the user's request to use forward slashes.
-    ; If this fails, consider changing PythonPath to use backslashes.
-    ; We also set output encoding to UTF-8 using chcp 65001.
-
     CommandStr := A_ComSpec ' /c chcp 65001 > nul && "' . PythonPath . '" "' . ScriptPath . '" --text "' . InputText .
-        '" --source ru --target en > "' . OutputFile . '"'
+        '" --source ' . SourceLang . ' --target ' . TargetLang . ' > "' . OutputFile . '"'
 
     ; Run the command hidden
     try {
