@@ -34,7 +34,7 @@
     ; Escape double quotes for the command line ( " -> \" )
     InputText := StrReplace(InputText, '"', '\"')
 
-    ; Define paths (using forward slashes as requested)
+    ; Define paths
     PythonPath := "C:/Tools/deep-translator/venv/Scripts/python.exe"
     ScriptPath := "C:/Tools/deep-translator/translate.py"
 
