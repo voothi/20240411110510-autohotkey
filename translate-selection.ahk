@@ -12,6 +12,15 @@
 ;   Ctrl + Alt + F5: de -> ru
 ; ===================================================================================
 
+; ===================================================================================
+; CONFIGURATION
+;Path to the Python interpreter (e.g. from a virtual environment)
+global PythonPath := "C:/Tools/deep-translator/venv/Scripts/python.exe"
+
+; Path to the Python translation script
+global ScriptPath := "C:/Tools/deep-translator/translate.py"
+; ===================================================================================
+
 ; Ru -> En
 ^!F2:: TranslateSelection("ru", "en")
 
@@ -46,16 +55,13 @@ TranslateSelection(SourceLang, TargetLang) {
     ; Escape double quotes for the command line ( " -> \" )
     InputText := StrReplace(InputText, '"', '\"')
 
-    ; Define paths
-    PythonPath := "C:/Tools/deep-translator/venv/Scripts/python.exe"
-    ScriptPath := "C:/Tools/deep-translator/translate.py"
-
     ; Temporary file for capturing output
     OutputFile := A_Temp . "\ahk_translate_out.txt"
     if FileExist(OutputFile)
         FileDelete OutputFile
 
     ; Construct the command line.
+    ; Uses global PythonPath and ScriptPath defined in the header
     CommandStr := A_ComSpec ' /c chcp 65001 > nul && "' . PythonPath . '" "' . ScriptPath . '" --text "' . InputText .
         '" --source ' . SourceLang . ' --target ' . TargetLang . ' > "' . OutputFile . '"'
 
