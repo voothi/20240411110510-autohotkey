@@ -30,7 +30,6 @@
 
 ; Settings
 PreserveNewlines := true ; Set to false to flatten text before translation
-NewlineToken := "[[@@@]]" ; Token to preserve line breaks (characters inside \Q...\E are treated literally)
 
 ; Configuration and Providers
 ; Configuration and Providers
@@ -198,9 +197,8 @@ TranslateSelection(SourceLang, TargetLang) {
     }
 
     if (PreserveNewlines) {
-        ; Use a distinct token which is less likely to be interpreted as grammar
-        ; We do NOT pad it with spaces, to strictly preserve existing indentation/whitespace.
-        Token := NewlineToken
+        ; Use standard escaped newline sequence which most translators understand
+        Token := "\n"
         ProcessText := StrReplace(ProcessText, "`r`n", Token)
         ProcessText := StrReplace(ProcessText, "`n", Token)
         ProcessText := StrReplace(ProcessText, "`r", Token)
@@ -257,10 +255,9 @@ TranslateSelection(SourceLang, TargetLang) {
                 TranslatedText := StrReplace(TranslatedText, "`r", "")
 
                 ; Restore newlines from the token
-                ; Restore newlines from the token
-                ; We use the normalized pattern '[[@+]]' to handle DeepL hallucinations (e.g. [[@@@@]])
-                ; We removed space consumption `[ \t]?` to perfectly preserve indentation.
-                TranslatedText := RegExReplace(TranslatedText, "i)\[\[@+\]\]", "`n")
+                ; We use the standard escaped newline sequence '\n'
+                ; We use \s* to consume all padding and surrounding spaces
+                TranslatedText := RegExReplace(TranslatedText, "i)\s*\\n\s*", "`n")
             }
 
             if (TranslatedText != "") {
