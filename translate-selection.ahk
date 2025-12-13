@@ -105,10 +105,10 @@ TranslateSelection(SourceLang, TargetLang) {
     ProcessText := InputText
 
     if (PreserveNewlines) {
-        ; Replace newlines with an HTML tag token which DeepL handles well
-        ProcessText := StrReplace(ProcessText, "`r`n", " <br> ")
-        ProcessText := StrReplace(ProcessText, "`n", " <br> ")
-        ProcessText := StrReplace(ProcessText, "`r", " <br> ")
+        ; Use an explicit word-like token
+        ProcessText := StrReplace(ProcessText, "`r`n", " [newline] ")
+        ProcessText := StrReplace(ProcessText, "`n", " [newline] ")
+        ProcessText := StrReplace(ProcessText, "`r", " [newline] ")
     } else {
         ; Flatten text for CLI (single line)
         ProcessText := StrReplace(ProcessText, "`r`n", " ")
@@ -148,13 +148,13 @@ TranslateSelection(SourceLang, TargetLang) {
             TranslatedText := Trim(TranslatedText, " `t`r`n")
 
             if (PreserveNewlines) {
-                ; Flatten any newlines added by the translator (formatting artifacts)
-                TranslatedText := StrReplace(TranslatedText, "`r`n", " ")
-                TranslatedText := StrReplace(TranslatedText, "`n", " ")
-                TranslatedText := StrReplace(TranslatedText, "`r", " ")
+                ; Remove newlines completely to avoid any spacing artifacts
+                TranslatedText := StrReplace(TranslatedText, "`r`n", "")
+                TranslatedText := StrReplace(TranslatedText, "`n", "")
+                TranslatedText := StrReplace(TranslatedText, "`r", "")
 
-                ; Restore newlines from the token (case insensitive, handling basic variations)
-                TranslatedText := RegExReplace(TranslatedText, "i)\s*<br\s*/?>\s*", "`n")
+                ; Restore newlines from the token (case insensitive)
+                TranslatedText := RegExReplace(TranslatedText, "i)\s*\[newline\]\s*", "`n")
             }
 
             if (TranslatedText != "") {
