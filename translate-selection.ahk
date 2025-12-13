@@ -38,10 +38,10 @@ TranslateSelection(SourceLang, TargetLang) {
     ; Get text
     InputText := A_Clipboard
 
-    ; Flatten text to single line
-    InputText := StrReplace(InputText, "`r`n", " ")
-    InputText := StrReplace(InputText, "`n", " ")
-    InputText := StrReplace(InputText, "`r", " ")
+    ; Replace newlines with a token to preserve structure during translation
+    InputText := StrReplace(InputText, "`r`n", " \n ")
+    InputText := StrReplace(InputText, "`n", " \n ")
+    InputText := StrReplace(InputText, "`r", " \n ")
 
     ; Escape double quotes for the command line ( " -> \" )
     InputText := StrReplace(InputText, '"', '\"')
@@ -74,6 +74,9 @@ TranslateSelection(SourceLang, TargetLang) {
             ; Read with UTF-8 encoding
             TranslatedText := FileRead(OutputFile, "UTF-8")
             TranslatedText := Trim(TranslatedText, " `t`r`n")
+
+            ; Restore newlines from the token
+            TranslatedText := RegExReplace(TranslatedText, "\s*\\n\s*", "`n")
 
             if (TranslatedText != "") {
                 ; Place result in clipboard and paste
