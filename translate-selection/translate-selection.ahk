@@ -186,14 +186,14 @@ TranslateSelection(SourceLang, TargetLang) {
     ; Prepare text for CLI
     ProcessText := InputText
 
-    ; Tokenize Double Spaces (Indentation) to separate tokens __@S__
+    ; Tokenize Double Spaces (Indentation) to separate tokens [[S]]
     ; We pad tokens with spaces so DeepL treats them as words, not garbage string
-    ProcessText := StrReplace(ProcessText, "  ", " __@S__ ")
+    ProcessText := StrReplace(ProcessText, "  ", " [[S]] ")
 
-    ; DeepL Specific: Tokenize Backslashes to [[@B]]
+    ; DeepL Specific: Tokenize Backslashes to [[B]]
     ; This avoids ANY command line escaping issues or DeepL escape interpretation.
     if (TranslationSession.CurrentProvider == 2) {
-        ProcessText := StrReplace(ProcessText, "\", " [[@B]] ")
+        ProcessText := StrReplace(ProcessText, "\", " [[B]] ")
     }
 
     if (PreserveNewlines) {
@@ -239,14 +239,14 @@ TranslateSelection(SourceLang, TargetLang) {
             TranslatedText := FileRead(OutputFile, "UTF-8")
             TranslatedText := Trim(TranslatedText, " `t`r`n")
 
-            ; DeepL Specific Restore: [[@B]] -> \
+            ; DeepL Specific Restore: [[B]] -> \
             if (TranslationSession.CurrentProvider == 2) {
-                TranslatedText := RegExReplace(TranslatedText, "i)\s*\[\[@B\]\]\s*", "\")
+                TranslatedText := RegExReplace(TranslatedText, "i)\s*\[\[B\]\]\s*", "\")
             }
 
-            ; Global Restore: __@S__ -> "  " (Double Space)
+            ; Global Restore: [[S]] -> "  " (Double Space)
             ; We use \s* to consume all padding spaces + any AI hallucinations
-            TranslatedText := RegExReplace(TranslatedText, "i)\s*__@S__\s*", "  ")
+            TranslatedText := RegExReplace(TranslatedText, "i)\s*\[\[S\]\]\s*", "  ")
 
             if (PreserveNewlines) {
                 ; Remove newlines completely to avoid any spacing artifacts
