@@ -106,7 +106,7 @@ TranslateSelection(SourceLang, TargetLang) {
 
     if (PreserveNewlines) {
         ; Use a numeric token which is less likely to be interpreted as grammar
-        Token := " [[999]] "
+        Token := " [[@@@]] "
         ProcessText := StrReplace(ProcessText, "`r`n", Token)
         ProcessText := StrReplace(ProcessText, "`n", Token)
         ProcessText := StrReplace(ProcessText, "`r", Token)
@@ -156,7 +156,7 @@ TranslateSelection(SourceLang, TargetLang) {
 
                 ; Restore newlines from the numeric token
                 ; We look for [[999]] surrounded by optional whitespace
-                TranslatedText := RegExReplace(TranslatedText, "\s*\[\[999\]\]\s*", "`n")
+                TranslatedText := RegExReplace(TranslatedText, "\s*\[\[@@@\]\]\s*", "`n")
             }
 
             if (TranslatedText != "") {
