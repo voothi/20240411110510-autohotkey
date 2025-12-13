@@ -51,7 +51,7 @@ GetDeepLCommand(text, src, tgt, outFile) {
         return ""
     }
     return A_ComSpec ' /c chcp 65001 > nul && "' . PythonPath . '" "' . ScriptPath_DeepL . '" --text ' . EscapeCmdArg(
-        StrReplace(text, "\", "\\")) .
+        text) .
     ' --source ' . src . ' --target ' . tgt . ' --deepl-api-key "' . apiKey . '" > "' . outFile . '"'
 }
 
