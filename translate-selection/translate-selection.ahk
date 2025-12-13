@@ -40,8 +40,9 @@ ScriptPath_Google := "C:/Tools/deep-translator/translate.py"
 ScriptPath_DeepL := "C:/Tools/deep-translator/translate.1.py"
 
 GetGoogleCommand(text, src, tgt, outFile) {
-    return A_ComSpec ' /c chcp 65001 > nul && "' . PythonPath . '" "' . ScriptPath_Google . '" --text "' . text .
-        '" --source ' . src . ' --target ' . tgt . ' > "' . outFile . '"'
+    return A_ComSpec ' /c chcp 65001 > nul && "' . PythonPath . '" "' . ScriptPath_Google . '" --text ' . EscapeCmdArg(
+        text) .
+    ' --source ' . src . ' --target ' . tgt . ' > "' . outFile . '"'
 }
 
 GetDeepLCommand(text, src, tgt, outFile) {
@@ -49,8 +50,36 @@ GetDeepLCommand(text, src, tgt, outFile) {
     if (apiKey == "") {
         return ""
     }
-    return A_ComSpec ' /c chcp 65001 > nul && "' . PythonPath . '" "' . ScriptPath_DeepL . '" --text "' . text .
-        '" --source ' . src . ' --target ' . tgt . ' --deepl-api-key "' . apiKey . '" > "' . outFile . '"'
+    return A_ComSpec ' /c chcp 65001 > nul && "' . PythonPath . '" "' . ScriptPath_DeepL . '" --text ' . EscapeCmdArg(
+        text) .
+    ' --source ' . src . ' --target ' . tgt . ' --deepl-api-key "' . apiKey . '" > "' . outFile . '"'
+}
+
+EscapeCmdArg(str) {
+    result := ""
+    backslashes := 0
+    loop parse, str {
+        if (A_LoopField == "\") {
+            backslashes += 1
+        } else if (A_LoopField == '"') {
+            ; Escape all preceding backslashes (double them)
+            loop backslashes * 2
+                result .= "\"
+            backslashes := 0
+            result .= '\"' ; Escape the quote
+        } else {
+            ; Non-special character, flush accumulated backslashes normally
+            loop backslashes
+                result .= "\"
+            backslashes := 0
+            result .= A_LoopField
+        }
+    }
+    ; Handle trailing backslashes before the closing quote
+    loop backslashes * 2
+        result .= "\"
+
+    return '"' . result . '"'
 }
 
 GetDeepLKey() {
@@ -172,8 +201,7 @@ TranslateSelection(SourceLang, TargetLang) {
         ProcessText := StrReplace(ProcessText, "`r", " ")
     }
 
-    ; Escape double quotes for the command line ( " -> \" )
-    ProcessText := StrReplace(ProcessText, '"', '\"')
+    ; Quote escaping is now handled by EscapeCmdArg in the command generator
 
     ; Temporary file for capturing output
     OutputFile := A_Temp . "\ahk_translate_out.txt"
