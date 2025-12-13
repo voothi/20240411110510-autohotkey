@@ -38,11 +38,10 @@ TranslateSelection(SourceLang, TargetLang) {
     ; Get text
     InputText := A_Clipboard
 
-    ; Replace newlines with a token to preserve structure during translation
-    ; Using __LB__ as it is safer than backslashes in CLI arguments
-    InputText := StrReplace(InputText, "`r`n", " __LB__ ")
-    InputText := StrReplace(InputText, "`n", " __LB__ ")
-    InputText := StrReplace(InputText, "`r", " __LB__ ")
+    ; Flatten text to single line
+    InputText := StrReplace(InputText, "`r`n", " ")
+    InputText := StrReplace(InputText, "`n", " ")
+    InputText := StrReplace(InputText, "`r", " ")
 
     ; Escape double quotes for the command line ( " -> \" )
     InputText := StrReplace(InputText, '"', '\"')
@@ -75,9 +74,6 @@ TranslateSelection(SourceLang, TargetLang) {
             ; Read with UTF-8 encoding
             TranslatedText := FileRead(OutputFile, "UTF-8")
             TranslatedText := Trim(TranslatedText, " `t`r`n")
-
-            ; Restore newlines from the token
-            TranslatedText := RegExReplace(TranslatedText, "i)\s*__LB__\s*", "`n")
 
             if (TranslatedText != "") {
                 ; Place result in clipboard and paste
