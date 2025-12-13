@@ -1,0 +1,4 @@
+Original: path = "C:\"
+Escaped:  "path = \"C:\\\""
+Original: path = "C:\"
+Escaped:  "path = \"C:\\\""

@@ -51,7 +51,7 @@ GetDeepLCommand(text, src, tgt, outFile) {
         return ""
     }
     return A_ComSpec ' /c chcp 65001 > nul && "' . PythonPath . '" "' . ScriptPath_DeepL . '" --text ' . EscapeCmdArg(
-        text) .
+        StrReplace(text, "\", "\\")) .
     ' --source ' . src . ' --target ' . tgt . ' --deepl-api-key "' . apiKey . '" > "' . outFile . '"'
 }
 
@@ -238,8 +238,10 @@ TranslateSelection(SourceLang, TargetLang) {
                 TranslatedText := StrReplace(TranslatedText, "`r", "")
 
                 ; Restore newlines from the token
-                ; We use \Q...\E to treat the user config token as literal characters in Regex
-                TranslatedText := RegExReplace(TranslatedText, "i)\s*\Q" . NewlineToken . "\E\s*", "`n")
+                ; Restore newlines from the token
+                ; We use the normalized pattern '[[@+]]' to handle DeepL hallucinations (e.g. [[@@@@]])
+                ; We use '[ \t]?' to consume at most one space around the token, preserving deeper indentation.
+                TranslatedText := RegExReplace(TranslatedText, "i)[ \t]?\[\[@+\]\][ \t]?", "`n")
             }
 
             if (TranslatedText != "") {
