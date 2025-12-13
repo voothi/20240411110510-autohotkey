@@ -198,7 +198,7 @@ TranslateSelection(SourceLang, TargetLang) {
 
     if (PreserveNewlines) {
         ; Use a distinct token which is less likely to be interpreted as grammar
-        Token := " [[_N_]] "
+        Token := " [[@]] "
         ProcessText := StrReplace(ProcessText, "`r`n", Token)
         ProcessText := StrReplace(ProcessText, "`n", Token)
         ProcessText := StrReplace(ProcessText, "`r", Token)
@@ -256,7 +256,7 @@ TranslateSelection(SourceLang, TargetLang) {
                 TranslatedText := StrReplace(TranslatedText, "`r", "")
 
                 ; Restore newlines from the token
-                TranslatedText := RegExReplace(TranslatedText, "i)[ \t]*\[\[\s*_N_\s*\]\][ \t]*", "`n")
+                TranslatedText := RegExReplace(TranslatedText, "i)[ \t]*\[\[\s*@\s*\]\][ \t]*", "`n")
             }
 
             if (TranslatedText != "") {
