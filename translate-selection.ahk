@@ -105,11 +105,10 @@ TranslateSelection(SourceLang, TargetLang) {
     ProcessText := InputText
 
     if (PreserveNewlines) {
-        ; Replace newlines with a token to preserve structure during translation
-        ; Using __NEWLINE__ as it is distinct and usually preserved as a "variable" by translators
-        ProcessText := StrReplace(ProcessText, "`r`n", " __NEWLINE__ ")
-        ProcessText := StrReplace(ProcessText, "`n", " __NEWLINE__ ")
-        ProcessText := StrReplace(ProcessText, "`r", " __NEWLINE__ ")
+        ; Replace newlines with an HTML tag token which DeepL handles well
+        ProcessText := StrReplace(ProcessText, "`r`n", " <br> ")
+        ProcessText := StrReplace(ProcessText, "`n", " <br> ")
+        ProcessText := StrReplace(ProcessText, "`r", " <br> ")
     } else {
         ; Flatten text for CLI (single line)
         ProcessText := StrReplace(ProcessText, "`r`n", " ")
@@ -154,8 +153,8 @@ TranslateSelection(SourceLang, TargetLang) {
                 TranslatedText := StrReplace(TranslatedText, "`n", " ")
                 TranslatedText := StrReplace(TranslatedText, "`r", " ")
 
-                ; Restore newlines from the token (case insensitive)
-                TranslatedText := RegExReplace(TranslatedText, "i)\s*__NEWLINE__\s*", "`n")
+                ; Restore newlines from the token (case insensitive, handling basic variations)
+                TranslatedText := RegExReplace(TranslatedText, "i)\s*<br\s*/?>\s*", "`n")
             }
 
             if (TranslatedText != "") {
