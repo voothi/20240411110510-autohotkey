@@ -149,6 +149,11 @@ TranslateSelection(SourceLang, TargetLang) {
             TranslatedText := Trim(TranslatedText, " `t`r`n")
 
             if (PreserveNewlines) {
+                ; Flatten any newlines added by the translator (formatting artifacts)
+                TranslatedText := StrReplace(TranslatedText, "`r`n", " ")
+                TranslatedText := StrReplace(TranslatedText, "`n", " ")
+                TranslatedText := StrReplace(TranslatedText, "`r", " ")
+
                 ; Restore newlines from the token (case insensitive)
                 TranslatedText := RegExReplace(TranslatedText, "i)\s*__NEWLINE__\s*", "`n")
             }
