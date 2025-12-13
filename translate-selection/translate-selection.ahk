@@ -187,14 +187,13 @@ TranslateSelection(SourceLang, TargetLang) {
     ; Prepare text for CLI
     ProcessText := InputText
 
-    ; Tokenize Double Spaces (Indentation) to separate tokens [[@S@]]
-    ; We pad tokens with spaces so DeepL treats them as words, not garbage string
-    ProcessText := StrReplace(ProcessText, "  ", " [[@S@]] ")
+    ; Tokenize Double Spaces (Indentation) to separate tokens __IDT__
+    ; We use a "Constant Variable" look (UPPERCASE with underscores) which DeepL reliably duplicates without translating.
+    ProcessText := StrReplace(ProcessText, "  ", "__IDT__")
 
-    ; DeepL Specific: Tokenize Backslashes to [[@B@]]
-    ; This avoids ANY command line escaping issues or DeepL escape interpretation.
+    ; DeepL Specific: Tokenize Backslashes to __BSL__
     if (TranslationSession.CurrentProvider == 2) {
-        ProcessText := StrReplace(ProcessText, "\", " [[@B@]] ")
+        ProcessText := StrReplace(ProcessText, "\", "__BSL__")
     }
 
     if (PreserveNewlines) {
@@ -241,14 +240,16 @@ TranslateSelection(SourceLang, TargetLang) {
             TranslatedText := FileRead(OutputFile, "UTF-8")
             TranslatedText := Trim(TranslatedText, " `t`r`n")
 
-            ; DeepL Specific Restore: [[@B@]] -> \
+            ; DeepL Specific Restore: __BSL__ -> \
             if (TranslationSession.CurrentProvider == 2) {
-                TranslatedText := RegExReplace(TranslatedText, "i)\s*\[\[@B@\]\]\s*", "\")
+                TranslatedText := RegExReplace(TranslatedText, "i)\s*__BSL__\s*", "\")
+
+                ; Fix Python f-string/r-string spacing artifact (e.g. f "string" -> f"string")
+                TranslatedText := RegExReplace(TranslatedText, "i)\b([frub])\s+`"", "$1`"")
             }
 
-            ; Global Restore: [[@S@]] -> "  " (Double Space)
-            ; We use \s* to consume all padding spaces + any AI hallucinations
-            TranslatedText := RegExReplace(TranslatedText, "i)\s*\[\[@S@\]\]\s*", "  ")
+            ; Global Restore: __IDT__ -> "  " (Double Space)
+            TranslatedText := RegExReplace(TranslatedText, "i)\s*__IDT__\s*", "  ")
 
             if (PreserveNewlines) {
                 ; Remove newlines completely to avoid any spacing artifacts
