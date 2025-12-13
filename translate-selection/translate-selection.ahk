@@ -197,8 +197,8 @@ TranslateSelection(SourceLang, TargetLang) {
     }
 
     if (PreserveNewlines) {
-        ; Use standard escaped newline sequence which most translators understand
-        Token := "\n"
+        ; Use a distinct token which is less likely to be interpreted as grammar
+        Token := " [[N]] "
         ProcessText := StrReplace(ProcessText, "`r`n", Token)
         ProcessText := StrReplace(ProcessText, "`n", Token)
         ProcessText := StrReplace(ProcessText, "`r", Token)
@@ -255,9 +255,8 @@ TranslateSelection(SourceLang, TargetLang) {
                 TranslatedText := StrReplace(TranslatedText, "`r", "")
 
                 ; Restore newlines from the token
-                ; We use the standard escaped newline sequence '\n'
                 ; We use \s* to consume all padding and surrounding spaces
-                TranslatedText := RegExReplace(TranslatedText, "i)\s*\\n\s*", "`n")
+                TranslatedText := RegExReplace(TranslatedText, "i)\s*\[\[N\]\]\s*", "`n")
             }
 
             if (TranslatedText != "") {
