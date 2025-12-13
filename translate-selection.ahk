@@ -14,6 +14,7 @@
 
 ; Settings
 PreserveNewlines := true ; Set to false to flatten text before translation
+NewlineToken := "[[@@@]]" ; Token to preserve line breaks (characters inside \Q...\E are treated literally)
 
 ; Configuration and Providers
 DeepLKeyFile := A_ScriptDir . "/secrets.ini"
@@ -106,7 +107,8 @@ TranslateSelection(SourceLang, TargetLang) {
 
     if (PreserveNewlines) {
         ; Use a distinct token which is less likely to be interpreted as grammar
-        Token := " [[@@@]] "
+        ; We pad it with spaces to ensure it's treated as a separate word
+        Token := " " . NewlineToken . " "
         ProcessText := StrReplace(ProcessText, "`r`n", Token)
         ProcessText := StrReplace(ProcessText, "`n", Token)
         ProcessText := StrReplace(ProcessText, "`r", Token)
@@ -155,8 +157,8 @@ TranslateSelection(SourceLang, TargetLang) {
                 TranslatedText := StrReplace(TranslatedText, "`r", "")
 
                 ; Restore newlines from the token
-                ; We look for [[@@@]] surrounded by optional whitespace
-                TranslatedText := RegExReplace(TranslatedText, "\s*\[\[@@@\]\]\s*", "`n")
+                ; We use \Q...\E to treat the user config token as literal characters in Regex
+                TranslatedText := RegExReplace(TranslatedText, "i)\s*\Q" . NewlineToken . "\E\s*", "`n")
             }
 
             if (TranslatedText != "") {
