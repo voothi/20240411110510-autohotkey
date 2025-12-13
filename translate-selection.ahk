@@ -1,9 +1,16 @@
 #Requires AutoHotkey v2.0
 
 ; ===================================================================================
-; Script:       Google Translate Selection
-; Description:  Copies selected text, translates it using a local Python script
+; Script:       Multi-Provider Translate Selection
+; Description:  Copies selected text, translates it using local Python scripts,
 ;               and replaces the selection with the translation.
+;
+; Features:
+;   - Supports Google Translate and DeepL (via secrets.ini)
+;   - Cycling: Press the same hotkey again (after manually Undoing) to switch providers.
+;     Flow: Translate -> [Undo] -> Translate again -> Next Provider used.
+;   - Preserves Newlines: Configurable token strategy to maintain paragraph structure.
+;   - Restore Clipboard: Restores original text to clipboard after pasting.
 ;
 ; Hotkeys:
 ;   Ctrl + Alt + F2: ru -> en
