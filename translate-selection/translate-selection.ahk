@@ -51,7 +51,7 @@ GetDeepLCommand(text, src, tgt, outFile) {
         return ""
     }
     return A_ComSpec ' /c chcp 65001 > nul && "' . PythonPath . '" "' . ScriptPath_DeepL . '" --text ' . EscapeCmdArg(
-        text) .
+        StrReplace(text, "\", "\\")) .
     ' --source ' . src . ' --target ' . tgt . ' --deepl-api-key "' . apiKey . '" > "' . outFile . '"'
 }
 
@@ -187,6 +187,9 @@ TranslateSelection(SourceLang, TargetLang) {
     ; Prepare text for CLI
     ProcessText := InputText
 
+    ; Protect Indentation: Replace double spaces with Non-Breaking Spaces to prevent collapsing
+    ProcessText := StrReplace(ProcessText, "  ", Chr(160) . Chr(160))
+
     if (PreserveNewlines) {
         ; Use a distinct token which is less likely to be interpreted as grammar
         ; We do NOT pad it with spaces, to strictly preserve existing indentation/whitespace.
@@ -230,6 +233,14 @@ TranslateSelection(SourceLang, TargetLang) {
             ; Read with UTF-8 encoding
             TranslatedText := FileRead(OutputFile, "UTF-8")
             TranslatedText := Trim(TranslatedText, " `t`r`n")
+
+            ; Restore protected indentation (NBSP -> Space)
+            TranslatedText := StrReplace(TranslatedText, Chr(160), " ")
+
+            ; DeepL Specific Cleanup: Un-double backslashes if we forced them
+            if (TranslationSession.CurrentProvider == 2) {
+                TranslatedText := StrReplace(TranslatedText, "\\", "\")
+            }
 
             if (PreserveNewlines) {
                 ; Remove newlines completely to avoid any spacing artifacts
