@@ -18,7 +18,9 @@
 ;
 ; Features:
 ;   - **Provider Cycling**: Press the trigger again to switch providers (if multiple defined).
-;   - **Smart Newlines**: Preserves paragraph structure using tokens.
+;   - **Smart Newlines**: Preserves paragraph structure. Optional advanced tokenization.
+;       - Controlled by `UseTokens=true` in `settings.ini`.
+;       - Uses tokens `[[S]]`, `[[B]]`, `[[N]]` for robust DeepL handling.
 ;   - **Security**: Never writes the decrypted key to disk; passes it to Python process only.
 ;
 ; Hotkeys:
