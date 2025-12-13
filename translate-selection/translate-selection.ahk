@@ -198,7 +198,8 @@ TranslateSelection(SourceLang, TargetLang) {
 
     if (PreserveNewlines) {
         ; Use a distinct token which is less likely to be interpreted as grammar
-        Token := " [[@N]] "
+        ; STRICT PRESERVATION: Do NOT pad with spaces.
+        Token := "[[@N]]"
         ProcessText := StrReplace(ProcessText, "`r`n", Token)
         ProcessText := StrReplace(ProcessText, "`n", Token)
         ProcessText := StrReplace(ProcessText, "`r", Token)
@@ -240,14 +241,14 @@ TranslateSelection(SourceLang, TargetLang) {
             TranslatedText := Trim(TranslatedText, " `t`r`n")
 
             ; DeepL Specific Restore: [[@B]] -> \
-            ; Use [ \t]* to avoid eating newlines, and allow spaces inside tokens
+            ; We use \s* here because these are explicitly padded by us
             if (TranslationSession.CurrentProvider == 2) {
-                TranslatedText := RegExReplace(TranslatedText, "i)[ \t]*\[\[\s*@B\s*\]\][ \t]*", "\")
+                TranslatedText := RegExReplace(TranslatedText, "i)\s*\[\[\s*@B\s*\]\]\s*", "\")
             }
 
             ; Global Restore: [[@S]] -> "  " (Double Space)
-            ; Use [ \t]* to avoid eating newlines (CRITICAL because newlines exist here)
-            TranslatedText := RegExReplace(TranslatedText, "i)[ \t]*\[\[\s*@S\s*\]\][ \t]*", "  ")
+            ; We use \s* here because these are explicitly padded by us
+            TranslatedText := RegExReplace(TranslatedText, "i)\s*\[\[\s*@S\s*\]\]\s*", "  ")
 
             if (PreserveNewlines) {
                 ; Remove newlines completely to avoid any spacing artifacts
@@ -256,7 +257,9 @@ TranslateSelection(SourceLang, TargetLang) {
                 TranslatedText := StrReplace(TranslatedText, "`r", "")
 
                 ; Restore newlines from the token
-                TranslatedText := RegExReplace(TranslatedText, "i)[ \t]*\[\[\s*@N\s*\]\][ \t]*", "`n")
+                ; STRICT PRESERVATION: Do NOT consume surrounding spaces.
+                ; Only match the token itself, allowing for minor DeepL hallucinations (whitespace inside brackets)
+                TranslatedText := RegExReplace(TranslatedText, "i)\[\[\s*@N\s*\]\]", "`n")
             }
 
             if (TranslatedText != "") {
