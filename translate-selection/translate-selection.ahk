@@ -187,14 +187,14 @@ TranslateSelection(SourceLang, TargetLang) {
     ; Prepare text for CLI
     ProcessText := InputText
 
-    ; Tokenize Double Spaces (Indentation) to separate tokens [[S]]
+    ; Tokenize Double Spaces (Indentation) to separate tokens [[@S@]]
     ; This works better than NBSP for DeepL, which tends to collapse/eat spaces.
-    ProcessText := StrReplace(ProcessText, "  ", "[[S]]")
+    ProcessText := StrReplace(ProcessText, "  ", "[[@S@]]")
 
-    ; DeepL Specific: Tokenize Backslashes to [[B]]
+    ; DeepL Specific: Tokenize Backslashes to [[@B@]]
     ; This avoids ANY command line escaping issues or DeepL escape interpretation.
     if (TranslationSession.CurrentProvider == 2) {
-        ProcessText := StrReplace(ProcessText, "\", "[[B]]")
+        ProcessText := StrReplace(ProcessText, "\", "[[@B@]]")
     }
 
     if (PreserveNewlines) {
@@ -241,14 +241,14 @@ TranslateSelection(SourceLang, TargetLang) {
             TranslatedText := FileRead(OutputFile, "UTF-8")
             TranslatedText := Trim(TranslatedText, " `t`r`n")
 
-            ; DeepL Specific Restore: [[B]] -> \
+            ; DeepL Specific Restore: [[@B@]] -> \
             if (TranslationSession.CurrentProvider == 2) {
-                TranslatedText := RegExReplace(TranslatedText, "i)\s?\[\[B\]\]\s?", "\")
+                TranslatedText := RegExReplace(TranslatedText, "i)\s?\[\[@B@\]\]\s?", "\")
             }
 
-            ; Global Restore: [[S]] -> "  " (Double Space)
+            ; Global Restore: [[@S@]] -> "  " (Double Space)
             ; We use \s? to consume any extra spaces introduced by the translator around the token
-            TranslatedText := RegExReplace(TranslatedText, "i)\s?\[\[S\]\]\s?", "  ")
+            TranslatedText := RegExReplace(TranslatedText, "i)\s?\[\[@S@\]\]\s?", "  ")
 
             if (PreserveNewlines) {
                 ; Remove newlines completely to avoid any spacing artifacts
