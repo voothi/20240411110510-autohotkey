@@ -13,7 +13,7 @@
 ; ===================================================================================
 
 ; Configuration and Providers
-DeepLKeyFile := A_ScriptDir . "\secrets.ini"
+DeepLKeyFile := A_ScriptDir . "/secrets.ini"
 PythonPath := "C:/Tools/deep-translator/venv/Scripts/python.exe"
 ScriptPath_Google := "C:/Tools/deep-translator/translate.py"
 ScriptPath_DeepL := "C:/Tools/deep-translator/translate.1.py"
