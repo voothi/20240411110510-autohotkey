@@ -76,7 +76,7 @@ class SecurityManager {
         this.SaltEdit := this.Gui.Add("Edit", "w430 ReadOnly Password vSaltDisplay", CurrentSalt)
         this.BtnShowSalt := this.Gui.Add("Button", "x+5 yp w45", "👁")
         this.BtnShowSalt.OnEvent("Click", ObjBindMethod(this, "OnToggleSalt"))
-        this.Gui.Add("Button", "x+10 yp w110", "Change Salt").OnEvent("Click", ObjBindMethod(this, "OnChangeSalt"))
+        this.Gui.Add("Button", "x+10 yp w110", "Edit").OnEvent("Click", ObjBindMethod(this, "OnChangeSalt"))
 
         ; List View
         this.Gui.Add("Text", "xm y+20", "Managed Keys:")
@@ -88,11 +88,13 @@ class SecurityManager {
         this.LV.OnEvent("DoubleClick", ObjBindMethod(this, "OnEdit"))
 
         ; Action Buttons
-        this.Gui.Add("Button", "w110 Section", "Edit Selected").OnEvent("Click", ObjBindMethod(this, "OnEdit"))
-        this.BtnReveal := this.Gui.Add("Button", "ys w110", "Reveal Values")
+        ; Unified Layout: [Reveal] [Edit] ... [Encrypt] [Decrypt]
+        this.BtnReveal := this.Gui.Add("Button", "section w45", "👁")
         this.BtnReveal.OnEvent("Click", ObjBindMethod(this, "OnToggleReveal"))
 
-        this.Gui.Add("Text", "ys+5 w20", "") ; Spacer
+        this.Gui.Add("Button", "ys w110", "Edit Selected").OnEvent("Click", ObjBindMethod(this, "OnEdit"))
+
+        this.Gui.Add("Text", "ys w150", "") ; Spacer to push bulk actions right (adjust width as needed)
 
         this.Gui.Add("Button", "ys w110", "Encrypt All").OnEvent("Click", ObjBindMethod(this, "OnEncryptAll"))
         this.Gui.Add("Button", "ys w110", "Decrypt All").OnEvent("Click", ObjBindMethod(this, "OnDecryptAll"))
@@ -176,7 +178,7 @@ class SecurityManager {
 
     OnToggleReveal(*) {
         this.RevealMode := !this.RevealMode
-        this.BtnReveal.Text := this.RevealMode ? "Hide Values" : "Reveal Values"
+        this.BtnReveal.Text := this.RevealMode ? "🔒" : "👁"
         this.RefreshList()
     }
 
