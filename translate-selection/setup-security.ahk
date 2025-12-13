@@ -100,7 +100,8 @@ class SecurityManager {
         this.Gui.Add("Button", "ys w110", "Decrypt All").OnEvent("Click", ObjBindMethod(this, "OnDecryptAll"))
 
         ; Footer
-        this.Gui.Add("StatusBar", , "Ready.")
+        this.Gui.Add("Text", "xm y+15 w600 h1 0x10") ; Horizontal Line
+        this.StatusBar := this.Gui.Add("Text", "xm y+5 w600", "Ready.")
 
         this.RefreshList()
         this.Gui.Show()
@@ -172,7 +173,7 @@ class SecurityManager {
                 IniWrite(Obfuscated, CurrentSecretsPath, Item.Section, Item.Key)
             }
             this.RefreshList()
-            this.Gui["StatusBar"].SetText("Updated " . Item.Name)
+            this.StatusBar.Value := "Updated " . Item.Name
         }
     }
 
