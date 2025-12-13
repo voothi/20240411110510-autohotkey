@@ -51,7 +51,7 @@ GetDeepLCommand(text, src, tgt, outFile) {
         return ""
     }
     return A_ComSpec ' /c chcp 65001 > nul && "' . PythonPath . '" "' . ScriptPath_DeepL . '" --text ' . EscapeCmdArg(
-        StrReplace(text, "\", "\\")) .
+        text) .
     ' --source ' . src . ' --target ' . tgt . ' --deepl-api-key "' . apiKey . '" > "' . outFile . '"'
 }
 
@@ -189,8 +189,8 @@ TranslateSelection(SourceLang, TargetLang) {
 
     if (PreserveNewlines) {
         ; Use a distinct token which is less likely to be interpreted as grammar
-        ; We pad it with spaces to ensure it's treated as a separate word
-        Token := " " . NewlineToken . " "
+        ; We do NOT pad it with spaces, to strictly preserve existing indentation/whitespace.
+        Token := NewlineToken
         ProcessText := StrReplace(ProcessText, "`r`n", Token)
         ProcessText := StrReplace(ProcessText, "`n", Token)
         ProcessText := StrReplace(ProcessText, "`r", Token)
@@ -240,8 +240,8 @@ TranslateSelection(SourceLang, TargetLang) {
                 ; Restore newlines from the token
                 ; Restore newlines from the token
                 ; We use the normalized pattern '[[@+]]' to handle DeepL hallucinations (e.g. [[@@@@]])
-                ; We use '[ \t]?' to consume at most one space around the token, preserving deeper indentation.
-                TranslatedText := RegExReplace(TranslatedText, "i)[ \t]?\[\[@+\]\][ \t]?", "`n")
+                ; We removed space consumption `[ \t]?` to perfectly preserve indentation.
+                TranslatedText := RegExReplace(TranslatedText, "i)\[\[@+\]\]", "`n")
             }
 
             if (TranslatedText != "") {
