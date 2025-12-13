@@ -2,196 +2,205 @@
 #Include ..\Lib\Security.ahk
 
 ; ==============================================================================
-; Security Setup & Management Script
+; Security Manager GUI
 ; ==============================================================================
-; Usage:
-;   Run this script to configure or update your secure API keys.
-;   To add a NEW key:
-;     1. Add a new `ConfigureKey(...)` line below in the "Keys to Manage" section.
-;     2. Update your main script to retrieve it using `Security.Deobfuscate(...)`.
+; A centralized interface for managing secure API keys.
 ; ==============================================================================
 
-; --- Configuration ---
+; --- Configuration & Paths ---
 ConfigName := "settings.ini"
 SecretsFileName := "secrets.ini"
-
-; --- Initialization ---
-; Assuming settings.ini is in the same directory
 SettingsPath := A_ScriptDir . "\" . ConfigName
+
+; Load Settings / Paths
+CurrentSalt := IniRead(SettingsPath, "Security", "Salt", "")
+CurrentSecretsPath := IniRead(SettingsPath, "Security", "SecretsPath", "")
 UserProfile := EnvGet("USERPROFILE")
 DefaultSecretsDir := UserProfile . "\.translate-selection"
 DefaultSecretsFile := DefaultSecretsDir . "\" . SecretsFileName
 
-; Load Settings
-CurrentSalt := IniRead(SettingsPath, "Security", "Salt", "")
-CurrentSecretsPath := IniRead(SettingsPath, "Security", "SecretsPath", "")
-
-; 1. Ensure Salt Exists
+; Ensure defaults if missing
 if (CurrentSalt == "") {
-    ib := InputBox("Enter a salt string for obfuscation (leave empty to generate random):", "Setup Security - Step 1/2",
-        "w400 h150")
-    if (ib.Result == "Cancel")
-        ExitApp
-
-    CurrentSalt := ib.Value
-    if (CurrentSalt == "") {
-        CurrentSalt := RandomString(16)
-    }
+    CurrentSalt := RandomString(16)
     IniWrite(CurrentSalt, SettingsPath, "Security", "Salt")
 }
-
-; 2. Ensure Secrets Path Exists
 if (CurrentSecretsPath == "") {
     CurrentSecretsPath := DefaultSecretsFile
-    ; Optional: Prompt for custom location could go here
     IniWrite(CurrentSecretsPath, SettingsPath, "Security", "SecretsPath")
 }
 
-; Create User Profile Directory if needed
+; Ensure Directory Exists
 SplitPath CurrentSecretsPath, , &OutDir
 if !DirExist(OutDir)
     DirCreate OutDir
 
 ; ==============================================================================
-; Keys to Manage
+; Main Application
 ; ==============================================================================
+App := SecurityManager()
 
-; ==============================================================================
-; Keys to Manage
-; ==============================================================================
-ManagedKeys := [{ Section: "DeepL", Key: "Key", Name: "DeepL API Key" }]
+class SecurityManager {
+    ManagedKeys := [{ Section: "DeepL", Key: "Key", Name: "DeepL API Key" }]
+    RevealMode := false
 
-; ==============================================================================
-; Main Menu
-; ==============================================================================
-Result := MsgBox(
-    "Choose an action:`n`n[Yes] Interactive Configuration (Add/Update)`n[No] Advanced: Bulk Encrypt/Decrypt File",
-    "Security Manager", 3)
+    __New() {
+        this.Gui := Gui("+Resize +MinSize600x400", "Security Manager")
+        this.Gui.SetFont("s10", "Segoe UI")
+        this.Gui.OnEvent("Close", (*) => ExitApp())
 
-if (Result == "Yes") {
-    for Item in ManagedKeys {
-        ConfigureKey(Item.Section, Item.Key, Item.Name)
+        ; Header
+        this.Gui.SetFont("Bold")
+        this.Gui.Add("Text", "w600", "Secure Storage Location:")
+        this.Gui.SetFont("Norm")
+        this.Gui.Add("Edit", "w600 ReadOnly vSecretsPath", CurrentSecretsPath)
+
+        ; List View
+        this.Gui.Add("Text", "xm y+10", "Managed Keys:")
+        this.LV := this.Gui.Add("ListView", "r12 w600 Grid vKeyList", ["Service", "Key Name", "Status", "Value"])
+        this.LV.ModifyCol(1, 100) ; Service
+        this.LV.ModifyCol(2, 150) ; Name
+        this.LV.ModifyCol(3, 100) ; Status
+        this.LV.ModifyCol(4, 230) ; Value
+        this.LV.OnEvent("DoubleClick", ObjBindMethod(this, "OnEdit"))
+
+        ; Action Buttons
+        this.Gui.Add("Button", "w110 Section", "Edit Selected").OnEvent("Click", ObjBindMethod(this, "OnEdit"))
+        this.BtnReveal := this.Gui.Add("Button", "ys w110", "Reveal Values")
+        this.BtnReveal.OnEvent("Click", ObjBindMethod(this, "OnToggleReveal"))
+
+        this.Gui.Add("Text", "ys+5 w20", "") ; Spacer
+
+        this.Gui.Add("Button", "ys w110", "Encrypt All").OnEvent("Click", ObjBindMethod(this, "OnEncryptAll"))
+        this.Gui.Add("Button", "ys w110", "Decrypt All").OnEvent("Click", ObjBindMethod(this, "OnDecryptAll"))
+
+        ; Footer
+        this.Gui.Add("StatusBar", , "Ready.")
+
+        this.RefreshList()
+        this.Gui.Show()
     }
-} else if (Result == "No") {
-    Action := MsgBox("Advanced Mode:`n`n[Yes] Encrypt all keys in file`n[No] Decrypt all keys in file (to plain text)",
-        "Bulk Action", 3)
 
-    if (Action == "Yes") {
-        BulkProcess("Encrypt")
-    } else if (Action == "No") {
-        BulkProcess("Decrypt")
+    RefreshList() {
+        this.LV.Delete()
+        this.LV.Opt("-Redraw")
+
+        for Item in this.ManagedKeys {
+            Val := IniRead(CurrentSecretsPath, Item.Section, Item.Key, "")
+            Status := "❌ Missing"
+            DisplayVal := ""
+
+            if (Val != "") {
+                ; Check Encryption Status
+                TempDecrypted := Security.Deobfuscate(Val, CurrentSalt)
+                IsEncrypted := (SubStr(TempDecrypted, 1, 7) == "%%SEC%%")
+
+                if (IsEncrypted) {
+                    Status := "🔒 Encrypted"
+                    RealVal := SubStr(TempDecrypted, 8)
+                } else {
+                    Status := "⚠️ Plain Text"
+                    RealVal := Val
+                }
+
+                if (this.RevealMode)
+                    DisplayVal := RealVal
+                else
+                    DisplayVal := "********************"
+            }
+
+            this.LV.Add(, Item.Section, Item.Name, Status, DisplayVal)
+        }
+
+        this.LV.Opt("+Redraw")
     }
-}
 
-MsgBox "Security configuration check complete!", "Done", 64
+    OnEdit(*) {
+        Row := this.LV.GetNext()
+        if (Row == 0) {
+            MsgBox("Please select a key to edit.")
+            return
+        }
 
-; ==============================================================================
-; Helper Functions
-; ==============================================================================
+        Item := this.ManagedKeys[Row]
 
-BulkProcess(Mode) {
-    global CurrentSecretsPath, CurrentSalt, ManagedKeys
-
-    Count := 0
-    for Item in ManagedKeys {
+        ; Get current plain text value for editing
+        CurrentPlain := ""
         Val := IniRead(CurrentSecretsPath, Item.Section, Item.Key, "")
-        if (Val == "")
-            continue
-
-        NewVal := ""
-
-        ; Verify if currently encrypted by attempting to decrypt and finding the marker
-        TempDecrypted := Security.Deobfuscate(Val, CurrentSalt)
-        IsEncrypted := (SubStr(TempDecrypted, 1, 7) == "%%SEC%%")
-
-        if (Mode == "Encrypt") {
-            if (!IsEncrypted) {
-                ; Encrypt plain text with Magic Marker
-                ; We prepend %%SEC%% so we can verify it later
-                Obfuscated := Security.Obfuscate("%%SEC%%" . Val, CurrentSalt)
-                NewVal := Obfuscated
-                Count++
-            }
-        } else if (Mode == "Decrypt") {
-            if (IsEncrypted) {
-                ; Decrypt to plain text (stripped of marker)
-                NewVal := SubStr(TempDecrypted, 8)
-                Count++
-            }
-        }
-
-        if (NewVal != "") {
-            IniWrite(NewVal, CurrentSecretsPath, Item.Section, Item.Key)
-        }
-    }
-
-    if (Count > 0)
-        MsgBox(Mode . "ion complete. Processed " . Count . " keys.`nFile: " . CurrentSecretsPath)
-    else
-        MsgBox("No keys needed " . Mode . "ion (All items were already up to date).")
-}
-
-; ==============================================================================
-; Helper Functions
-; ==============================================================================
-
-ConfigureKey(Section, KeyName, DisplayName) {
-    global CurrentSecretsPath, CurrentSalt
-
-    ; 1. Check for local migration opportunity (Legacy)
-    ; Assuming secrets.ini might be in same dir if legacy
-    LocalSecretsFile := A_ScriptDir . "\secrets.ini"
-    MigratedValue := ""
-
-    if FileExist(LocalSecretsFile) {
-        Val := IniRead(LocalSecretsFile, Section, KeyName, "")
         if (Val != "") {
-            if (MsgBox("Found local " . DisplayName . " in secrets.ini.`nMigrate and Secure it?", "Migrate", 36) ==
-            "Yes") {
-                MigratedValue := Val
+            TempDecrypted := Security.Deobfuscate(Val, CurrentSalt)
+            if (SubStr(TempDecrypted, 1, 7) == "%%SEC%%")
+                CurrentPlain := SubStr(TempDecrypted, 8)
+            else
+                CurrentPlain := Val
+        }
+
+        ib := InputBox("Enter new value for " . Item.Name . ":", "Edit Key", "w400 h130", CurrentPlain)
+        if (ib.Result == "OK") {
+            NewVal := Trim(ib.Value)
+            if (NewVal == "") {
+                ; Maybe support deleting? For now just empty.
+                IniDelete(CurrentSecretsPath, Item.Section, Item.Key)
+            } else {
+                ; Always encrypt on save from Edit
+                Obfuscated := Security.Obfuscate("%%SEC%%" . NewVal, CurrentSalt)
+                IniWrite(Obfuscated, CurrentSecretsPath, Item.Section, Item.Key)
             }
+            this.RefreshList()
+            this.Gui["StatusBar"].SetText("Updated " . Item.Name)
         }
     }
 
-    ; 2. Check if already exists in secure storage
-    ExistingObfuscated := IniRead(CurrentSecretsPath, Section, KeyName, "")
-    NewValue := ""
-
-    if (MigratedValue != "") {
-        NewValue := MigratedValue
-    } else if (ExistingObfuscated != "") {
-        ; Check if it is already encrypted (Internal Magic Marker Check)
-        DecryptedCheck := Security.Deobfuscate(ExistingObfuscated, CurrentSalt)
-        IsEncrypted := (SubStr(DecryptedCheck, 1, 7) == "%%SEC%%")
-
-        if (IsEncrypted) {
-            ; Already secure. Ask to update/overwrite.
-            if (MsgBox(DisplayName . " is already secured.`nDo you want to overwrite it?", "Update Key", 36) == "Yes") {
-                ib := InputBox("Enter new " . DisplayName . ":", "Update " . DisplayName)
-                if (ib.Result == "OK")
-                    NewValue := Trim(ib.Value)
-            }
-        } else {
-            ; Exists but is NOT encrypted (Plain Text in secure file).
-            ; Ask to encrypt it.
-            if (MsgBox("Found plain text " . DisplayName . " in secure storage.`nEncrypt it now?", "Secure Key", 36) ==
-            "Yes") {
-                NewValue := ExistingObfuscated
-            }
-        }
-    } else {
-        ; Doesn't exist. Ask to set.
-        ib := InputBox("Enter " . DisplayName . ":", "Setup " . DisplayName)
-        if (ib.Result == "OK")
-            NewValue := Trim(ib.Value)
+    OnToggleReveal(*) {
+        this.RevealMode := !this.RevealMode
+        this.BtnReveal.Text := this.RevealMode ? "Hide Values" : "Reveal Values"
+        this.RefreshList()
     }
 
-    ; 3. Write if we have a new value
-    if (NewValue != "") {
-        ; Prepend Marker before encrypting
-        Obfuscated := Security.Obfuscate("%%SEC%%" . NewValue, CurrentSalt)
-        IniWrite(Obfuscated, CurrentSecretsPath, Section, KeyName)
-        MsgBox(DisplayName . " secured successfully.")
+    OnEncryptAll(*) {
+        Count := 0
+        for Item in this.ManagedKeys {
+            Val := IniRead(CurrentSecretsPath, Item.Section, Item.Key, "")
+            if (Val == "")
+                continue
+
+            ; Check if plain
+            TempDecrypted := Security.Deobfuscate(Val, CurrentSalt)
+            IsEncrypted := (SubStr(TempDecrypted, 1, 7) == "%%SEC%%")
+
+            if (!IsEncrypted) {
+                ; Encrypt
+                Obfuscated := Security.Obfuscate("%%SEC%%" . Val, CurrentSalt)
+                IniWrite(Obfuscated, CurrentSecretsPath, Item.Section, Item.Key)
+                Count++
+            }
+        }
+        this.RefreshList()
+        MsgBox("Encrypt All Complete. Secured " . Count . " keys.")
+    }
+
+    OnDecryptAll(*) {
+        if (MsgBox("Are you sure you want to decrypt all keys to plain text?", "Confirm", 36) != "Yes")
+            return
+
+        Count := 0
+        for Item in this.ManagedKeys {
+            Val := IniRead(CurrentSecretsPath, Item.Section, Item.Key, "")
+            if (Val == "")
+                continue
+
+            ; Check if encrypted
+            TempDecrypted := Security.Deobfuscate(Val, CurrentSalt)
+            IsEncrypted := (SubStr(TempDecrypted, 1, 7) == "%%SEC%%")
+
+            if (IsEncrypted) {
+                ; Decrypt
+                Plain := SubStr(TempDecrypted, 8)
+                IniWrite(Plain, CurrentSecretsPath, Item.Section, Item.Key)
+                Count++
+            }
+        }
+        this.RefreshList()
+        MsgBox("Decrypt All Complete. Exposed " . Count . " keys.")
     }
 }
 
