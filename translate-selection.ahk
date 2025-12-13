@@ -39,9 +39,10 @@ TranslateSelection(SourceLang, TargetLang) {
     InputText := A_Clipboard
 
     ; Replace newlines with a token to preserve structure during translation
-    InputText := StrReplace(InputText, "`r`n", " \n ")
-    InputText := StrReplace(InputText, "`n", " \n ")
-    InputText := StrReplace(InputText, "`r", " \n ")
+    ; Using __LB__ as it is safer than backslashes in CLI arguments
+    InputText := StrReplace(InputText, "`r`n", " __LB__ ")
+    InputText := StrReplace(InputText, "`n", " __LB__ ")
+    InputText := StrReplace(InputText, "`r", " __LB__ ")
 
     ; Escape double quotes for the command line ( " -> \" )
     InputText := StrReplace(InputText, '"', '\"')
@@ -76,7 +77,7 @@ TranslateSelection(SourceLang, TargetLang) {
             TranslatedText := Trim(TranslatedText, " `t`r`n")
 
             ; Restore newlines from the token
-            TranslatedText := RegExReplace(TranslatedText, "\s*\\n\s*", "`n")
+            TranslatedText := RegExReplace(TranslatedText, "i)\s*__LB__\s*", "`n")
 
             if (TranslatedText != "") {
                 ; Place result in clipboard and paste
