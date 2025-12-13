@@ -246,14 +246,16 @@ TranslateSelection(SourceLang, TargetLang) {
             TranslatedText := FileRead(OutputFile, "UTF-8")
             TranslatedText := Trim(TranslatedText, " `t`r`n")
 
-            ; DeepL Specific Restore: [[@B@]] -> \
+            ; ========== XML Tags Restoration for DeepL ==========
             if (TranslationSession.CurrentProvider == 2) {
-                TranslatedText := RegExReplace(TranslatedText, "i)\s*\[\[@B@\]\]\s*", "\")
+                ; Strip XML tags, preserving their content
+                ; <x>\</x> -> \
+                ; <x>  </x> -> "  " (two spaces)
+                TranslatedText := RegExReplace(TranslatedText, "i)<x>([^<]*)</x>", "$1")
+            } else {
+                ; Google Translate: restore space tokens
+                TranslatedText := RegExReplace(TranslatedText, "i)\s*\[\[@S@\]\]\s*", "  ")
             }
-
-            ; Global Restore: [[@S@]] -> "  " (Double Space)
-            ; We use \s* to consume all padding spaces + any AI hallucinations
-            TranslatedText := RegExReplace(TranslatedText, "i)\s*\[\[@S@\]\]\s*", "  ")
 
             if (PreserveNewlines) {
                 ; Remove newlines completely to avoid any spacing artifacts
