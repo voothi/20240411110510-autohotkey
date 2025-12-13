@@ -67,7 +67,7 @@ class Security {
             NumPut("UChar", byte ^ saltByte, buf, A_Index - 1)
         }
 
-        return StrGet(buf, "UTF-8")
+        return StrGet(buf, len, "UTF-8")
     }
 
     static Base64Encode(buf, len) {
