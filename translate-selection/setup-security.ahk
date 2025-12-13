@@ -1,5 +1,5 @@
 #Requires AutoHotkey v2.0
-#Include ..\lib\security.ahk
+#Include ..\Lib\Security.ahk
 
 ; ==============================================================================
 ; Security Setup & Management Script

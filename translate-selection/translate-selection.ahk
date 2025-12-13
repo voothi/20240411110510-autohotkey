@@ -1,5 +1,5 @@
 #Requires AutoHotkey v2.0
-#Include ..\lib\security.ahk
+#Include ..\Lib\Security.ahk
 
 ; ===================================================================================
 ; Script:       Multi-Provider Translate Selection
@@ -58,7 +58,10 @@ GetDeepLKey() {
     if FileExist(SecretsPath) {
         ObfuscatedKey := IniRead(SecretsPath, "DeepL", "Key", "")
         if (ObfuscatedKey != "") {
-            return Security.Deobfuscate(ObfuscatedKey, Salt)
+            Decrypted := Security.Deobfuscate(ObfuscatedKey, Salt)
+            if (Decrypted != "")
+                return Decrypted
+            return ObfuscatedKey ; Fallback: Assume it's a plain text key if deobfuscation fails
         }
     }
 
