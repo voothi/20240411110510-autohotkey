@@ -187,19 +187,19 @@ TranslateSelection(SourceLang, TargetLang) {
     ; Prepare text for CLI
     ProcessText := InputText
 
-    ; Tokenize Double Spaces (Indentation) to separate tokens __IDT__
-    ; We use a "Constant Variable" look (UPPERCASE with underscores) which DeepL reliably duplicates without translating.
-    ProcessText := StrReplace(ProcessText, "  ", "__IDT__")
+    ; Tokenize Double Spaces (Indentation) to separate tokens __@IDT@__
+    ; We PAD the tokens with spaces to prevent them from sticking to words, ensuring translation works.
+    ProcessText := StrReplace(ProcessText, "  ", " __@IDT@__ ")
 
-    ; DeepL Specific: Tokenize Backslashes to __BSL__
+    ; DeepL Specific: Tokenize Backslashes to __@BSL@__
     if (TranslationSession.CurrentProvider == 2) {
-        ProcessText := StrReplace(ProcessText, "\", "__BSL__")
+        ProcessText := StrReplace(ProcessText, "\", " __@BSL@__ ")
     }
 
     if (PreserveNewlines) {
         ; Use a distinct token which is less likely to be interpreted as grammar
-        ; We do NOT pad it with spaces, to strictly preserve existing indentation/whitespace.
-        Token := NewlineToken
+        ; We PAD the newline token as well to prevent "Word[[@@@]]Word" agglutination.
+        Token := " " . NewlineToken . " "
         ProcessText := StrReplace(ProcessText, "`r`n", Token)
         ProcessText := StrReplace(ProcessText, "`n", Token)
         ProcessText := StrReplace(ProcessText, "`r", Token)
