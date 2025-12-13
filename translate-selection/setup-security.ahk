@@ -124,7 +124,10 @@ BulkProcess(Mode) {
         }
     }
 
-    MsgBox(Mode . "ion complete. Processed " . Count . " keys.`nFile: " . CurrentSecretsPath)
+    if (Count > 0)
+        MsgBox(Mode . "ion complete. Processed " . Count . " keys.`nFile: " . CurrentSecretsPath)
+    else
+        MsgBox("No keys needed " . Mode . "ion (All items were already up to date).")
 }
 
 ; ==============================================================================
