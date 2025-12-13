@@ -1,4 +1,5 @@
 #Requires AutoHotkey v2.0
+#Include security.ahk
 
 ; ===================================================================================
 ; Script:       Multi-Provider Translate Selection
@@ -24,7 +25,8 @@ PreserveNewlines := true ; Set to false to flatten text before translation
 NewlineToken := "[[@@@]]" ; Token to preserve line breaks (characters inside \Q...\E are treated literally)
 
 ; Configuration and Providers
-DeepLKeyFile := A_ScriptDir . "/secrets.ini"
+; Configuration and Providers
+SettingsFile := A_ScriptDir . "/settings.ini"
 PythonPath := "C:/Tools/deep-translator/venv/Scripts/python.exe"
 ScriptPath_Google := "C:/Tools/deep-translator/translate.py"
 ScriptPath_DeepL := "C:/Tools/deep-translator/translate.1.py"
@@ -35,13 +37,39 @@ GetGoogleCommand(text, src, tgt, outFile) {
 }
 
 GetDeepLCommand(text, src, tgt, outFile) {
-    apiKey := IniRead(DeepLKeyFile, "DeepL", "Key", "")
+    apiKey := GetDeepLKey()
     if (apiKey == "") {
-        MsgBox "DeepL API Key not found in " . DeepLKeyFile . "`nPlease create it with:`n[DeepL]`nKey=YOUR_KEY"
         return ""
     }
     return A_ComSpec ' /c chcp 65001 > nul && "' . PythonPath . '" "' . ScriptPath_DeepL . '" --text "' . text .
         '" --source ' . src . ' --target ' . tgt . ' --deepl-api-key "' . apiKey . '" > "' . outFile . '"'
+}
+
+GetDeepLKey() {
+    ; 1. Try secure settings
+    Salt := IniRead(SettingsFile, "Security", "Salt", "")
+    SecretsPath := IniRead(SettingsFile, "Security", "SecretsPath", "")
+
+    ; Default secure path if not specified but salt exists (or implied)
+    if (SecretsPath == "") {
+        SecretsPath := EnvGet("USERPROFILE") . "\.translate-selection\secrets.ini"
+    }
+
+    if FileExist(SecretsPath) {
+        ObfuscatedKey := IniRead(SecretsPath, "DeepL", "Key", "")
+        if (ObfuscatedKey != "") {
+            return Security.Deobfuscate(ObfuscatedKey, Salt)
+        }
+    }
+
+    ; 2. Fallback to legacy local secrets.ini
+    LegacyFile := A_ScriptDir . "/secrets.ini"
+    if FileExist(LegacyFile) {
+        return IniRead(LegacyFile, "DeepL", "Key", "")
+    }
+
+    MsgBox "DeepL API Key not found.`nPlease run setup-security.ahk to configure secure storage."
+    return ""
 }
 
 Providers := [GetGoogleCommand, GetDeepLCommand]

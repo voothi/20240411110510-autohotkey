@@ -93,3 +93,4 @@ dist/
 
 # Local configuration and secrets
 secrets.ini
+settings.ini
