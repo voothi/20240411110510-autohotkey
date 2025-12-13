@@ -105,10 +105,11 @@ TranslateSelection(SourceLang, TargetLang) {
     ProcessText := InputText
 
     if (PreserveNewlines) {
-        ; Use an explicit word-like token
-        ProcessText := StrReplace(ProcessText, "`r`n", " [newline] ")
-        ProcessText := StrReplace(ProcessText, "`n", " [newline] ")
-        ProcessText := StrReplace(ProcessText, "`r", " [newline] ")
+        ; Use a numeric token which is less likely to be interpreted as grammar
+        Token := " [[999]] "
+        ProcessText := StrReplace(ProcessText, "`r`n", Token)
+        ProcessText := StrReplace(ProcessText, "`n", Token)
+        ProcessText := StrReplace(ProcessText, "`r", Token)
     } else {
         ; Flatten text for CLI (single line)
         ProcessText := StrReplace(ProcessText, "`r`n", " ")
@@ -153,8 +154,9 @@ TranslateSelection(SourceLang, TargetLang) {
                 TranslatedText := StrReplace(TranslatedText, "`n", "")
                 TranslatedText := StrReplace(TranslatedText, "`r", "")
 
-                ; Restore newlines from the token (case insensitive)
-                TranslatedText := RegExReplace(TranslatedText, "i)\s*\[newline\]\s*", "`n")
+                ; Restore newlines from the numeric token
+                ; We look for [[999]] surrounded by optional whitespace
+                TranslatedText := RegExReplace(TranslatedText, "\s*\[\[999\]\]\s*", "`n")
             }
 
             if (TranslatedText != "") {
