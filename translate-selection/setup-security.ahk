@@ -99,23 +99,24 @@ BulkProcess(Mode) {
             continue
 
         NewVal := ""
-        IsEncrypted := (SubStr(Val, 1, 4) == "ENC:")
+
+        ; Verify if currently encrypted by attempting to decrypt and finding the marker
+        TempDecrypted := Security.Deobfuscate(Val, CurrentSalt)
+        IsEncrypted := (SubStr(TempDecrypted, 1, 7) == "%%SEC%%")
 
         if (Mode == "Encrypt") {
             if (!IsEncrypted) {
-                ; Encrypt plain text
-                Obfuscated := Security.Obfuscate(Val, CurrentSalt)
-                NewVal := "ENC:" . Obfuscated
+                ; Encrypt plain text with Magic Marker
+                ; We prepend %%SEC%% so we can verify it later
+                Obfuscated := Security.Obfuscate("%%SEC%%" . Val, CurrentSalt)
+                NewVal := Obfuscated
                 Count++
             }
         } else if (Mode == "Decrypt") {
             if (IsEncrypted) {
-                ; Decrypt to plain text
-                Decrypted := Security.Deobfuscate(SubStr(Val, 5), CurrentSalt)
-                if (Decrypted != "") {
-                    NewVal := Decrypted
-                    Count++
-                }
+                ; Decrypt to plain text (stripped of marker)
+                NewVal := SubStr(TempDecrypted, 8)
+                Count++
             }
         }
 
@@ -159,8 +160,11 @@ ConfigureKey(Section, KeyName, DisplayName) {
     if (MigratedValue != "") {
         NewValue := MigratedValue
     } else if (ExistingObfuscated != "") {
-        ; Check if it is already encrypted
-        if (SubStr(ExistingObfuscated, 1, 4) == "ENC:") {
+        ; Check if it is already encrypted (Internal Magic Marker Check)
+        DecryptedCheck := Security.Deobfuscate(ExistingObfuscated, CurrentSalt)
+        IsEncrypted := (SubStr(DecryptedCheck, 1, 7) == "%%SEC%%")
+
+        if (IsEncrypted) {
             ; Already secure. Ask to update/overwrite.
             if (MsgBox(DisplayName . " is already secured.`nDo you want to overwrite it?", "Update Key", 36) == "Yes") {
                 ib := InputBox("Enter new " . DisplayName . ":", "Update " . DisplayName)
@@ -184,10 +188,9 @@ ConfigureKey(Section, KeyName, DisplayName) {
 
     ; 3. Write if we have a new value
     if (NewValue != "") {
-        Obfuscated := Security.Obfuscate(NewValue, CurrentSalt)
-        ; Prefix with ENC: to distinguish from plain text keys
-        FinalValue := "ENC:" . Obfuscated
-        IniWrite(FinalValue, CurrentSecretsPath, Section, KeyName)
+        ; Prepend Marker before encrypting
+        Obfuscated := Security.Obfuscate("%%SEC%%" . NewValue, CurrentSalt)
+        IniWrite(Obfuscated, CurrentSecretsPath, Section, KeyName)
         MsgBox(DisplayName . " secured successfully.")
     }
 }

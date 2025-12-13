@@ -58,17 +58,16 @@ GetDeepLKey() {
     if FileExist(SecretsPath) {
         ObfuscatedKey := IniRead(SecretsPath, "DeepL", "Key", "")
         if (ObfuscatedKey != "") {
-            ; Check for explicit encryption marker
-            if (SubStr(ObfuscatedKey, 1, 4) == "ENC:") {
-                Decrypted := Security.Deobfuscate(SubStr(ObfuscatedKey, 5), Salt)
-                if (Decrypted != "")
-                    return Decrypted
-                ; If decryption fails but had prefix, return empty or warn?
-                ; Returning empty allows fallback flow to continue or explicit failure.
-                return ""
+            ; Attempt to decrypt
+            Decrypted := Security.Deobfuscate(ObfuscatedKey, Salt)
+
+            ; Check for internal magic marker "%%SEC%%"
+            ; This confirms the decryption was successful and the key was indeed encrypted.
+            if (SubStr(Decrypted, 1, 7) == "%%SEC%%") {
+                return SubStr(Decrypted, 8) ; Return the actual key
             }
-            ; No prefix? Treat as plain text (Support for manual entry)
-            ; Note: We use it silently without prompting the user to avoid interrupting the translation workflow.
+
+            ; If marker not found, assume the key in the file is Plain Text
             return ObfuscatedKey
         }
     }
