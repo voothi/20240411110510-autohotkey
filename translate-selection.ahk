@@ -138,6 +138,10 @@ TranslateSelection(SourceLang, TargetLang) {
                 ; Place result in clipboard and paste
                 A_Clipboard := TranslatedText
                 SendInput "^v"
+
+                ; Restore original text to clipboard so user can use it
+                Sleep 200
+                A_Clipboard := TranslationSession.SourceText
             }
         }
         catch as err {
