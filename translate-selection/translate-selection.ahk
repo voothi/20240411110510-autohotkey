@@ -26,7 +26,7 @@ NewlineToken := "[[@@@]]" ; Token to preserve line breaks (characters inside \Q.
 
 ; Configuration and Providers
 ; Configuration and Providers
-SettingsFile := A_ScriptDir . "/../settings.ini"
+SettingsFile := A_ScriptDir . "/settings.ini"
 PythonPath := "C:/Tools/deep-translator/venv/Scripts/python.exe"
 ScriptPath_Google := "C:/Tools/deep-translator/translate.py"
 ScriptPath_DeepL := "C:/Tools/deep-translator/translate.1.py"
@@ -66,7 +66,7 @@ GetDeepLKey() {
     }
 
     ; 2. Fallback to legacy local secrets.ini
-    LegacyFile := A_ScriptDir . "/../secrets.ini"
+    LegacyFile := A_ScriptDir . "/secrets.ini"
     if FileExist(LegacyFile) {
         return IniRead(LegacyFile, "DeepL", "Key", "")
     }

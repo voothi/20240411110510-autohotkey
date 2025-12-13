@@ -93,4 +93,5 @@ dist/
 
 # Local configuration and secrets
 secrets.ini
+translate-selection/settings.ini
 settings.ini

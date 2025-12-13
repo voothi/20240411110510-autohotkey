@@ -16,8 +16,8 @@ ConfigName := "settings.ini"
 SecretsFileName := "secrets.ini"
 
 ; --- Initialization ---
-; Assuming settings.ini is one level up relative to this script
-SettingsPath := A_ScriptDir . "\..\" . ConfigName
+; Assuming settings.ini is in the same directory
+SettingsPath := A_ScriptDir . "\" . ConfigName
 UserProfile := EnvGet("USERPROFILE")
 DefaultSecretsDir := UserProfile . "\.translate-selection"
 DefaultSecretsFile := DefaultSecretsDir . "\" . SecretsFileName
@@ -71,8 +71,8 @@ ConfigureKey(Section, KeyName, DisplayName) {
     global CurrentSecretsPath, CurrentSalt
 
     ; 1. Check for local migration opportunity (Legacy)
-    ; Assuming secrets.ini might be in parent root if legacy
-    LocalSecretsFile := A_ScriptDir . "\..\secrets.ini"
+    ; Assuming secrets.ini might be in same dir if legacy
+    LocalSecretsFile := A_ScriptDir . "\secrets.ini"
     MigratedValue := ""
 
     if FileExist(LocalSecretsFile) {
