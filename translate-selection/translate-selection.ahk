@@ -68,6 +68,7 @@ GetDeepLKey() {
                 return ""
             }
             ; No prefix? Treat as plain text (Support for manual entry)
+            ; Note: We use it silently without prompting the user to avoid interrupting the translation workflow.
             return ObfuscatedKey
         }
     }
