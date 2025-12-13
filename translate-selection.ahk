@@ -12,6 +12,9 @@
 ;   Ctrl + Alt + F5: de -> ru
 ; ===================================================================================
 
+; Settings
+PreserveNewlines := true ; Set to false to flatten text before translation
+
 ; Configuration and Providers
 DeepLKeyFile := A_ScriptDir . "/secrets.ini"
 PythonPath := "C:/Tools/deep-translator/venv/Scripts/python.exe"
@@ -98,10 +101,21 @@ TranslateSelection(SourceLang, TargetLang) {
         InputText := CurrentText
     }
 
-    ; Flatten text for CLI (as per current logic)
-    ProcessText := StrReplace(InputText, "`r`n", " ")
-    ProcessText := StrReplace(ProcessText, "`n", " ")
-    ProcessText := StrReplace(ProcessText, "`r", " ")
+    ; Prepare text for CLI
+    ProcessText := InputText
+
+    if (PreserveNewlines) {
+        ; Replace newlines with a token to preserve structure during translation
+        ; Using __NEWLINE__ as it is distinct and usually preserved as a "variable" by translators
+        ProcessText := StrReplace(ProcessText, "`r`n", " __NEWLINE__ ")
+        ProcessText := StrReplace(ProcessText, "`n", " __NEWLINE__ ")
+        ProcessText := StrReplace(ProcessText, "`r", " __NEWLINE__ ")
+    } else {
+        ; Flatten text for CLI (single line)
+        ProcessText := StrReplace(ProcessText, "`r`n", " ")
+        ProcessText := StrReplace(ProcessText, "`n", " ")
+        ProcessText := StrReplace(ProcessText, "`r", " ")
+    }
 
     ; Escape double quotes for the command line ( " -> \" )
     ProcessText := StrReplace(ProcessText, '"', '\"')
@@ -133,6 +147,11 @@ TranslateSelection(SourceLang, TargetLang) {
             ; Read with UTF-8 encoding
             TranslatedText := FileRead(OutputFile, "UTF-8")
             TranslatedText := Trim(TranslatedText, " `t`r`n")
+
+            if (PreserveNewlines) {
+                ; Restore newlines from the token (case insensitive)
+                TranslatedText := RegExReplace(TranslatedText, "i)\s*__NEWLINE__\s*", "`n")
+            }
 
             if (TranslatedText != "") {
                 ; Place result in clipboard and paste
