@@ -92,11 +92,21 @@ ConfigureKey(Section, KeyName, DisplayName) {
     if (MigratedValue != "") {
         NewValue := MigratedValue
     } else if (ExistingObfuscated != "") {
-        ; Already exists. Ask to update.
-        if (MsgBox(DisplayName . " is already configured.`nDo you want to overwrite it?", "Update Key", 36) == "Yes") {
-            ib := InputBox("Enter new " . DisplayName . ":", "Update " . DisplayName)
-            if (ib.Result == "OK")
-                NewValue := ib.Value
+        ; Check if it is already encrypted
+        if (SubStr(ExistingObfuscated, 1, 4) == "ENC:") {
+            ; Already secure. Ask to update/overwrite.
+            if (MsgBox(DisplayName . " is already secured.`nDo you want to overwrite it?", "Update Key", 36) == "Yes") {
+                ib := InputBox("Enter new " . DisplayName . ":", "Update " . DisplayName)
+                if (ib.Result == "OK")
+                    NewValue := ib.Value
+            }
+        } else {
+            ; Exists but is NOT encrypted (Plain Text in secure file).
+            ; Ask to encrypt it.
+            if (MsgBox("Found plain text " . DisplayName . " in secure storage.`nEncrypt it now?", "Secure Key", 36) ==
+            "Yes") {
+                NewValue := ExistingObfuscated
+            }
         }
     } else {
         ; Doesn't exist. Ask to set.
