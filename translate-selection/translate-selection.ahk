@@ -186,20 +186,20 @@ TranslateSelection(SourceLang, TargetLang) {
     ; Prepare text for CLI
     ProcessText := InputText
 
-    ; Tokenize Double Spaces (Indentation) to separate tokens [[_S_]]
+    ; Tokenize Double Spaces (Indentation) to separate tokens __S__
     ; We pad tokens with spaces so DeepL treats them as words, not garbage string
-    ProcessText := StrReplace(ProcessText, "  ", " [[_S_]] ")
+    ProcessText := StrReplace(ProcessText, "  ", " __S__ ")
 
-    ; DeepL Specific: Tokenize Backslashes to [[_B_]]
+    ; DeepL Specific: Tokenize Backslashes to __B__
     ; This avoids ANY command line escaping issues or DeepL escape interpretation.
     if (TranslationSession.CurrentProvider == 2) {
-        ProcessText := StrReplace(ProcessText, "\", " [[_B_]] ")
+        ProcessText := StrReplace(ProcessText, "\", " __B__ ")
     }
 
     if (PreserveNewlines) {
         ; Use a distinct token which is less likely to be interpreted as grammar
         ; STRICT PRESERVATION: Do NOT pad with spaces.
-        Token := "[[_N_]]"
+        Token := "__N__"
         ProcessText := StrReplace(ProcessText, "`r`n", Token)
         ProcessText := StrReplace(ProcessText, "`n", Token)
         ProcessText := StrReplace(ProcessText, "`r", Token)
@@ -240,15 +240,15 @@ TranslateSelection(SourceLang, TargetLang) {
             TranslatedText := FileRead(OutputFile, "UTF-8")
             TranslatedText := Trim(TranslatedText, " `t`r`n")
 
-            ; DeepL Specific Restore: [[_B_]] -> \
+            ; DeepL Specific Restore: __B__ -> \
             ; We use \s* here because these are explicitly padded by us
             if (TranslationSession.CurrentProvider == 2) {
-                TranslatedText := RegExReplace(TranslatedText, "i)\s*\[\[\s*_B_\s*\]\]\s*", "\")
+                TranslatedText := RegExReplace(TranslatedText, "i)\s*__\s*B\s*__\s*", "\")
             }
 
-            ; Global Restore: [[_S_]] -> "  " (Double Space)
+            ; Global Restore: __S__ -> "  " (Double Space)
             ; We use \s* here because these are explicitly padded by us
-            TranslatedText := RegExReplace(TranslatedText, "i)\s*\[\[\s*_S_\s*\]\]\s*", "  ")
+            TranslatedText := RegExReplace(TranslatedText, "i)\s*__\s*S\s*__\s*", "  ")
 
             if (PreserveNewlines) {
                 ; Remove newlines completely to avoid any spacing artifacts
@@ -258,8 +258,8 @@ TranslateSelection(SourceLang, TargetLang) {
 
                 ; Restore newlines from the token
                 ; STRICT PRESERVATION: Do NOT consume surrounding spaces.
-                ; Only match the token itself, allowing for minor DeepL hallucinations (whitespace inside brackets)
-                TranslatedText := RegExReplace(TranslatedText, "i)\[\[\s*_N_\s*\]\]", "`n")
+                ; Only match the token itself, allowing for minor DeepL hallucinations (whitespace inside underscores)
+                TranslatedText := RegExReplace(TranslatedText, "i)__\s*N\s*__", "`n")
             }
 
             if (TranslatedText != "") {
