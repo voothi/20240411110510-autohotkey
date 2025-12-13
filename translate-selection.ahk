@@ -66,37 +66,55 @@ TranslateSelection(SourceLang, TargetLang) {
     isCycling := (TranslationSession.Active && A_ThisHotkey == TranslationSession.LastHotkey)
 
     if (isCycling) {
-        ; Cycle to next provider
-        TranslationSession.CurrentProvider += 1
-        if (TranslationSession.CurrentProvider > Providers.Length)
-            TranslationSession.CurrentProvider := 1
-
         ; Undo previous translation (Simulate Ctrl+Z)
         SendInput "^z"
         Sleep 200 ; Wait for undo to complete
 
-        ; Use original text from session
-        InputText := TranslationSession.SourceText
-    } else {
-        ; Start New Session
+        ; Copy text again to verify it matches original source
+        A_Clipboard := ""
+        SendInput "^c"
+        if !ClipWait(1) {
+            ; If copy fails after undo, something is wrong. Reset.
+            TranslationSession.Reset()
+            return
+        }
+        CurrentText := A_Clipboard
+
+        if (CurrentText == TranslationSession.SourceText) {
+            ; Match confirmed, proceed with cycling
+            TranslationSession.CurrentProvider += 1
+            if (TranslationSession.CurrentProvider > Providers.Length)
+                TranslationSession.CurrentProvider := 1
+            InputText := TranslationSession.SourceText
+        } else {
+            ; Mismatch - User changed state or context. Treat as new session
+            ; We use the text we just copied (CurrentText) as the new source
+            isCycling := false
+            InputText := CurrentText
+        }
+    }
+
+    if (!isCycling) {
+        ; Start New Session logic
         TranslationSession.Reset()
         TranslationSession.Active := true
         TranslationSession.LastHotkey := A_ThisHotkey
         TranslationSession.CurrentProvider := 1
 
-        ; Clear clipboard for ClipWait detection
-        A_Clipboard := ""
-
-        ; Copy selected text
-        SendInput "^c"
-        if !ClipWait(1) {
-            MsgBox "No text selected or copy failed."
-            TranslationSession.Reset()
-            return
+        ; If InputText is already set (from mismatch branch), use it.
+        ; Otherwise, perform the copy.
+        if (!IsSet(InputText) || InputText == "") {
+            A_Clipboard := ""
+            SendInput "^c"
+            if !ClipWait(1) {
+                MsgBox "No text selected or copy failed."
+                TranslationSession.Reset()
+                return
+            }
+            InputText := A_Clipboard
         }
 
         ; Store original text
-        InputText := A_Clipboard
         TranslationSession.SourceText := InputText
     }
 
