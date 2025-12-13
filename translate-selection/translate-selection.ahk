@@ -187,14 +187,19 @@ TranslateSelection(SourceLang, TargetLang) {
     ; Prepare text for CLI
     ProcessText := InputText
 
-    ; Tokenize Double Spaces (Indentation) to separate tokens [[@S@]]
-    ; We pad tokens with spaces so DeepL treats them as words, not garbage string
-    ProcessText := StrReplace(ProcessText, "  ", " [[@S@]] ")
+    ; ========== XML Tags Approach for DeepL ==========
+    ; DeepL respects XML-like tags and preserves their content.
+    ; We use <x>content</x> to protect non-translatable elements.
 
-    ; DeepL Specific: Tokenize Backslashes to [[@B@]]
-    ; This avoids ANY command line escaping issues or DeepL escape interpretation.
     if (TranslationSession.CurrentProvider == 2) {
-        ProcessText := StrReplace(ProcessText, "\", " [[@B@]] ")
+        ; Wrap backslashes in XML tags to prevent DeepL interpretation
+        ProcessText := StrReplace(ProcessText, "\", "<x>\</x>")
+
+        ; Wrap double-spaces (indentation) in XML tags
+        ProcessText := StrReplace(ProcessText, "  ", "<x>  </x>")
+    } else {
+        ; Google Translate: use simple space tokens (tested working)
+        ProcessText := StrReplace(ProcessText, "  ", " [[@S@]] ")
     }
 
     if (PreserveNewlines) {
