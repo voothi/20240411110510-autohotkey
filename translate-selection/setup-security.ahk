@@ -71,8 +71,12 @@ class SecurityManager {
         this.Gui.SetFont("Norm")
         this.Gui.Add("Edit", "w600 ReadOnly vSecretsPath", CurrentSecretsPath)
 
+        this.Gui.Add("Text", "xm y+10 w600", "Encryption Salt:")
+        this.Gui.Add("Edit", "w480 ReadOnly vSaltDisplay", CurrentSalt)
+        this.Gui.Add("Button", "x+10 yp w110", "Change Salt").OnEvent("Click", ObjBindMethod(this, "OnChangeSalt"))
+
         ; List View
-        this.Gui.Add("Text", "xm y+10", "Managed Keys:")
+        this.Gui.Add("Text", "xm y+20", "Managed Keys:")
         this.LV := this.Gui.Add("ListView", "r12 w600 Grid vKeyList", ["Service", "Key Name", "Status", "Value"])
         this.LV.ModifyCol(1, 100) ; Service
         this.LV.ModifyCol(2, 150) ; Name
@@ -218,6 +222,68 @@ class SecurityManager {
         }
         this.RefreshList()
         MsgBox("Decrypt All Complete. Exposed " . Count . " keys.")
+    }
+
+    OnChangeSalt(*) {
+        global CurrentSalt
+
+        ; Warning / Confirmation
+        MsgString := "WARNING: Changing the Salt involves re-encryption of all keys.`n"
+        MsgString .= "The script will attempt to decrypt everything with the OLD salt first.`n"
+        MsgString .= "If successful, it will save them with the NEW salt.`n`n"
+        MsgString .= "Do you want to proceed?"
+
+        if (MsgBox(MsgString, "Change Salt", 36 + 48) != "Yes")
+            return
+
+        ib := InputBox("Enter New Salt (Leave empty to auto-generate):", "New Salt", "w400 h130", "")
+        if (ib.Result != "OK")
+            return
+
+        NewSalt := Trim(ib.Value)
+        if (NewSalt == "")
+            NewSalt := RandomString(16)
+
+        ; 1. Load all current keys into memory (Decrypted)
+        MemoryKeys := Map()
+
+        for Item in this.ManagedKeys {
+            Val := IniRead(CurrentSecretsPath, Item.Section, Item.Key, "")
+            if (Val == "")
+                continue
+
+            ; Deobfuscate using OLD CurrentSalt
+            TempDecrypted := Security.Deobfuscate(Val, CurrentSalt)
+            IsEncrypted := (SubStr(TempDecrypted, 1, 7) == "%%SEC%%")
+
+            if (IsEncrypted) {
+                MemoryKeys[Item.Section . "|" . Item.Key] := SubStr(TempDecrypted, 8)
+            } else {
+                ; Keep plain text as is (will be encrypted with new salt if loop logic dictates)
+                MemoryKeys[Item.Section . "|" . Item.Key] := Val
+            }
+        }
+
+        ; 2. Commit New Salt
+        CurrentSalt := NewSalt
+        IniWrite(CurrentSalt, SettingsPath, "Security", "Salt")
+        this.Gui["SaltDisplay"].Value := CurrentSalt
+
+        ; 3. Re-Write Keys with New Salt
+        Count := 0
+        for Item in this.ManagedKeys {
+            MapKey := Item.Section . "|" . Item.Key
+            if (MemoryKeys.Has(MapKey)) {
+                PlainVal := MemoryKeys[MapKey]
+                ; Always encrypt when saving new salt
+                Obfuscated := Security.Obfuscate("%%SEC%%" . PlainVal, CurrentSalt)
+                IniWrite(Obfuscated, CurrentSecretsPath, Item.Section, Item.Key)
+                Count++
+            }
+        }
+
+        this.RefreshList()
+        MsgBox("Salt updated successfully!`nRe-processed " . Count . " keys.")
     }
 }
 
