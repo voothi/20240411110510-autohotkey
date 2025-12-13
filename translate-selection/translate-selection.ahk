@@ -187,19 +187,14 @@ TranslateSelection(SourceLang, TargetLang) {
     ; Prepare text for CLI
     ProcessText := InputText
 
-    ; ========== XML Tags Approach for DeepL ==========
-    ; DeepL respects XML-like tags and preserves their content.
-    ; We use <x>content</x> to protect non-translatable elements.
+    ; Tokenize Double Spaces (Indentation) to separate tokens [[@S@]]
+    ; We pad tokens with spaces so DeepL treats them as words, not garbage string
+    ProcessText := StrReplace(ProcessText, "  ", " [[@S@]] ")
 
+    ; DeepL Specific: Tokenize Backslashes to [[@B@]]
+    ; This avoids ANY command line escaping issues or DeepL escape interpretation.
     if (TranslationSession.CurrentProvider == 2) {
-        ; Wrap backslashes in XML tags to prevent DeepL interpretation
-        ProcessText := StrReplace(ProcessText, "\", "<x>\</x>")
-
-        ; Wrap double-spaces (indentation) in XML tags
-        ProcessText := StrReplace(ProcessText, "  ", "<x>  </x>")
-    } else {
-        ; Google Translate: use simple space tokens (tested working)
-        ProcessText := StrReplace(ProcessText, "  ", " [[@S@]] ")
+        ProcessText := StrReplace(ProcessText, "\", " [[@B@]] ")
     }
 
     if (PreserveNewlines) {
@@ -246,16 +241,14 @@ TranslateSelection(SourceLang, TargetLang) {
             TranslatedText := FileRead(OutputFile, "UTF-8")
             TranslatedText := Trim(TranslatedText, " `t`r`n")
 
-            ; ========== XML Tags Restoration for DeepL ==========
+            ; DeepL Specific Restore: [[@B@]] -> \
             if (TranslationSession.CurrentProvider == 2) {
-                ; Strip XML tags, preserving their content
-                ; <x>\</x> -> \
-                ; <x>  </x> -> "  " (two spaces)
-                TranslatedText := RegExReplace(TranslatedText, "i)<x>([^<]*)</x>", "$1")
-            } else {
-                ; Google Translate: restore space tokens
-                TranslatedText := RegExReplace(TranslatedText, "i)\s*\[\[@S@\]\]\s*", "  ")
+                TranslatedText := RegExReplace(TranslatedText, "i)\s*\[\[@B@\]\]\s*", "\")
             }
+
+            ; Global Restore: [[@S@]] -> "  " (Double Space)
+            ; We use \s* to consume all padding spaces + any AI hallucinations
+            TranslatedText := RegExReplace(TranslatedText, "i)\s*\[\[@S@\]\]\s*", "  ")
 
             if (PreserveNewlines) {
                 ; Remove newlines completely to avoid any spacing artifacts
