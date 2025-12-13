@@ -80,7 +80,8 @@ class SecurityManager {
 
         ; List View
         this.Gui.Add("Text", "xm y+20", "Managed Keys:")
-        this.LV := this.Gui.Add("ListView", "r12 w600 Grid vKeyList", ["Service", "Key Name", "Status", "Value"])
+        this.LV := this.Gui.Add("ListView", "r12 w600 Grid -Multi +LV0x8 vKeyList", ["Service", "Key Name", "Status",
+            "Value"])
         this.LV.ModifyCol(1, 100) ; Service
         this.LV.ModifyCol(2, 150) ; Name
         this.LV.ModifyCol(3, 100) ; Status
