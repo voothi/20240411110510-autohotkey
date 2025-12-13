@@ -56,12 +56,76 @@ if !DirExist(OutDir)
 ; Keys to Manage
 ; ==============================================================================
 
-ConfigureKey("DeepL", "Key", "DeepL API Key")
+; ==============================================================================
+; Keys to Manage
+; ==============================================================================
+ManagedKeys := [{ Section: "DeepL", Key: "Key", Name: "DeepL API Key" }]
 
-; Example of adding a new one:
-; ConfigureKey("OpenAI", "Key", "OpenAI API Token")
+; ==============================================================================
+; Main Menu
+; ==============================================================================
+Result := MsgBox(
+    "Choose an action:`n`n[Yes] Interactive Configuration (Add/Update)`n[No] Advanced: Bulk Encrypt/Decrypt File",
+    "Security Manager", 3)
+
+if (Result == "Yes") {
+    for Item in ManagedKeys {
+        ConfigureKey(Item.Section, Item.Key, Item.Name)
+    }
+} else if (Result == "No") {
+    Action := MsgBox("Advanced Mode:`n`n[Yes] Encrypt all keys in file`n[No] Decrypt all keys in file (to plain text)",
+        "Bulk Action", 3)
+
+    if (Action == "Yes") {
+        BulkProcess("Encrypt")
+    } else if (Action == "No") {
+        BulkProcess("Decrypt")
+    }
+}
 
 MsgBox "Security configuration check complete!", "Done", 64
+
+; ==============================================================================
+; Helper Functions
+; ==============================================================================
+
+BulkProcess(Mode) {
+    global CurrentSecretsPath, CurrentSalt, ManagedKeys
+
+    Count := 0
+    for Item in ManagedKeys {
+        Val := IniRead(CurrentSecretsPath, Item.Section, Item.Key, "")
+        if (Val == "")
+            continue
+
+        NewVal := ""
+        IsEncrypted := (SubStr(Val, 1, 4) == "ENC:")
+
+        if (Mode == "Encrypt") {
+            if (!IsEncrypted) {
+                ; Encrypt plain text
+                Obfuscated := Security.Obfuscate(Val, CurrentSalt)
+                NewVal := "ENC:" . Obfuscated
+                Count++
+            }
+        } else if (Mode == "Decrypt") {
+            if (IsEncrypted) {
+                ; Decrypt to plain text
+                Decrypted := Security.Deobfuscate(SubStr(Val, 5), CurrentSalt)
+                if (Decrypted != "") {
+                    NewVal := Decrypted
+                    Count++
+                }
+            }
+        }
+
+        if (NewVal != "") {
+            IniWrite(NewVal, CurrentSecretsPath, Item.Section, Item.Key)
+        }
+    }
+
+    MsgBox(Mode . "ion complete. Processed " . Count . " keys.`nFile: " . CurrentSecretsPath)
+}
 
 ; ==============================================================================
 ; Helper Functions
