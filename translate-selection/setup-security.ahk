@@ -59,6 +59,7 @@ App := SecurityManager()
 class SecurityManager {
     ManagedKeys := [{ Section: "DeepL", Key: "Key", Name: "DeepL API Key" }]
     RevealMode := false
+    SaltVisible := false
 
     __New() {
         this.Gui := Gui("+Resize +MinSize600x400", "Security Manager")
@@ -72,7 +73,9 @@ class SecurityManager {
         this.Gui.Add("Edit", "w600 ReadOnly vSecretsPath", CurrentSecretsPath)
 
         this.Gui.Add("Text", "xm y+10 w600", "Encryption Salt:")
-        this.Gui.Add("Edit", "w480 ReadOnly vSaltDisplay", CurrentSalt)
+        this.SaltEdit := this.Gui.Add("Edit", "w430 ReadOnly Password vSaltDisplay", CurrentSalt)
+        this.BtnShowSalt := this.Gui.Add("Button", "x+5 yp w45", "👁")
+        this.BtnShowSalt.OnEvent("Click", ObjBindMethod(this, "OnToggleSalt"))
         this.Gui.Add("Button", "x+10 yp w110", "Change Salt").OnEvent("Click", ObjBindMethod(this, "OnChangeSalt"))
 
         ; List View
@@ -284,6 +287,17 @@ class SecurityManager {
 
         this.RefreshList()
         MsgBox("Salt updated successfully!`nRe-processed " . Count . " keys.")
+    }
+
+    OnToggleSalt(*) {
+        this.SaltVisible := !this.SaltVisible
+        if (this.SaltVisible) {
+            this.SaltEdit.Opt("-Password")
+            this.BtnShowSalt.Text := "🔒"
+        } else {
+            this.SaltEdit.Opt("+Password")
+            this.BtnShowSalt.Text := "👁"
+        }
     }
 }
 
