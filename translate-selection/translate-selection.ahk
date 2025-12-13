@@ -187,19 +187,20 @@ TranslateSelection(SourceLang, TargetLang) {
     ; Prepare text for CLI
     ProcessText := InputText
 
-    ; Tokenize Double Spaces (Indentation) to separate tokens __@IDT@__
-    ; We PAD the tokens with spaces to prevent them from sticking to words, ensuring translation works.
-    ProcessText := StrReplace(ProcessText, "  ", " __@IDT@__ ")
+    ; Tokenize Double Spaces (Indentation) to separate tokens [[@S@]]
+    ; We pad tokens with spaces so DeepL treats them as words, not garbage string
+    ProcessText := StrReplace(ProcessText, "  ", " [[@S@]] ")
 
-    ; DeepL Specific: Tokenize Backslashes to __@BSL@__
+    ; DeepL Specific: Tokenize Backslashes to [[@B@]]
+    ; This avoids ANY command line escaping issues or DeepL escape interpretation.
     if (TranslationSession.CurrentProvider == 2) {
-        ProcessText := StrReplace(ProcessText, "\", " __@BSL@__ ")
+        ProcessText := StrReplace(ProcessText, "\", " [[@B@]] ")
     }
 
     if (PreserveNewlines) {
         ; Use a distinct token which is less likely to be interpreted as grammar
-        ; We PAD the newline token as well to prevent "Word[[@@@]]Word" agglutination.
-        Token := " " . NewlineToken . " "
+        ; We do NOT pad it with spaces, to strictly preserve existing indentation/whitespace.
+        Token := NewlineToken
         ProcessText := StrReplace(ProcessText, "`r`n", Token)
         ProcessText := StrReplace(ProcessText, "`n", Token)
         ProcessText := StrReplace(ProcessText, "`r", Token)
@@ -240,16 +241,14 @@ TranslateSelection(SourceLang, TargetLang) {
             TranslatedText := FileRead(OutputFile, "UTF-8")
             TranslatedText := Trim(TranslatedText, " `t`r`n")
 
-            ; DeepL Specific Restore: __BSL__ -> \
+            ; DeepL Specific Restore: [[@B@]] -> \
             if (TranslationSession.CurrentProvider == 2) {
-                TranslatedText := RegExReplace(TranslatedText, "i)\s*__BSL__\s*", "\")
-
-                ; Fix Python f-string/r-string spacing artifact (e.g. f "string" -> f"string")
-                TranslatedText := RegExReplace(TranslatedText, "i)\b([frub])\s+`"", "$1`"")
+                TranslatedText := RegExReplace(TranslatedText, "i)\s*\[\[@B@\]\]\s*", "\")
             }
 
-            ; Global Restore: __IDT__ -> "  " (Double Space)
-            TranslatedText := RegExReplace(TranslatedText, "i)\s*__IDT__\s*", "  ")
+            ; Global Restore: [[@S@]] -> "  " (Double Space)
+            ; We use \s* to consume all padding spaces + any AI hallucinations
+            TranslatedText := RegExReplace(TranslatedText, "i)\s*\[\[@S@\]\]\s*", "  ")
 
             if (PreserveNewlines) {
                 ; Remove newlines completely to avoid any spacing artifacts
