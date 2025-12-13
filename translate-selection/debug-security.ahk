@@ -2,9 +2,20 @@
 #Include ..\Lib\Security.ahk
 
 ; ==============================================================================
-; Debug Security Script
-; ==============================================================================
-; Run this to see EXACTLY what the system sees when it tries to read your key.
+; Script:       Debug Security (debug-security.ahk)
+; Description:  Diagnostic tool for troubleshooting API Key decryption issues.
+;
+; Purpose:
+;   - Use this if your translations are failing with "Auth Error" or strange bugs.
+;   - It reads your `secrets.ini` exactly as the main script does.
+;   - It attempts to decrypt the key and shows you the RAW result.
+;
+; What to look for:
+;   - "Decrypted Raw": Should look like [%%SEC%%YOUR-KEY-HERE].
+;   - Check for leading/trailing spaces inside the brackets [ ].
+;   - Check if the key looks corrupted (garbage characters).
+;
+; This script does NOT modify any files. It only reads and reports.
 ; ==============================================================================
 
 ConfigName := "settings.ini"

@@ -2,16 +2,24 @@
 #Include ..\Lib\Security.ahk
 
 ; ===================================================================================
-; Script:       Multi-Provider Translate Selection
-; Description:  Copies selected text, translates it using local Python scripts,
-;               and replaces the selection with the translation.
+; Script:       Multi-Provider Translate Selection (translate-selection.ahk)
+; Description:  The main runtime script for hotkey-based text translation.
+;
+; Functionality:
+;   1.  **Hotkey Action**: Trigger (e.g., Ctrl+Alt+F2) passes Source/Target language.
+;   2.  **Selection Capture**: Copies selected text to Clipboard.
+;   3.  **Secure Key Retrieval**:
+;       - Reads `settings.ini` to locate `secrets.ini`.
+;       - Fetches the obfuscated API key.
+;       - Decrypts it in memory using `Lib/Security.ahk`.
+;       - If decryption fails (no '%%SEC%%' marker), it falls back to using the text as-is.
+;   4.  **Translation**: Executes a Python CLI wrapper (`deep-translator`) with the key.
+;   5.  **Output**: Replaces the selected text on screen with the translation.
 ;
 ; Features:
-;   - Supports Google Translate and DeepL (via secrets.ini)
-;   - Cycling: Press the same hotkey again (after manually Undoing) to switch providers.
-;     Flow: Translate -> [Undo] -> Translate again -> Next Provider used.
-;   - Preserves Newlines: Configurable token strategy to maintain paragraph structure.
-;   - Restore Clipboard: Restores original text to clipboard after pasting.
+;   - **Provider Cycling**: Press the trigger again to switch providers (if multiple defined).
+;   - **Smart Newlines**: Preserves paragraph structure using tokens.
+;   - **Security**: Never writes the decrypted key to disk; passes it to Python process only.
 ;
 ; Hotkeys:
 ;   Ctrl + Alt + F2: ru -> en

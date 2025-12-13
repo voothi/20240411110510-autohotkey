@@ -2,9 +2,26 @@
 #Include ..\Lib\Security.ahk
 
 ; ==============================================================================
-; Security Manager GUI
-; ==============================================================================
-; A centralized interface for managing secure API keys.
+; Script:       Security Manager (setup-security.ahk)
+; Description:  A GUI utility for managing secure API keys used by the translation system.
+;
+; Purpose:
+;   - Provides a friendly interface to Add, Edit, and View API keys.
+;   - Handles encryption (Obfuscation) of keys using a Salt.
+;   - Stores encrypted keys in a secure, user-specific location (user_profile/.translate-selection/secrets.ini).
+;   - Prevents clear-text keys from being stored in the project directory.
+;
+; How it Works:
+;   1. Reads 'settings.ini' to find the 'Salt' and the path to 'secrets.ini'.
+;   2. Lists all managed keys (e.g. DeepL).
+;   3. Indicates status:
+;      - 🔒 Encrypted: Key is obfuscated with '%%SEC%%' marker. Safe.
+;      - ⚠️ Plain Text: Key is raw text. Risky.
+;      - ❌ Missing: Key not found.
+;   4. Allows Bulk Encryption to secure all plain text keys at once.
+;
+; Usage:
+;   Run this script to configure your keys. You do NOT need to run this for daily translation.
 ; ==============================================================================
 
 ; --- Configuration & Paths ---
