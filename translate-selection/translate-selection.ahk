@@ -64,11 +64,11 @@ GetDeepLKey() {
             ; Check for internal magic marker "%%SEC%%"
             ; This confirms the decryption was successful and the key was indeed encrypted.
             if (SubStr(Decrypted, 1, 7) == "%%SEC%%") {
-                return SubStr(Decrypted, 8) ; Return the actual key
+                return Trim(SubStr(Decrypted, 8)) ; Return the actual key, trimmed
             }
 
             ; If marker not found, assume the key in the file is Plain Text
-            return ObfuscatedKey
+            return Trim(ObfuscatedKey)
         }
     }
 

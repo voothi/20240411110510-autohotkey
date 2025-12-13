@@ -169,7 +169,7 @@ ConfigureKey(Section, KeyName, DisplayName) {
             if (MsgBox(DisplayName . " is already secured.`nDo you want to overwrite it?", "Update Key", 36) == "Yes") {
                 ib := InputBox("Enter new " . DisplayName . ":", "Update " . DisplayName)
                 if (ib.Result == "OK")
-                    NewValue := ib.Value
+                    NewValue := Trim(ib.Value)
             }
         } else {
             ; Exists but is NOT encrypted (Plain Text in secure file).
@@ -183,7 +183,7 @@ ConfigureKey(Section, KeyName, DisplayName) {
         ; Doesn't exist. Ask to set.
         ib := InputBox("Enter " . DisplayName . ":", "Setup " . DisplayName)
         if (ib.Result == "OK")
-            NewValue := ib.Value
+            NewValue := Trim(ib.Value)
     }
 
     ; 3. Write if we have a new value
