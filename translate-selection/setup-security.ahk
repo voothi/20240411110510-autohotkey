@@ -108,7 +108,9 @@ ConfigureKey(Section, KeyName, DisplayName) {
     ; 3. Write if we have a new value
     if (NewValue != "") {
         Obfuscated := Security.Obfuscate(NewValue, CurrentSalt)
-        IniWrite(Obfuscated, CurrentSecretsPath, Section, KeyName)
+        ; Prefix with ENC: to distinguish from plain text keys
+        FinalValue := "ENC:" . Obfuscated
+        IniWrite(FinalValue, CurrentSecretsPath, Section, KeyName)
         MsgBox(DisplayName . " secured successfully.")
     }
 }
