@@ -117,11 +117,16 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
 [Back to Top](#table-of-contents)
 
 ### hotkeys.ahk
-- **Description:** Remaps Enter and Ctrl+Enter specifically for the Google AI Studio web interface. This inverts the default behavior, making `Enter` create a new line and `Ctrl+Enter` submit the prompt.
+- **Description:** Remaps Enter and Ctrl+Enter specifically for **Google AI Studio** and the **Antigravity** application. This generally inverts the default behavior to make `Enter` create a new line (like a text editor).
 - **Hotkeys:**
-  - `Enter`: Sends `Shift+Enter`.
-  - `Ctrl + Enter`: Sends `Enter`.
-- **Context:** Only active in a Chrome window with "Google AI Studio" in the title.
+  - **Google AI Studio**:
+    - `Enter`: Sends `Shift+Enter` (New Line).
+    - `Ctrl + Enter`: Sends `Enter` (Submit).
+  - **Antigravity**:
+    - `Enter`: Sends `Shift+Enter` (New Line).
+    - `Ctrl + Enter`: Native behavior (Submit/Commit).
+    - `Shift+Enter`: Native behavior (New Line).
+- **Context:** Active in Chrome ("Google AI Studio") or the Antigravity application.
 
 [Back to Top](#table-of-contents)
 

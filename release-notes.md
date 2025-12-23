@@ -11,6 +11,8 @@ This release extends the `hotkeys.ahk` utility to support the **Antigravity** ap
     *   **Ctrl+Enter**: Retains native behavior (Submit/Commit).
     *   **Shift+Enter**: Retains native behavior (New Line).
 
+**RFC**: [20251223110924-antigravity-hotkeys](docs/rfcs/20251223110924-antigravity-hotkeys.md)
+
 **Full Changelog**: https://github.com/voothi/20240411110510-autohotkey/compare/v1.48.4...v1.48.8
 
 ---
