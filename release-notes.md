@@ -1,0 +1,34 @@
+# Release Notes (v1.44.2 - v1.48.4)
+
+## Overview
+This cumulative update brings major improvements to **Security**, **Usability**, and **Translation Accuracy**. It introduces enterprise-grade API key protection, seamless multi-provider cycling, and a robust new tokenization strategy to strictly preserve code structure and indentation.
+
+## Script-Specific Updates
+
+### `translate-selection.ahk` (Main Runtime)
+*   **Feature: Strict Indentation Preservation**: Implemented a new tokenization logic (`[[S]]`, `[[B]]`, `[[N]]`) that strictly protects code blocks and whitespace from being mangled or consumed during DeepL translation.
+*   **Feature: Multi-Provider Cycling**: Pressing the hotkey (e.g., `Ctrl+Alt+F2`) repeatedly on the same selection now cycles through available providers (Google <-> DeepL).
+*   **Feature: Smart Context**: The script now persists session state to enable provider switching without needing to re-copy the source text.
+*   **Configuration Logic**: Updated to respect the `UseTokens` setting from `settings.ini`, allowing users to toggle the advanced whitespace protection on/off.
+
+### `setup-security.ahk` (New Utility)
+*   **New Script**: A dedicated setup utility introduced in v1.44.2.
+*   **Functionality**: securely encrypts API keys and stores them in an obfuscated format (`secrets.ini`). This ensures that plain-text API keys are never stored on disk, only decrypted in memory during runtime.
+
+### `settings.ini` & Templates
+*   **New Section `[Settings]`**: Added to control global behavior.
+*   **New Option `UseTokens`**:
+    *   `UseTokens=true`: Enables the advanced token strategy (`[[S]]`, `[[B]]`, `[[N]]`) for strict preservation of indentation and backslashes (Recommended for code).
+    *   `UseTokens=false` (Default): Uses standard behavior (flattening newlines) for general text stability.
+*   **Path Handling**: Improved support for system environment variables (e.g., `%USERPROFILE%`) in path configurations.
+
+## How to Update
+1. **Update Scripts**: Replace `translate-selection.ahk` and ensure `setup-security.ahk` is present.
+2. **Setup Security**: Run `setup-security.ahk` to encrypt your DeepL API key if you haven't already.
+3. **Configure**: Update `settings.ini` to enable tokens if desired:
+   ```ini
+   [Settings]
+   UseTokens=true
+   ```
+
+**Full Changelog**: https://github.com/voothi/20240411110510-autohotkey/compare/v1.44.2...v1.48.4
