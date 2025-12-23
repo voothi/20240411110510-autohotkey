@@ -1,3 +1,20 @@
+# Release Notes (v1.48.8)
+
+## Overview
+This release extends the `hotkeys.ahk` utility to support the **Antigravity** application, providing a more intuitive typing experience in its chat interface.
+
+## Script-Specific Updates
+
+### `hotkeys.ahk`
+*   **Feature: Antigravity Support**:
+    *   **Enter**: Now acts as "New Line" (sends `Shift+Enter`), matching the behavior in Google AI Studio.
+    *   **Ctrl+Enter**: Retains native behavior (Submit/Commit).
+    *   **Shift+Enter**: Retains native behavior (New Line).
+
+**Full Changelog**: https://github.com/voothi/20240411110510-autohotkey/compare/v1.48.4...v1.48.8
+
+---
+
 # Release Notes (v1.44.2 - v1.48.4)
 
 ## Overview
