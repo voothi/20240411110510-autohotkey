@@ -28,10 +28,6 @@ Enter:: Send "+{Enter}"
 ; Remap the Enter key to send Shift+Enter (New Line).
 Enter:: Send "+{Enter}"
 
-; Remap Shift+Enter to send Enter (Submit).
-; This provides a keyboard way to submit in Chat, while Enter creates a new line.
-+Enter:: Send "{Enter}"
-
 ; Note: Ctrl+Enter is NOT remapped here, so it retains its native function (e.g., Commit).
 
 ; Reset the context-sensitive directive. Any hotkeys defined below this line
