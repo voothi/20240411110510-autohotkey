@@ -13,18 +13,26 @@
 ;               - Pressing Ctrl+Enter will now submit the prompt (sends Enter).
 ; ===================================================================================
 
-; The following hotkeys are context-sensitive. They will be active for Google AI Studio
-; or the Antigravity application.
-#HotIf (WinActive("ahk_exe chrome.exe") and InStr(WinGetTitle("A"), "Google AI Studio")) 
-    or WinActive("ahk_exe Antigravity.exe")
+; Google AI Studio
+#HotIf WinActive("ahk_exe chrome.exe") and InStr(WinGetTitle("A"), "Google AI Studio")
 
-; Remap the Enter key to send Shift+Enter.
-; This allows you to create new lines easily, just like in a standard text editor.
+; Remap the Enter key to send Shift+Enter (New Line).
 Enter:: Send "+{Enter}"
 
-; Remap Ctrl+Enter to send a standard Enter keypress.
-; This becomes the new "submit" hotkey.
+; Remap Ctrl+Enter to send Enter (Submit).
 ^Enter:: Send "{Enter}"
+
+; Antigravity Application
+#HotIf WinActive("ahk_exe Antigravity.exe")
+
+; Remap the Enter key to send Shift+Enter (New Line).
+Enter:: Send "+{Enter}"
+
+; Remap Shift+Enter to send Enter (Submit).
+; This provides a keyboard way to submit in Chat, while Enter creates a new line.
++Enter:: Send "{Enter}"
+
+; Note: Ctrl+Enter is NOT remapped here, so it retains its native function (e.g., Commit).
 
 ; Reset the context-sensitive directive. Any hotkeys defined below this line
 ; will be global again.
