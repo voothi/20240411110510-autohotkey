@@ -22,6 +22,18 @@ Enter:: Send "+{Enter}"
 ; Remap Ctrl+Enter to send Enter (Submit).
 ^Enter:: Send "{Enter}"
 
+; Alt+LeftClick to delete item: Click, move diagonal 10px, click again.
+!LButton::
+{
+    MouseGetPos &X, &Y
+    Send "{Click}"
+    Sleep 100
+    MouseMove 50, 50, 0, "R"
+    Sleep 100
+    Send "{Click}"
+    MouseMove X, Y
+}
+
 ; Antigravity Application
 #HotIf WinActive("ahk_exe Antigravity.exe")
 
