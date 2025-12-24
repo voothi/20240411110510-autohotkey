@@ -1,3 +1,23 @@
+# Release Notes (v1.48.10)
+
+## Overview
+This release adds a productivity feature for **Google AI Studio**, allowing rapid deletion of chat items using `Alt+Click`.
+
+## Script-Specific Updates
+
+### `hotkeys.ahk`
+*   **Feature: Rapid Deletion Hotkey**:
+    *   **Action**: `Alt + Left Click` on a menu button (three-dots) automatically opens the menu and clicks "Delete".
+    *   **Behavior**:
+        *   **Auto-Return**: The cursor immediately snaps back to its original position, preserving mouse context.
+        *   **Looping**: Holding the mouse button repeats the action, allowing you to sweep across a list to delete multiple items quickly.
+
+**RFC**: [20251224202917-google-ai-studio-hotkeys](docs/rfcs/20251224202917-google-ai-studio-hotkeys.md)
+
+**Full Changelog**: https://github.com/voothi/20240411110510-autohotkey/compare/v1.48.8...v1.48.10
+
+---
+
 # Release Notes (v1.48.8)
 
 ## Overview

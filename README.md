@@ -122,6 +122,7 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
   - **Google AI Studio**:
     - `Enter`: Sends `Shift+Enter` (New Line).
     - `Ctrl + Enter`: Sends `Enter` (Submit).
+    - `Alt + Left Click`: Rapidly deletes items (Auto-opens menu, clicks Delete, loops on hold).
   - **Antigravity**:
     - `Enter`: Sends `Shift+Enter` (New Line).
     - `Ctrl + Enter`: Native behavior (Submit/Commit).
