@@ -29,7 +29,7 @@
     ; Step 2: Execute the external Python script to process the clipboard content.
     ; `RunWait` pauses this script's execution until the Python script has finished.
     ; The `Hide` option prevents a command window from appearing.
-    RunWait("C:\Python\Python312\python.exe C:\Tools\zid_name\zid_name.py", "", "Hide")
+    RunWait("C:\Python\Python312\python.exe U:\voothi\20240929203511-zid-name", "", "Hide")
     
     ; A pause after the external script finishes. This might be a safeguard for certain
     ; system-specific delays. It can likely be adjusted or removed.
