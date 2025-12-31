@@ -28,7 +28,7 @@
     ; Step 2: Execute the external Python script.
     ; `RunWait` pauses this script's execution until the Python script has finished.
     ; The `Hide` option prevents a command window from appearing.
-    RunWait("C:\Python\Python312\python.exe C:\Tools\lowercase_util\lowercase_util.py", "", "Hide")
+    RunWait("C:\Python\Python312\python.exe U:\voothi\20240327132411-lowercase-util\lowercase_util.py", "", "Hide")
     
     ; A pause after the external script finishes. This might be a safeguard for certain
     ; race conditions or system-specific delays. It can likely be adjusted or removed.

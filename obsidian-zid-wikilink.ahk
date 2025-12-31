@@ -29,7 +29,7 @@
     ; Step 2: Execute the external Python script to process the clipboard content.
     ; `RunWait` pauses this script's execution until the Python script has finished.
     ; The `Hide` option prevents a command window from appearing.
-    RunWait("C:\Python\Python312\python.exe C:\Tools\obsidian-zid-wikilink\obsidian_zid_wikilink.py", "", "Hide")
+    RunWait("C:\Python\Python312\python.exe U:\voothi\20241221130311-obsidian-zid-wikilink\obsidian_zid_wikilink.py", "", "Hide")
     
     ; A pause after the external script finishes. This might be a safeguard for certain
     ; system-specific delays or to ensure the clipboard is updated properly.
