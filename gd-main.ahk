@@ -77,7 +77,7 @@
     ; Step 4: Run an external Python script to clean the clipboard content.
     ; This script is expected to remove newline characters from the text.
     ; The 'Hide' option prevents the command window from appearing.
-    RunWait('C:\Python\Python312\python.exe "C:\Tools\remove_newline_util\remove_newline_util.py"', '', 'Hide')
+    RunWait('C:\Python\Python312\python.exe "U:\voothi\20240310195111-remove-newline-util\remove_newline_util.py"', '', 'Hide')
     Sleep(100)
 
     ; Step 5: Paste the cleaned text into the search bar and execute the search.

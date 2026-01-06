@@ -36,7 +36,7 @@ PreserveNewlines := true ; Set to false to flatten text before translation
 ; Configuration and Providers
 ; Configuration and Providers
 SettingsFile := A_ScriptDir . "/settings.ini"
-PythonPath := "C:/Tools/deep-translator/venv/Scripts/python.exe"
+PythonPath := "U:\voothi\20241122093311-deep-translator/venv/Scripts/python.exe"
 ScriptPath_Google := "C:/Tools/deep-translator/translate.py"
 ScriptPath_DeepL := "C:/Tools/deep-translator/translate.1.py"
 

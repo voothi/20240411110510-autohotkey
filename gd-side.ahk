@@ -32,7 +32,7 @@
         ; This is typically used to remove newline characters, which can interfere
         ; with lookups of multi-line selections.
         ; The 'Hide' option prevents the command window from appearing.
-        RunWait('C:\Python\Python312\python.exe "C:\Tools\remove_newline_util\remove_newline_util.py"', '', 'Hide')
+        RunWait('C:\Python\Python312\python.exe "U:\voothi\20240310195111-remove-newline-util\remove_newline_util.py"', '', 'Hide')
     }
     
     ; The commented-out Sleep is a potential delay, currently disabled.
