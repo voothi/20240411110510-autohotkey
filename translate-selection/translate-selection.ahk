@@ -23,6 +23,8 @@
 ;       - Uses tokens `[[S]]`, `[[B]]`, `[[N]]` for robust DeepL handling.
 ;   - **Security**: Never writes the decrypted key to disk; passes it to Python process only.
 ;
+; Related Repository: https://github.com/voothi/20241122093311-deep-translator
+;
 ; Hotkeys:
 ;   Ctrl + Alt + F2: ru -> en
 ;   Ctrl + Alt + F3: ru -> de

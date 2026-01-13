@@ -220,6 +220,17 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
 
 [Back to Top](#table-of-contents)
 
+## Related Repositories
+
+The following repositories contain the Python scripts and other dependencies used by this AutoHotkey collection. You may need to clone these and configure the paths in the AHK scripts accordingly.
+
+- **Deep Translator Wrapper**: [voothi/20241122093311-deep-translator](https://github.com/voothi/20241122093311-deep-translator) - Python wrapper for deep translation CLI.
+- **Argo Translate Wrapper**: [voothi/20241121100211-argotranslate](https://github.com/voothi/20241121100211-argotranslate) - Python wrapper for offline translation using Argo Translate.
+- **TTS Scripts**: [voothi/20231001193911-tts](https://github.com/voothi/20231001193911-tts) - Text-to-Speech utilities.
+- **Lingva Translate CLI**: [voothi/20250214181911-lingva-translate-cli](https://github.com/voothi/20250214181911-lingva-translate-cli) - CLI for Lingva Translate.
+
+[Back to Top](#table-of-contents)
+
 ## Kardenwort Ecosystem
 
 This project is part of the **[Kardenwort](https://github.com/kardenwort)** environment, designed to create a focused and efficient learning ecosystem.

@@ -16,6 +16,8 @@
 ;   - The `piper_tts.py` script and the Piper TTS engine must be set up.
 ;   - IMPORTANT: You MUST update the paths in the RunWait command below to match
 ;     your system's configuration.
+;
+; Related Repository: https://github.com/voothi/20231001193911-tts
 ; ===================================================================================
 
 ; #Persistent ; Ensures the script stays running. Note: In AHKv2, this is generally

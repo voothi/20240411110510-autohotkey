@@ -1,3 +1,16 @@
+# Release Notes (v1.48.11)
+
+## Overview
+Documentation update to include links to published draft scripts and dependencies.
+
+## Documentation
+*   Added "Related Repositories" section to `README.md`.
+*   Added repository links to `translate-selection.ahk` and `tts.ahk` headers.
+
+**RFC**: [20260113230434-link-published-scripts](docs/rfcs/20260113230434-link-published-scripts.md)
+
+---
+
 # Release Notes (v1.48.10)
 
 ## Overview
