@@ -37,8 +37,8 @@ PreserveNewlines := true ; Set to false to flatten text before translation
 ; Configuration and Providers
 SettingsFile := A_ScriptDir . "/settings.ini"
 PythonPath := "U:/voothi/20241122093311-deep-translator/venv/Scripts/python.exe"
-ScriptPath_Google := "U:/voothi/20241122093311-deep-translator/translate.py"
-ScriptPath_DeepL := "U:/voothi/20241122093311-deep-translator/translate.1.py"
+ScriptPath_Google := "U:/voothi/20241122093311-deep-translator/translate_google.py"
+ScriptPath_DeepL := "U:/voothi/20241122093311-deep-translator/translate_deepl.py"
 
 GetGoogleCommand(text, src, tgt, outFile) {
     return A_ComSpec ' /c chcp 65001 > nul && "' . PythonPath . '" "' . ScriptPath_Google . '" --text ' . EscapeCmdArg(
