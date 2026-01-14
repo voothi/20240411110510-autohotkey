@@ -27,6 +27,7 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
     - [obsidian-zid-wikilink.ahk](#obsidian-zid-wikilinkahk)
     - [open-in-anki.ahk](#open-in-ankiahk)
     - [remove-newline.ahk](#remove-newlineahk)
+    - [translate-selection.ahk](#translate-selectionahk)
     - [tts.ahk](#ttsahk)
     - [uppercase.ahk](#uppercaseahk)
     - [vocabsieve-anki-desk.ahk](#vocabsieve-anki-deskahk)
@@ -168,6 +169,17 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
 - **Description:** Copies the selected text, processes it with an external Python script to remove all newline characters, and pastes the result back as a single line. Excellent for cleaning text from PDFs.
 - **Hotkey:** `Ctrl + Alt + N`
 - **Dependencies:** Requires a corresponding Python script (`remove_newline_util.py`) at a hardcoded path.
+
+[Back to Top](#table-of-contents)
+
+### translate-selection.ahk
+- **Description:** A multi-provider translation tool located in the `translate-selection/` folder. It replaces the currently selected text with its translation using Google Translate or DeepL. It features secure API key handling via `settings.ini` and `secrets.ini` (managed by `setup-security.ahk`), removing the need to store clear-text keys in scripts. It also intelligently preserves paragraph structure.
+- **Hotkeys:**
+  - `Ctrl + Alt + F2`: Russian -> English
+  - `Ctrl + Alt + F3`: Russian -> German
+  - `Ctrl + Alt + F4`: English -> Russian
+  - `Ctrl + Alt + F5`: German -> Russian
+- **Dependencies:** Requires `Lib/Security.ahk` and the external repository `voothi/20241122093311-deep-translator`.
 
 [Back to Top](#table-of-contents)
 
