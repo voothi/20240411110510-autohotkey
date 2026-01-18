@@ -215,9 +215,10 @@ TranslateSelection(SourceLang, TargetLang) {
     if (UseTokens == "true" or UseTokens == "1") {
         ; PHASE 1: Collision Protection (Literal Escaping)
         ; Protect any literal occurrences of our tokens in the source text
-        ProcessText := StrReplace(ProcessText, "[[S]]", "AHK_ESC_[[S]]")
-        ProcessText := StrReplace(ProcessText, "[[B]]", "AHK_ESC_[[B]]")
-        ProcessText := StrReplace(ProcessText, "[[N]]", "AHK_ESC_[[N]]")
+        ; We remove brackets in the escape version to prevent Phase 3 restoration regex from matching them.
+        ProcessText := StrReplace(ProcessText, "[[S]]", "AHK_ESC_S_")
+        ProcessText := StrReplace(ProcessText, "[[B]]", "AHK_ESC_B_")
+        ProcessText := StrReplace(ProcessText, "[[N]]", "AHK_ESC_N_")
 
         ; PHASE 2: Functional Tokenization
         ; Tokenize Double Spaces (Indentation) to separate tokens [[S]]
@@ -313,9 +314,9 @@ TranslateSelection(SourceLang, TargetLang) {
 
                 ; PHASE 3: Unescaping Literals
                 ; Restore the protected literal tokens. Use regex to handle potential DeepL artifacts.
-                TranslatedText := RegExReplace(TranslatedText, "i)AHK_ESC_\s*\[\[\s*S\s*\]\]", "[[S]]")
-                TranslatedText := RegExReplace(TranslatedText, "i)AHK_ESC_\s*\[\[\s*B\s*\]\]", "[[B]]")
-                TranslatedText := RegExReplace(TranslatedText, "i)AHK_ESC_\s*\[\[\s*N\s*\]\]", "[[N]]")
+                TranslatedText := RegExReplace(TranslatedText, "i)AHK_ESC_S_", "[[S]]")
+                TranslatedText := RegExReplace(TranslatedText, "i)AHK_ESC_B_", "[[B]]")
+                TranslatedText := RegExReplace(TranslatedText, "i)AHK_ESC_N_", "[[N]]")
             }
 
             if (TranslatedText != "") {

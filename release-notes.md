@@ -8,6 +8,7 @@ This release resolves the "Token Collision" bug where functional tokens (like `[
 ### `translate-selection.ahk`
 *   **Feature: Robust Token Strategy**:
     *   **Phase 1: Collision Protection**: Literal occurrences of tokens (`[[S]]`, `[[B]]`, `[[N]]`) are now automatically escaped before processing.
+    *   **Logic Refinement**: The internal escape placeholder (e.g., `AHK_ESC_S_`) now deliberately omits brackets. This prevents the functional restoration regex from accidentally matching the "escaped" content.
     *   **Phase 3: DeepL Artifact Handling**: Unescaping logic now uses regex to safely restore original text even if DeepL introduces minor whitespace artifacts into the escape sequences.
 *   **Logic Improvement**: Adopted the established spirit of v1.48.14 by treating "Core Text" processing as a protected transaction separate from literal boundaries.
 
