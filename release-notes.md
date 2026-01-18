@@ -1,3 +1,21 @@
+# Release Notes (v1.48.15)
+
+## Overview
+This release resolves the "Token Collision" bug where functional tokens (like `[[S]]`) in the original text were misinterpreted. It introduces a robust escaping layer to protect literal text.
+
+## Script-Specific Updates
+
+### `translate-selection.ahk`
+*   **Feature: Robust Token Strategy**:
+    *   **Phase 1: Collision Protection**: Literal occurrences of tokens (`[[S]]`, `[[B]]`, `[[N]]`) are now automatically escaped before processing.
+    *   **Phase 3: DeepL Artifact Handling**: Unescaping logic now uses regex to safely restore original text even if DeepL introduces minor whitespace artifacts into the escape sequences.
+*   **Logic Improvement**: Adopted the established spirit of v1.48.14 by treating "Core Text" processing as a protected transaction separate from literal boundaries.
+
+### Configuration (`settings.ini.template`)
+*   Updated documentation for `UseTokens` to explain its collision-resistant behavior.
+
+---
+
 # Release Notes (v1.48.14)
 
 ## Overview

@@ -213,6 +213,13 @@ TranslateSelection(SourceLang, TargetLang) {
     UseTokens := IniRead(SettingsFile, "Settings", "UseTokens", "false")
 
     if (UseTokens == "true" or UseTokens == "1") {
+        ; PHASE 1: Collision Protection (Literal Escaping)
+        ; Protect any literal occurrences of our tokens in the source text
+        ProcessText := StrReplace(ProcessText, "[[S]]", "AHK_ESC_[[S]]")
+        ProcessText := StrReplace(ProcessText, "[[B]]", "AHK_ESC_[[B]]")
+        ProcessText := StrReplace(ProcessText, "[[N]]", "AHK_ESC_[[N]]")
+
+        ; PHASE 2: Functional Tokenization
         ; Tokenize Double Spaces (Indentation) to separate tokens [[S]]
         ; We pad tokens with spaces so DeepL treats them as words, not garbage string
         ProcessText := StrReplace(ProcessText, "  ", " [[S]] ")
@@ -303,6 +310,12 @@ TranslateSelection(SourceLang, TargetLang) {
                     ; Only match the token itself, allowing for minor DeepL hallucinations (whitespace inside brackets)
                     TranslatedText := RegExReplace(TranslatedText, "i)\[\[\s*N\s*\]\]", "`n")
                 }
+
+                ; PHASE 3: Unescaping Literals
+                ; Restore the protected literal tokens. Use regex to handle potential DeepL artifacts.
+                TranslatedText := RegExReplace(TranslatedText, "i)AHK_ESC_\s*\[\[\s*S\s*\]\]", "[[S]]")
+                TranslatedText := RegExReplace(TranslatedText, "i)AHK_ESC_\s*\[\[\s*B\s*\]\]", "[[B]]")
+                TranslatedText := RegExReplace(TranslatedText, "i)AHK_ESC_\s*\[\[\s*N\s*\]\]", "[[N]]")
             }
 
             if (TranslatedText != "") {
