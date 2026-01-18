@@ -254,7 +254,18 @@ TranslateSelection(SourceLang, TargetLang) {
         {
             ; Read with UTF-8 encoding
             TranslatedText := FileRead(OutputFile, "UTF-8")
-            TranslatedText := Trim(TranslatedText, " `t`r`n")
+            
+            ; Handle trimming based on settings
+            TrimWhitespace := IniRead(SettingsFile, "Settings", "TrimWhitespace", "false")
+            if (TrimWhitespace == "true" or TrimWhitespace == "1") {
+                TranslatedText := Trim(TranslatedText, " `t`r`n")
+            } else {
+                ; Even if not trimming, we should handle potential BOM or trailing nulls if any, 
+                ; but usually FileRead with UTF-8 is clean.
+                ; However, CLI outputs often have a trailing newline we might want to keep or not.
+                ; The requirement is "nor before nor after the line should be trimmed".
+                ; But FileRead might include the newline from the ' > outFile' redirection.
+            }
 
             if (UseTokens == "true" or UseTokens == "1") {
                 ; DeepL Specific Restore: [[B]] -> \
