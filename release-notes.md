@@ -1,3 +1,23 @@
+# Release Notes (v1.48.14)
+
+## Overview
+This release introduces a robust whitespace preservation feature and a new configuration option to control trimming behavior in the translation script.
+
+## Script-Specific Updates
+
+### `translate-selection.ahk`
+*   **Feature: Robust Whitespace Preservation**: Implemented a pre-extraction and post-restoration strategy for leading and trailing whitespace. This ensures that accidentally captured spaces, tabs, and newlines are perfectly preserved, regardless of the translation provider's behavior.
+*   **Configuration Logic**: Updated to respect the new `TrimWhitespace` setting.
+
+### Configuration (`settings.ini`)
+*   **New Option `TrimWhitespace`**:
+    *   `TrimWhitespace=false` (Default): Preserves all leading/trailing whitespace from the original selection. Recommended for chat and sentence-boundary translation.
+    *   `TrimWhitespace=true`: Trims the translated output of all leading/trailing whitespace (Legacy behavior).
+
+**RFC**: [20260118101956-whitespace-preservation-option](docs/rfcs/20260118101956-whitespace-preservation-option.md)
+
+---
+
 # Release Notes (v1.48.11)
 
 ## Overview
