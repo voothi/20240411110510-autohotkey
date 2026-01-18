@@ -1,19 +1,23 @@
-# Release Notes (v1.48.15)
+# Release Notes (v1.48.16)
 
 ## Overview
-This release resolves the "Token Collision" bug where functional tokens (like `[[S]]`) in the original text were misinterpreted. It introduces a robust escaping layer to protect literal text.
+This release resolves the "Token Collision" bug and introduces enterprise-grade debuggability by capturing standard errors during translation. It also consolidates the automated test suite for better reliability.
 
 ## Script-Specific Updates
 
 ### `translate-selection.ahk`
 *   **Feature: Robust Token Strategy**:
-    *   **Phase 1: Collision Protection**: Literal occurrences of tokens (`[[S]]`, `[[B]]`, `[[N]]`) are now automatically escaped before processing.
-    *   **Logic Refinement**: The internal escape placeholder (e.g., `AHK_ESC_S_`) now deliberately omits brackets. This prevents the functional restoration regex from accidentally matching the "escaped" content.
-    *   **Phase 3: DeepL Artifact Handling**: Unescaping logic now uses regex to safely restore original text even if DeepL introduces minor whitespace artifacts into the escape sequences.
-*   **Logic Improvement**: Adopted the established spirit of v1.48.14 by treating "Core Text" processing as a protected transaction separate from literal boundaries.
+    *   **Phase 1: Collision Protection**: Literal occurrences of tokens (`[[S]]`, `[[B]]`, `[[N]]`) are now escaped locally to prevent misinterpretation as functional tokens.
+    *   **Logic Refinement**: Improved internal placeholder format (`AHK_ESC_X_`) to ensure zero overlap with restoration patterns.
+    *   **Phase 3: DeepL Artifact Handling**: Transitioned to regex-based unescaping to handle minor API-side formatting shifts.
+*   **Feature: Enhanced Debuggability**:
+    *   **Standard Error Capture**: Now redirects `stderr` to the output log (`2>&1`). If a command fails, the script displays the actual Python error/traceback.
+    *   **ExitCode Validation**: Added explicit checking of process exit codes to trigger error reporting.
 
-### Configuration (`settings.ini.template`)
-*   Updated documentation for `UseTokens` to explain its collision-resistant behavior.
+### `tests/test_integration.ahk`
+*   **Consolidated Test Suite**: Replaced individual scripts with a comprehensive integration test covering whitespace, tokens, and collisions in a single pipeline.
+
+**RFC**: [20260118111559-robust-token-collision-protection](docs/rfcs/20260118111559-robust-token-collision-protection.md)
 
 ---
 

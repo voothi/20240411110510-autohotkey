@@ -173,7 +173,7 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
 [Back to Top](#table-of-contents)
 
 ### translate-selection.ahk
-- **Description:** A multi-provider translation tool located in the `translate-selection/` folder. It replaces the currently selected text with its translation using Google Translate or DeepL. It features secure API key handling via `settings.ini` and `secrets.ini` (managed by `setup-security.ahk`), removing the need to store clear-text keys in scripts. It intelligently preserves paragraph structure and offers a `TrimWhitespace` option to preserve or remove selection boundaries.
+- **Description:** A multi-provider translation tool located in the `translate-selection/` folder. It replaces the currently selected text with its translation using Google Translate or DeepL. It features secure API key handling via `settings.ini` and `secrets.ini` (managed by `setup-security.ahk`). Version v1.48.16 introduces robust protection against internal token collisions (using an escaping layer), captures standard error output for reliable debugging, and includes a comprehensive integration test suite for verifying complex formatting.
 - **Hotkeys:**
   - `Ctrl + Alt + F2`: Russian -> English
   - `Ctrl + Alt + F3`: Russian -> German
