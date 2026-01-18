@@ -45,7 +45,7 @@ ScriptPath_DeepL := "U:/voothi/20241122093311-deep-translator/translate_deepl.py
 GetGoogleCommand(text, src, tgt, outFile) {
     return A_ComSpec ' /c chcp 65001 > nul && "' . PythonPath . '" "' . ScriptPath_Google . '" --text ' . EscapeCmdArg(
         text) .
-    ' --source ' . src . ' --target ' . tgt . ' > "' . outFile . '"'
+    ' --source ' . src . ' --target ' . tgt . ' > "' . outFile . '" 2>&1'
 }
 
 GetDeepLCommand(text, src, tgt, outFile) {
@@ -55,7 +55,7 @@ GetDeepLCommand(text, src, tgt, outFile) {
     }
     return A_ComSpec ' /c chcp 65001 > nul && "' . PythonPath . '" "' . ScriptPath_DeepL . '" --text ' . EscapeCmdArg(
         text) .
-    ' --source ' . src . ' --target ' . tgt . ' --deepl-api-key "' . apiKey . '" > "' . outFile . '"'
+    ' --source ' . src . ' --target ' . tgt . ' --deepl-api-key "' . apiKey . '" > "' . outFile . '" 2>&1'
 }
 
 EscapeCmdArg(str) {
