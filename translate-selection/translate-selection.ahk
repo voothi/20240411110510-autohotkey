@@ -188,7 +188,26 @@ TranslateSelection(SourceLang, TargetLang) {
     }
 
     ; Prepare text for CLI
-    ProcessText := InputText
+    ; Handle whitespace preservation based on settings
+    TrimWhitespace := IniRead(SettingsFile, "Settings", "TrimWhitespace", "false")
+    LeadingWS := ""
+    TrailingWS := ""
+
+    if (TrimWhitespace == "false" or TrimWhitespace == "0") {
+        CoreText := Trim(InputText, " `t`r`n")
+        if (CoreText != "") {
+            ; Find exact leading and trailing strings by splitting the original text
+            LeftP := InStr(InputText, CoreText, true)
+            LeadingWS := SubStr(InputText, 1, LeftP - 1)
+            TrailingWS := SubStr(InputText, LeftP + StrLen(CoreText))
+            ProcessText := CoreText ; Proceed with clean text for the translator
+        } else {
+            ; Only whitespace selected, proceed as-is (will effectively translate nothing or return original)
+            ProcessText := InputText
+        }
+    } else {
+        ProcessText := InputText
+    }
 
     ; Check if Advanced Tokenization is enabled in Settings
     UseTokens := IniRead(SettingsFile, "Settings", "UseTokens", "false")
@@ -254,17 +273,12 @@ TranslateSelection(SourceLang, TargetLang) {
         {
             ; Read with UTF-8 encoding
             TranslatedText := FileRead(OutputFile, "UTF-8")
-            
-            ; Handle trimming based on settings
-            TrimWhitespace := IniRead(SettingsFile, "Settings", "TrimWhitespace", "false")
-            if (TrimWhitespace == "true" or TrimWhitespace == "1") {
+
+            ; Handle restoration of external whitespace if trimming is disabled
+            if (TrimWhitespace == "false" or TrimWhitespace == "0") {
+                TranslatedText := LeadingWS . TranslatedText . TrailingWS
+            } else if (TrimWhitespace == "true" or TrimWhitespace == "1") {
                 TranslatedText := Trim(TranslatedText, " `t`r`n")
-            } else {
-                ; Even if not trimming, we should handle potential BOM or trailing nulls if any, 
-                ; but usually FileRead with UTF-8 is clean.
-                ; However, CLI outputs often have a trailing newline we might want to keep or not.
-                ; The requirement is "nor before nor after the line should be trimmed".
-                ; But FileRead might include the newline from the ' > outFile' redirection.
             }
 
             if (UseTokens == "true" or UseTokens == "1") {
