@@ -267,11 +267,18 @@ TranslateSelection(SourceLang, TargetLang) {
     if (CommandStr == "")
         return
 
-    ; Run the command hidden
+    ; Run the command hidden and check for errors
     try {
-        RunWait CommandStr, , "Hide"
+        ExitCode := RunWait(CommandStr, , "Hide")
+        if (ExitCode != 0) {
+            ErrorLog := FileExist(OutputFile) ? FileRead(OutputFile, "UTF-8") : "No error output captured."
+            MsgBox "Translation failed (Exit Code " . ExitCode . "):`n`n" . ErrorLog
+            if FileExist(OutputFile)
+                FileDelete OutputFile
+            return
+        }
     } catch as err {
-        MsgBox "Failed to run translation script: " . err.Message
+        MsgBox "Failed to execute translation command: " . err.Message
         return
     }
 
