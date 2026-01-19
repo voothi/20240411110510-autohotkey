@@ -6,6 +6,7 @@ This release adds mouse-based Text-to-Speech triggering to `tts.ahk` and languag
 ## Script-Specific Updates
 
 ### `tts.ahk`
+*   **Externalized Configuration**: Moved paths, settings, and language metadata (labels, colors, hotkeys) to `tts_config.ini` for easier customization.
 *   **Mouse Trigger**: Added support for triggering TTS by pressing the Middle Mouse Button while selecting text with the Left Mouse Button.
 *   **Language Persistence**: The script now remembers the last used language from keyboard shortcuts.
 *   **Tray Menu**: Added a dynamic tray menu to show and switch the current TTS language.

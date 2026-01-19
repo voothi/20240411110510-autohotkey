@@ -2,40 +2,75 @@
 
 ; ===================================================================================
 ; Script:       Text-to-Speech (TTS) Hotkeys
-; Hotkeys:      Ctrl+Alt+Shift+2 (English)
-;               Ctrl+Alt+Shift+3 (German)
-;               Ctrl+Alt+Shift+4 (Russian)
-;               Ctrl+Alt+Shift+5 (Ukrainian)
 ;
 ; Description:  This script provides multi-language Text-to-Speech functionality for
-;               any selected text. It uses separate hotkeys to read the text aloud
-;               in different languages by passing it to an external TTS engine
-;               (Anki TTS CLI) via a Python script.
+;               any selected text. It utilizes a configuration file (tts_config.ini)
+;               for dynamic language and path settings.
 ;
-; Dependencies:
-;   - Python 3 must be installed.
-;   - The `anki-tts-cli.py` script must be set up.
-;   - IMPORTANT: You MUST update the paths in the RunWait command below to match
-;     your system's configuration.
+; Features:
+;   - Dynamic Tray Icon: Draws current language code on the tray icon.
+;   - Mouse Trigger: Middle Click while Left Click is held (selection) triggers TTS.
+;   - Configurable: Languages, colors, hotkeys, and paths are stored in tts_config.ini.
 ;
 ; Related Repository: https://github.com/voothi/20260119103526-anki-tts-cli
 ; ===================================================================================
 
-; Global variable to store current language
-global currentLang := "en"
+; --- Initialization & Config Loading ---
+configFile := A_ScriptDir "\tts_config.ini"
+
+if !FileExist(configFile) {
+    MsgBox("Configuration file not found: " configFile "`nPlease create it based on the template.", "TTS Error", "Icon!")
+    ExitApp()
+}
+
+; Load Paths
+global pythonPath := IniRead(configFile, "Paths", "PythonPath", "python.exe")
+global scriptPath := IniRead(configFile, "Paths", "ScriptPath", "")
+
+; Load Settings
+global currentLang := IniRead(configFile, "Settings", "DefaultLanguage", "en")
 global currentHIcon := 0
+
+; Load Languages and Setup Hotkeys
+global langInfo := Map()
+try {
+    langSection := IniRead(configFile, "Languages")
+    for line in StrSplit(langSection, "`n") {
+        if (line = "" || InStr(line, ";") == 1)
+            continue
+        parts := StrSplit(line, "=")
+        code := Trim(parts[1])
+        vals := StrSplit(parts[2], ",")
+        
+        info := {
+            text: Trim(vals[1]), 
+            bg: Number(Trim(vals[2])), 
+            fg: Number(Trim(vals[3])), 
+            hotkey: vals.Length >= 4 ? Trim(vals[4]) : ""
+        }
+        langInfo[code] := info
+        
+        ; Register dynamic hotkeys
+        if (info.hotkey != "") {
+            Hotkey(info.hotkey, RunPythonScript.Bind(code))
+        }
+    }
+} catch Any as e {
+    MsgBox("Error parsing [Languages] section in tts_config.ini:`n" e.Message, "Config Error", "Icon!")
+}
 
 ; Update Tray Menu to show current language
 UpdateTrayMenu() {
-    global currentLang
+    global currentLang, langInfo
     A_TrayMenu.Delete()
     A_TrayMenu.Add("Current Language: " . currentLang, (*) => 0)
-    A_TrayMenu.Disable("1&") ; Disable the first item (Current Language)
+    A_TrayMenu.Disable("1&")
     A_TrayMenu.Add() ; Separator
-    A_TrayMenu.Add("English (en)", (itemName, itemPos, MyMenu) => SetLanguage("en"))
-    A_TrayMenu.Add("German (de)", (itemName, itemPos, MyMenu) => SetLanguage("de"))
-    A_TrayMenu.Add("Russian (ru)", (itemName, itemPos, MyMenu) => SetLanguage("ru"))
-    A_TrayMenu.Add("Ukrainian (uk)", (itemName, itemPos, MyMenu) => SetLanguage("uk"))
+    
+    for code, info in langInfo {
+        A_TrayMenu.Add(info.text " (" code ")", ((c, *) => SetLanguage(c)).Bind(code))
+    }
+    
     A_TrayMenu.Add() ; Separator
     A_TrayMenu.AddStandard()
     
@@ -48,15 +83,7 @@ SetLanguage(lang) {
 }
 
 UpdateTrayIcon() {
-    global currentLang, currentHIcon
-    
-    ; Mapping language to display text and colors (0xBBGGRR)
-    langInfo := Map(
-        "en", {text: "En", bg: 0xD83E00, fg: 0xFFFFFF}, ; Blue
-        "de", {text: "De", bg: 0x00D7FF, fg: 0x000000}, ; Yellow
-        "ru", {text: "Ru", bg: 0x0000FF, fg: 0xFFFFFF}, ; Red
-        "uk", {text: "Uk", bg: 0xFFD700, fg: 0x000000}  ; Cyan
-    )
+    global currentLang, currentHIcon, langInfo
     
     info := langInfo.Has(currentLang) ? langInfo[currentLang] : {text: "??", bg: 0x808080, fg: 0xFFFFFF}
     
@@ -112,14 +139,12 @@ CreateIconFromText(text, bgColor, textColor) {
     return hIcon
 }
 
-UpdateTrayMenu() ; Initialize menu
+; Initial Menu Setup
+UpdateTrayMenu()
 
-; A reusable function that copies the selected text and runs the TTS Python script,
-; passing the specified language code.
-; @param lang: The language code (e.g., "en", "de") to be passed to the TTS script.
 RunPythonScript(lang := "") {
-    global currentLang
-    if (lang != "") {
+    global currentLang, pythonPath, scriptPath
+    if (lang != "" && lang != 0) {
         currentLang := lang
         UpdateTrayMenu()
     } else {
@@ -127,41 +152,24 @@ RunPythonScript(lang := "") {
     }
 
     ; Step 1: Copy the selected text to the clipboard.
-    ; Clearing the clipboard first is essential to ensure ClipWait waits for NEW data.
     oldClipboard := A_Clipboard
     A_Clipboard := "" 
     
-    ; Small delay to allow the application to process the selection if triggered by mouse
     Sleep(50) 
     Send("^c")
     
-    ; Wait up to 2 seconds for the clipboard to contain data.
     if !ClipWait(2) {
-        ; If clipboard is still empty, restore old content and exit.
         A_Clipboard := oldClipboard
         return
     }
 
     ; Step 2: Execute the external Python TTS script.
-    ; Arguments: "text" "lang"
-    ; `RunWait` pauses this AHK script until the TTS playback is finished.
-    ; `Hide` prevents a command window from appearing.
-    RunWait('C:\Python\Python312\python.exe U:\voothi\20260119103526-anki-tts-cli\anki-tts-cli.py "' A_Clipboard '" "' lang '"', "", "Hide")
+    RunWait('"' pythonPath '" "' scriptPath '" "' A_Clipboard '" "' lang '"', "", "Hide")
     
-    ; A pause after the script finishes. This might be useful if the TTS engine needs
-    ; time to release resources. Can be adjusted or removed.
     Sleep(1000)
 }
 
-
-; --- Hotkey Definitions ---
-; Each hotkey calls the main function with a different language code.
-
-^!+2::RunPythonScript("en") ; Hotkey for English TTS.
-^!+3::RunPythonScript("de") ; Hotkey for German TTS.
-^!+4::RunPythonScript("ru") ; Hotkey for Russian TTS.
-^!+5::RunPythonScript("uk") ; Hotkey for Ukrainian TTS.
-; Mouse trigger: Middle button while Left button is held (during selection)
+; --- Static Mouse Trigger ---
 ~LButton & MButton:: {
     RunPythonScript()
 }

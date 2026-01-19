@@ -28,12 +28,10 @@ Add to tts.ahk a function to call by pressing the middle mouse button (wheel) wh
     - **De**: Yellow background, Black text.
     - **Ru**: Red background, White text.
     - **Uk**: Cyan background, Black text.
+7. **External Configuration**: Use `tts_config.ini` to store all paths, settings, and language metadata (labels, colors, hotkeys) to avoid hardcoding.
 
 ### Implementation Plan
-- Add a global variable `currentLang` defaulting to "en".
-- Update `RunPythonScript` to update `currentLang`.
-- **Enhanced Clipboard Logic**: Clear clipboard before `^c` and use `ClipWait(2)` to ensure data is fresh.
-- Add a hotkey for `MButton` that checks if `LButton` is down.
-- Update tray menu to show current language.
-- Implement `CreateIconFromText(text)` using Windows API DllCalls.
-- Call `UpdateTrayIcon()` whenever the language changes.
+- Create `tts_config.ini` with `[Paths]`, `[Settings]`, and `[Languages]` sections.
+- Update `tts.ahk` to load settings using `IniRead`.
+- Use the `Hotkey()` function to dynamically register hotkeys from the `ini` file.
+- Update tray icon and menu logic to use the loaded language map.
