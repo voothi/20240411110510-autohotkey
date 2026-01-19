@@ -1,3 +1,14 @@
+# Release Notes (v1.48.22)
+
+## Script-Specific Updates
+
+### `tts/tts.ahk`
+*   **Smart Replay**: Updated the clipboard handling logic. If no text is selected when the hotkey is triggered (causing a copy timeout), the script now checks if the previous clipboard content is valid and replays it. This allows replaying the last text without needing to re-select it.
+
+**RFC**: [20260119212839-replay-clipboard-if-unchanged](docs/rfcs/20260119212839-replay-clipboard-if-unchanged.md)
+
+---
+
 # Release Notes (v1.48.21)
 
 ## Script-Specific Updates

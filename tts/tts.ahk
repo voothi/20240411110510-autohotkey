@@ -158,8 +158,11 @@ RunPythonScript(lang := "", *) {
     Sleep(50) 
     Send("^c")
     
-    if !ClipWait(2) {
+    if !ClipWait(0.5) {
         A_Clipboard := oldClipboard
+        if (A_Clipboard != "") {
+            Run('"' pythonPath '" "' scriptPath '" "' A_Clipboard '" "' lang '"', "", "Hide")
+        }
         return
     }
 
