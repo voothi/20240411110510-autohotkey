@@ -21,13 +21,42 @@
 ; Related Repository: https://github.com/voothi/20260119103526-anki-tts-cli
 ; ===================================================================================
 
-; #Persistent ; Ensures the script stays running. Note: In AHKv2, this is generally
-              ; not needed for scripts that contain hotkeys, as they make it persistent by default.
+; Global variable to store current language
+global currentLang := "en"
+
+; Update Tray Menu to show current language
+UpdateTrayMenu() {
+    A_TrayMenu.Delete()
+    A_TrayMenu.Add("Current Language: " . currentLang, (*) => 0)
+    A_TrayMenu.Disable("1&") ; Disable the first item (Current Language)
+    A_TrayMenu.Add() ; Separator
+    A_TrayMenu.Add("English (en)", (itemName, itemPos, MyMenu) => SetLanguage("en"))
+    A_TrayMenu.Add("German (de)", (itemName, itemPos, MyMenu) => SetLanguage("de"))
+    A_TrayMenu.Add("Russian (ru)", (itemName, itemPos, MyMenu) => SetLanguage("ru"))
+    A_TrayMenu.Add("Ukrainian (uk)", (itemName, itemPos, MyMenu) => SetLanguage("uk"))
+    A_TrayMenu.Add() ; Separator
+    A_TrayMenu.AddStandard()
+}
+
+SetLanguage(lang) {
+    global currentLang := lang
+    UpdateTrayMenu()
+}
+
+UpdateTrayMenu() ; Initialize menu
 
 ; A reusable function that copies the selected text and runs the TTS Python script,
 ; passing the specified language code.
 ; @param lang: The language code (e.g., "en", "de") to be passed to the TTS script.
-RunPythonScript(lang) {
+RunPythonScript(lang := "") {
+    global currentLang
+    if (lang != "") {
+        currentLang := lang
+        UpdateTrayMenu()
+    } else {
+        lang := currentLang
+    }
+
     ; Step 1: Copy the selected text to the clipboard.
     Send("^c")
     ClipWait(1) ; Wait up to 1 second for the copy to complete.
@@ -51,3 +80,7 @@ RunPythonScript(lang) {
 ^!+3::RunPythonScript("de") ; Hotkey for German TTS.
 ^!+4::RunPythonScript("ru") ; Hotkey for Russian TTS.
 ^!+5::RunPythonScript("uk") ; Hotkey for Ukrainian TTS.
+; Mouse trigger: Middle button while Left button is held (during selection)
+~LButton & MButton:: {
+    RunPythonScript()
+}

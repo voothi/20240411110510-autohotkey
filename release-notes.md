@@ -1,3 +1,19 @@
+# Release Notes (v1.48.19)
+
+## Overview
+This release adds mouse-based Text-to-Speech triggering to `tts.ahk` and language persistence.
+
+## Script-Specific Updates
+
+### `tts.ahk`
+*   **Mouse Trigger**: Added support for triggering TTS by pressing the Middle Mouse Button while selecting text with the Left Mouse Button.
+*   **Language Persistence**: The script now remembers the last used language from keyboard shortcuts.
+*   **Tray Menu**: Added a dynamic tray menu to show and switch the current TTS language.
+
+**RFC**: [20260119144427-add-tts-mouse-support](docs/rfcs/20260119144427-add-tts-mouse-support.md)
+
+---
+
 # Release Notes (v1.48.18)
 
 ## Overview

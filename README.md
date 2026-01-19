@@ -184,12 +184,16 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
 [Back to Top](#table-of-contents)
 
 ### tts.ahk
-- **Description:** Provides multi-language Text-to-Speech for selected text. It uses separate hotkeys to read text aloud in English, German, Russian, or Ukrainian by passing it to the [anki-tts-cli](https://github.com/voothi/20260119103526-anki-tts-cli) utility.
+- **Description:** Provides multi-language Text-to-Speech for selected text. It uses separate hotkeys to read text aloud in English, German, Russian, or Ukrainian by passing it to the [anki-tts-cli](https://github.com/voothi/20260119103526-anki-tts-cli) utility. It features language persistence and a middle-mouse trigger for selection-based reading.
 - **Hotkeys:**
   - `Ctrl + Alt + Shift + 2`: Read in English.
   - `Ctrl + Alt + Shift + 3`: Read in German.
   - `Ctrl + Alt + Shift + 4`: Read in Russian.
   - `Ctrl + Alt + Shift + 5`: Read in Ukrainian.
+  - `~LButton & MButton`: Read selected text in the current language (shown in the tray icon).
+- **Features:**
+  - **Dynamic Tray Menu**: Displays the current language and allows manual switching.
+  - **Language Memory**: Remembers the last used language from a keyboard shortcut or tray selection.
 - **Dependencies:** Requires a corresponding Python script (`anki-tts-cli.py`) at a hardcoded path.
 
 [Back to Top](#table-of-contents)
