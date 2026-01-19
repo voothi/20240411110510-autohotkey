@@ -190,6 +190,7 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
   - **External Configuration**: Paths, languages, colors, and hotkeys managed via `tts/config.ini`.
   - **Dynamic Tray Icon**: Displays the current language and allows manual switching.
   - **Language Memory**: Remembers the last used language from a keyboard shortcut or tray selection.
+  - **Non-blocking Playback**: Allows rapid re-triggering of TTS without waiting for the previous audio to finish.
 - **Hotkeys:** (Configurable via `tts/config.ini`)
   - `Ctrl + Alt + Shift + 2`: Read in English.
   - `Ctrl + Alt + Shift + 3`: Read in German.

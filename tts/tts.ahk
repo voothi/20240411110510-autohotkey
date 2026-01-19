@@ -164,9 +164,9 @@ RunPythonScript(lang := "") {
     }
 
     ; Step 2: Execute the external Python TTS script.
-    RunWait('"' pythonPath '" "' scriptPath '" "' A_Clipboard '" "' lang '"', "", "Hide")
+    Run('"' pythonPath '" "' scriptPath '" "' A_Clipboard '" "' lang '"', "", "Hide")
     
-    Sleep(1000)
+    Sleep(200)
 }
 
 ; --- Static Mouse Trigger ---

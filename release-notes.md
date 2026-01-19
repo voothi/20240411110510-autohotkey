@@ -1,3 +1,14 @@
+# Release Notes (v1.48.21)
+
+## Script-Specific Updates
+
+### `tts/tts.ahk`
+*   **Non-blocking Execution**: Changed TTS execution from blocking (`RunWait`) to asynchronous (`Run`). This fixes an issue where triggering TTS repeatedly (e.g., while rapidly adjusting a selection) resulted in ignored commands if the previous audio was still playing.
+
+**RFC**: [20260119160641-fix-tts-selection-edge-case](docs/rfcs/20260119160641-fix-tts-selection-edge-case.md)
+
+---
+
 # Release Notes (v1.48.20)
 
 ## Overview
