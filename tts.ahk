@@ -127,8 +127,20 @@ RunPythonScript(lang := "") {
     }
 
     ; Step 1: Copy the selected text to the clipboard.
+    ; Clearing the clipboard first is essential to ensure ClipWait waits for NEW data.
+    oldClipboard := A_Clipboard
+    A_Clipboard := "" 
+    
+    ; Small delay to allow the application to process the selection if triggered by mouse
+    Sleep(50) 
     Send("^c")
-    ClipWait(1) ; Wait up to 1 second for the copy to complete.
+    
+    ; Wait up to 2 seconds for the clipboard to contain data.
+    if !ClipWait(2) {
+        ; If clipboard is still empty, restore old content and exit.
+        A_Clipboard := oldClipboard
+        return
+    }
 
     ; Step 2: Execute the external Python TTS script.
     ; Arguments: "text" "lang"

@@ -15,6 +15,7 @@ Add to tts.ahk a function to call by pressing the middle mouse button (wheel) wh
 - Users want to use the mouse for a more streamlined experience, especially when sticking to one language.
 - Middle mouse button (MButton) is a good candidate for triggering the action during a left-click drag (selection).
 - Language selection needs to be persisted or remembered.
+- **Reliability issue**: Standard `^c` and `ClipWait` can be unreliable if the clipboard isn't cleared first, leading to old text being re-read.
 
 ### Decisions
 1. **Language Persistence**: Store the last used language from a keyboard shortcut in a global variable or environment variable.
@@ -31,6 +32,7 @@ Add to tts.ahk a function to call by pressing the middle mouse button (wheel) wh
 ### Implementation Plan
 - Add a global variable `currentLang` defaulting to "en".
 - Update `RunPythonScript` to update `currentLang`.
+- **Enhanced Clipboard Logic**: Clear clipboard before `^c` and use `ClipWait(2)` to ensure data is fresh.
 - Add a hotkey for `MButton` that checks if `LButton` is down.
 - Update tray menu to show current language.
 - Implement `CreateIconFromText(text)` using Windows API DllCalls.
