@@ -5,19 +5,20 @@
 ; Hotkeys:      Ctrl+Alt+Shift+2 (English)
 ;               Ctrl+Alt+Shift+3 (German)
 ;               Ctrl+Alt+Shift+4 (Russian)
+;               Ctrl+Alt+Shift+5 (Ukrainian)
 ;
 ; Description:  This script provides multi-language Text-to-Speech functionality for
 ;               any selected text. It uses separate hotkeys to read the text aloud
 ;               in different languages by passing it to an external TTS engine
-;               (Piper TTS) via a Python script.
+;               (Anki TTS CLI) via a Python script.
 ;
 ; Dependencies:
 ;   - Python 3 must be installed.
-;   - The `piper_tts.py` script and the Piper TTS engine must be set up.
+;   - The `anki-tts-cli.py` script must be set up.
 ;   - IMPORTANT: You MUST update the paths in the RunWait command below to match
 ;     your system's configuration.
 ;
-; Related Repository: https://github.com/voothi/20231001193911-tts
+; Related Repository: https://github.com/voothi/20260119103526-anki-tts-cli
 ; ===================================================================================
 
 ; #Persistent ; Ensures the script stays running. Note: In AHKv2, this is generally
@@ -32,11 +33,10 @@ RunPythonScript(lang) {
     ClipWait(1) ; Wait up to 1 second for the copy to complete.
 
     ; Step 2: Execute the external Python TTS script.
-    ; The `lang` parameter is passed as an argument to `--lang`.
-    ; The `--clipboard` argument tells the Python script to read its text from the clipboard.
+    ; Arguments: "text" "lang"
     ; `RunWait` pauses this AHK script until the TTS playback is finished.
     ; `Hide` prevents a command window from appearing.
-    RunWait("C:/Python/Python312/python.exe U:/voothi/20241206010110-piper-tts/piper_tts.py --lang " lang " --clipboard", "", "Hide")
+    RunWait('C:\Python\Python312\python.exe U:\voothi\20260119103526-anki-tts-cli\anki-tts-cli.py "' A_Clipboard '" "' lang '"', "", "Hide")
     
     ; A pause after the script finishes. This might be useful if the TTS engine needs
     ; time to release resources. Can be adjusted or removed.
@@ -50,3 +50,4 @@ RunPythonScript(lang) {
 ^!+2::RunPythonScript("en") ; Hotkey for English TTS.
 ^!+3::RunPythonScript("de") ; Hotkey for German TTS.
 ^!+4::RunPythonScript("ru") ; Hotkey for Russian TTS.
+^!+5::RunPythonScript("uk") ; Hotkey for Ukrainian TTS.

@@ -184,12 +184,13 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
 [Back to Top](#table-of-contents)
 
 ### tts.ahk
-- **Description:** Provides multi-language Text-to-Speech for selected text. It uses separate hotkeys to read text aloud in English, German, or Russian by passing it to an external Python script that interfaces with the Piper TTS engine.
+- **Description:** Provides multi-language Text-to-Speech for selected text. It uses separate hotkeys to read text aloud in English, German, Russian, or Ukrainian by passing it to the [anki-tts-cli](https://github.com/voothi/20260119103526-anki-tts-cli) utility.
 - **Hotkeys:**
   - `Ctrl + Alt + Shift + 2`: Read in English.
   - `Ctrl + Alt + Shift + 3`: Read in German.
   - `Ctrl + Alt + Shift + 4`: Read in Russian.
-- **Dependencies:** Requires a corresponding Python script (`piper_tts.py`) at a hardcoded path.
+  - `Ctrl + Alt + Shift + 5`: Read in Ukrainian.
+- **Dependencies:** Requires a corresponding Python script (`anki-tts-cli.py`) at a hardcoded path.
 
 [Back to Top](#table-of-contents)
 
@@ -238,7 +239,8 @@ The following repositories contain the Python scripts and other dependencies use
 
 - **Deep Translator Wrapper**: [voothi/20241122093311-deep-translator](https://github.com/voothi/20241122093311-deep-translator) - Python wrapper for deep translation CLI.
 - **Argo Translate Wrapper**: [voothi/20241121100211-argotranslate](https://github.com/voothi/20241121100211-argotranslate) - Python wrapper for offline translation using Argo Translate.
-- **TTS Scripts**: [voothi/20231001193911-tts](https://github.com/voothi/20231001193911-tts) - Text-to-Speech utilities.
+- **Anki TTS CLI**: [voothi/20260119103526-anki-tts-cli](https://github.com/voothi/20260119103526-anki-tts-cli) - Text-to-Speech utility for multi-language synthesis.
+- **TTS Scripts**: [voothi/20231001193911-tts](https://github.com/voothi/20231001193911-tts) - Legacy Text-to-Speech utilities.
 - **Lingva Translate CLI**: [voothi/20250214181911-lingva-translate-cli](https://github.com/voothi/20250214181911-lingva-translate-cli) - CLI for Lingva Translate.
 
 [Back to Top](#table-of-contents)

@@ -17,6 +17,11 @@ This release resolves the "Token Collision" bug and introduces enterprise-grade 
 ### `tests/test_integration.ahk`
 *   **Consolidated Test Suite**: Replaced individual scripts with a comprehensive integration test covering whitespace, tokens, and collisions in a single pipeline.
 
+### `tts.ahk`
+*   **Engine Migration**: Migrating to `anki-tts-cli` for more robust text-to-speech processing (ZID: 20260119121949).
+*   **Added Ukrainian Support**: Introduced `Ctrl+Alt+Shift+5` for Ukrainian language TTS.
+
+**RFC**: [20260119121949-migrate-to-anki-tts-cli](docs/rfcs/20260119121949-migrate-to-anki-tts-cli.md)
 **RFC**: [20260118111559-robust-token-collision-protection](docs/rfcs/20260118111559-robust-token-collision-protection.md)
 
 ---
