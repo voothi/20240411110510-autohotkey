@@ -22,9 +22,16 @@ Add to tts.ahk a function to call by pressing the middle mouse button (wheel) wh
 3. **Tray Menu**: Enhance the tray menu of `tts.ahk` to allow selecting and displaying the current language.
 4. **Environment variable**: Use an environment variable or a local variable within the script to store the current language. Given it's a single script, a global variable in the script (which is persistent) should suffice for the session. For persistence across restarts, an `.ini` file or environment variable might be better. The user mentioned environment variables as a possibility.
 5. **Auto-updating current language**: When a specific language hotkey is pressed (e.g., `^!+2` for "en"), update the "current" language to "en".
+6. **Dynamic Tray Icon**: Use GDI/DllCall to draw the current language abbreviation (En, Ru, De, Uk) directly onto the tray icon for at-a-glance status.
+    - **En**: Blue background, White text.
+    - **De**: Yellow background, Black text.
+    - **Ru**: Red background, White text.
+    - **Uk**: Cyan background, Black text.
 
 ### Implementation Plan
 - Add a global variable `currentLang` defaulting to "en".
 - Update `RunPythonScript` to update `currentLang`.
 - Add a hotkey for `MButton` that checks if `LButton` is down.
 - Update tray menu to show current language.
+- Implement `CreateIconFromText(text)` using Windows API DllCalls.
+- Call `UpdateTrayIcon()` whenever the language changes.

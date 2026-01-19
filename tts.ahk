@@ -23,9 +23,11 @@
 
 ; Global variable to store current language
 global currentLang := "en"
+global currentHIcon := 0
 
 ; Update Tray Menu to show current language
 UpdateTrayMenu() {
+    global currentLang
     A_TrayMenu.Delete()
     A_TrayMenu.Add("Current Language: " . currentLang, (*) => 0)
     A_TrayMenu.Disable("1&") ; Disable the first item (Current Language)
@@ -36,11 +38,78 @@ UpdateTrayMenu() {
     A_TrayMenu.Add("Ukrainian (uk)", (itemName, itemPos, MyMenu) => SetLanguage("uk"))
     A_TrayMenu.Add() ; Separator
     A_TrayMenu.AddStandard()
+    
+    UpdateTrayIcon()
 }
 
 SetLanguage(lang) {
     global currentLang := lang
     UpdateTrayMenu()
+}
+
+UpdateTrayIcon() {
+    global currentLang, currentHIcon
+    
+    ; Mapping language to display text and colors (0xBBGGRR)
+    langInfo := Map(
+        "en", {text: "En", bg: 0xD83E00, fg: 0xFFFFFF}, ; Blue
+        "de", {text: "De", bg: 0x00D7FF, fg: 0x000000}, ; Yellow
+        "ru", {text: "Ru", bg: 0x0000FF, fg: 0xFFFFFF}, ; Red
+        "uk", {text: "Uk", bg: 0xFFD700, fg: 0x000000}  ; Cyan
+    )
+    
+    info := langInfo.Has(currentLang) ? langInfo[currentLang] : {text: "??", bg: 0x808080, fg: 0xFFFFFF}
+    
+    newHIcon := CreateIconFromText(info.text, info.bg, info.fg)
+    if (newHIcon) {
+        TraySetIcon("HICON:" . newHIcon)
+        if (currentHIcon)
+            DllCall("DestroyIcon", "Ptr", currentHIcon)
+        currentHIcon := newHIcon
+    }
+}
+
+CreateIconFromText(text, bgColor, textColor) {
+    s := 16
+    hDC := DllCall("GetDC", "Ptr", 0, "Ptr")
+    hMemDC := DllCall("CreateCompatibleDC", "Ptr", hDC, "Ptr")
+    hBitmap := DllCall("CreateCompatibleBitmap", "Ptr", hDC, "Int", s, "Int", s, "Ptr")
+    hOldBitmap := DllCall("SelectObject", "Ptr", hMemDC, "Ptr", hBitmap, "Ptr")
+    
+    ; Draw background
+    rect := Buffer(16, 0)
+    NumPut("Int", 0, "Int", 0, "Int", s, "Int", s, rect)
+    hBrush := DllCall("CreateSolidBrush", "UInt", bgColor, "Ptr")
+    DllCall("FillRect", "Ptr", hMemDC, "Ptr", rect, "Ptr", hBrush)
+    DllCall("DeleteObject", "Ptr", hBrush)
+    
+    ; Draw text
+    DllCall("SetTextColor", "Ptr", hMemDC, "UInt", textColor)
+    DllCall("SetBkMode", "Ptr", hMemDC, "Int", 1) ; Transparent
+    
+    hFont := DllCall("CreateFont", "Int", -11, "Int", 0, "Int", 0, "Int", 0, "Int", 700, "UInt", 0, "UInt", 0, "UInt", 0, "UInt", 0, "UInt", 3, "UInt", 2, "UInt", 1, "UInt", 34, "Str", "Arial Narrow", "Ptr")
+    hOldFont := DllCall("SelectObject", "Ptr", hMemDC, "Ptr", hFont, "Ptr")
+    DllCall("DrawText", "Ptr", hMemDC, "Str", text, "Int", -1, "Ptr", rect, "UInt", 0x25)
+    
+    ; Create Icon
+    iconInfo := Buffer(A_PtrSize == 8 ? 32 : 20, 0)
+    NumPut("Int", 1, iconInfo, 0) ; fIcon = true
+    hMask := DllCall("CreateCompatibleBitmap", "Ptr", hDC, "Int", s, "Int", s, "Ptr")
+    NumPut("Ptr", hMask, iconInfo, A_PtrSize == 8 ? 16 : 12)
+    NumPut("Ptr", hBitmap, iconInfo, A_PtrSize == 8 ? 24 : 16)
+    
+    hIcon := DllCall("CreateIconIndirect", "Ptr", iconInfo, "Ptr")
+    
+    ; Cleanup
+    DllCall("SelectObject", "Ptr", hMemDC, "Ptr", hOldBitmap)
+    DllCall("SelectObject", "Ptr", hMemDC, "Ptr", hOldFont)
+    DllCall("DeleteObject", "Ptr", hMask)
+    DllCall("DeleteObject", "Ptr", hBitmap)
+    DllCall("DeleteObject", "Ptr", hFont)
+    DllCall("DeleteDC", "Ptr", hMemDC)
+    DllCall("ReleaseDC", "Ptr", 0, "Ptr", hDC)
+    
+    return hIcon
 }
 
 UpdateTrayMenu() ; Initialize menu

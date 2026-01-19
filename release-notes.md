@@ -9,6 +9,7 @@ This release adds mouse-based Text-to-Speech triggering to `tts.ahk` and languag
 *   **Mouse Trigger**: Added support for triggering TTS by pressing the Middle Mouse Button while selecting text with the Left Mouse Button.
 *   **Language Persistence**: The script now remembers the last used language from keyboard shortcuts.
 *   **Tray Menu**: Added a dynamic tray menu to show and switch the current TTS language.
+*   **Dynamic Tray Icon**: The script now dynamically draws the current language abbreviation (En, Ru, De, Uk) on the tray icon using GDI for instant visual feedback.
 
 **RFC**: [20260119144427-add-tts-mouse-support](docs/rfcs/20260119144427-add-tts-mouse-support.md)
 
