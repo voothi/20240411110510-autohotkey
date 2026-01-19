@@ -4,19 +4,19 @@
 ; Script:       Text-to-Speech (TTS) Hotkeys
 ;
 ; Description:  This script provides multi-language Text-to-Speech functionality for
-;               any selected text. It utilizes a configuration file (tts_config.ini)
+;               any selected text. It utilizes a configuration file (config.ini)
 ;               for dynamic language and path settings.
 ;
 ; Features:
 ;   - Dynamic Tray Icon: Draws current language code on the tray icon.
 ;   - Mouse Trigger: Middle Click while Left Click is held (selection) triggers TTS.
-;   - Configurable: Languages, colors, hotkeys, and paths are stored in tts_config.ini.
+;   - Configurable: Languages, colors, hotkeys, and paths are stored in config.ini.
 ;
 ; Related Repository: https://github.com/voothi/20260119103526-anki-tts-cli
 ; ===================================================================================
 
 ; --- Initialization & Config Loading ---
-configFile := A_ScriptDir "\tts_config.ini"
+configFile := A_ScriptDir "\config.ini"
 
 if !FileExist(configFile) {
     MsgBox("Configuration file not found: " configFile "`nPlease create it based on the template.", "TTS Error", "Icon!")

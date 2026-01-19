@@ -28,13 +28,14 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
     - [open-in-anki.ahk](#open-in-ankiahk)
     - [remove-newline.ahk](#remove-newlineahk)
     - [translate-selection.ahk](#translate-selectionahk)
-    - [tts.ahk](#ttsahk)
+    - [tts/tts.ahk](#ttsttsahk)
     - [uppercase.ahk](#uppercaseahk)
     - [vocabsieve-anki-desk.ahk](#vocabsieve-anki-deskahk)
     - [vocabsieve-save.ahk](#vocabsieve-saveahk)
     - [whisper.ahk](#whisperahk)
     - [zid-name.ahk](#zid-nameahk)
     - [zid.ahk](#zidahk)
+  - [Related Repositories](#related-repositories)
   - [Kardenwort Ecosystem](#kardenwort-ecosystem)
   - [License](#license)
 
@@ -183,19 +184,19 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
 
 [Back to Top](#table-of-contents)
 
-### tts.ahk
+### tts/tts.ahk
 - **Description:** Provides multi-language Text-to-Speech for selected text. It uses separate hotkeys to read text aloud in English, German, Russian, or Ukrainian by passing it to the [anki-tts-cli](https://github.com/voothi/20260119103526-anki-tts-cli) utility. It features language persistence, a middle-mouse trigger for selection-based reading, and a configuration file for easy setup.
 - **Features:**
-  - **External Configuration**: Paths, languages, colors, and hotkeys managed via `tts_config.ini`.
+  - **External Configuration**: Paths, languages, colors, and hotkeys managed via `tts/config.ini`.
   - **Dynamic Tray Icon**: Displays the current language and allows manual switching.
   - **Language Memory**: Remembers the last used language from a keyboard shortcut or tray selection.
-- **Hotkeys:** (Configurable via `tts_config.ini`)
+- **Hotkeys:** (Configurable via `tts/config.ini`)
   - `Ctrl + Alt + Shift + 2`: Read in English.
   - `Ctrl + Alt + Shift + 3`: Read in German.
   - `Ctrl + Alt + Shift + 4`: Read in Russian.
   - `Ctrl + Alt + Shift + 5`: Read in Ukrainian.
   - `~LButton & MButton`: Read selected text in the current language (shown in the tray icon).
-- **Dependencies:** Requires a corresponding Python script (`anki-tts-cli.py`) at a hardcoded path (configured in `tts_config.ini`).
+- **Dependencies:** Requires a corresponding Python script (`anki-tts-cli.py`) at a hardcoded path (configured in `tts/config.ini`).
 
 [Back to Top](#table-of-contents)
 
