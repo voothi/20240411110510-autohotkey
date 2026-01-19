@@ -142,7 +142,7 @@ CreateIconFromText(text, bgColor, textColor) {
 ; Initial Menu Setup
 UpdateTrayMenu()
 
-RunPythonScript(lang := "") {
+RunPythonScript(lang := "", *) {
     global currentLang, pythonPath, scriptPath
     if (lang != "" && lang != 0) {
         currentLang := lang
