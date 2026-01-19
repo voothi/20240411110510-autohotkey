@@ -1,17 +1,17 @@
-# Release Notes (v1.48.19)
+# Release Notes (v1.48.20)
 
 ## Overview
-This release adds mouse-based Text-to-Speech triggering to `tts.ahk` and language persistence.
+This release reorganizes the Text-to-Speech utility, enhances configuration flexibility, and improves mouse-based interaction and clipboard reliability.
 
 ## Script-Specific Updates
 
-### `tts.ahk`
-*   **Project Reorganization**: Moved `tts.ahk` into its own `tts/` folder for better project structure.
-*   **Externalized Configuration**: Moved paths, settings, and language metadata (labels, colors, hotkeys) to `tts/config.ini` with detailed parameter descriptions.
-*   **Mouse Trigger**: Added support for triggering TTS by pressing the Middle Mouse Button while selecting text with the Left Mouse Button.
-*   **Language Persistence**: The script now remembers the last used language from keyboard shortcuts.
-*   **Tray Menu**: Added a dynamic tray menu to show and switch the current TTS language.
-*   **Dynamic Tray Icon**: The script now dynamically draws the current language abbreviation (En, Ru, De, Uk) on the tray icon using GDI for instant visual feedback.
+### `tts/tts.ahk`
+*   **Project Reorganization**: Moved `tts.ahk` and its configuration into a dedicated `tts/` folder.
+*   **Externalized Configuration**: Introduced `tts/config.ini` for managing paths, settings, and language metadata (colors, hotkeys, labels) without editing code.
+*   **Clipboard Reliability**: Refined the copy-to-clipboard logic by clearing the clipboard before copying and increasing wait times, ensuring fresh text is always processed.
+*   **Mouse Trigger**: Added the ability to trigger TTS by pressing the Middle Mouse Button while selecting text with the Left Mouse Button.
+*   **Dynamic Tray Icon**: The script now draws the current language (e.g., "En", "Ru") directly on the tray icon using GDI for at-a-glance status.
+*   **Language Persistence**: Remembers the last used language across different trigger methods (keyboard, mouse, or tray menu).
 
 **RFC**: [20260119144427-add-tts-mouse-support](docs/rfcs/20260119144427-add-tts-mouse-support.md)
 

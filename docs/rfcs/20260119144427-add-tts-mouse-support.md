@@ -28,10 +28,11 @@ Add to tts.ahk a function to call by pressing the middle mouse button (wheel) wh
     - **De**: Yellow background, Black text.
     - **Ru**: Red background, White text.
     - **Uk**: Cyan background, Black text.
-7. **External Configuration**: Use `tts_config.ini` to store all paths, settings, and language metadata (labels, colors, hotkeys) to avoid hardcoding.
+7. **External Configuration**: Use `tts/config.ini` to store all paths, settings, and language metadata (labels, colors, hotkeys) to avoid hardcoding.
 
 ### Implementation Plan
-- Create `tts_config.ini` with `[Paths]`, `[Settings]`, and `[Languages]` sections.
+- Organize TTS script into a dedicated `/tts` directory.
+- Create `tts/config.ini` with `[Paths]`, `[Settings]`, and `[Languages]` sections.
 - Update `tts.ahk` to load settings using `IniRead`.
 - Use the `Hotkey()` function to dynamically register hotkeys from the `ini` file.
 - Update tray icon and menu logic to use the loaded language map.
