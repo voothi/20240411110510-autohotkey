@@ -95,3 +95,4 @@ dist/
 secrets.ini
 translate-selection/settings.ini
 settings.ini
+tts/tests/test_merged.log

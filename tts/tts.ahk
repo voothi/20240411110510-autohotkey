@@ -16,51 +16,63 @@
 ; ===================================================================================
 
 ; --- Initialization & Config Loading ---
-configFile := A_ScriptDir "\config.ini"
-
-if !FileExist(configFile) {
-    MsgBox("Configuration file not found: " configFile "`nPlease create it based on the template.", "TTS Error",
-        "Icon!")
-    ExitApp()
-}
-
-; Load Paths
-global pythonPath := IniRead(configFile, "Paths", "PythonPath", "python.exe")
-global scriptPath := IniRead(configFile, "Paths", "ScriptPath", "")
-
-; Load Settings
-global currentLang := IniRead(configFile, "Settings", "DefaultLanguage", "en")
-global doublePressDelay := IniRead(configFile, "Settings", "DoublePressDelay", 500)
+; Global variables
+global configFile := A_ScriptDir "\config.ini"
+global pythonPath := ""
+global scriptPath := ""
+global currentLang := "en"
+global doublePressDelay := 500
 global currentHIcon := 0
 global langCodes := []
-
-; Load Languages and Setup Hotkeys
 global langInfo := Map()
-try {
-    langSection := IniRead(configFile, "Languages")
-    for line in StrSplit(langSection, "`n") {
-        if (line = "" || InStr(line, ";") == 1)
-            continue
-        parts := StrSplit(line, "=")
-        code := Trim(parts[1])
-        vals := StrSplit(parts[2], ",")
+global RunExternal := Run ; Delegate for Run command to allow mocking
 
-        info := {
-            text: Trim(vals[1]),
-            bg: Number(Trim(vals[2])),
-            fg: Number(Trim(vals[3])),
-            hotkey: vals.Length >= 4 ? Trim(vals[4]) : ""
-        }
-        langInfo[code] := info
-        langCodes.Push(code)
+InitializeTTS() {
+    global
 
-        ; Register dynamic hotkeys
-        if (info.hotkey != "") {
-            Hotkey(info.hotkey, RunPythonScript.Bind(code))
-        }
+    if !FileExist(configFile) {
+        MsgBox("Configuration file not found: " configFile "`nPlease create it based on the template.", "TTS Error",
+            "Icon!")
+        ExitApp()
     }
-} catch Any as e {
-    MsgBox("Error parsing [Languages] section in tts_config.ini:`n" e.Message, "Config Error", "Icon!")
+
+    ; Load Paths
+    pythonPath := IniRead(configFile, "Paths", "PythonPath", "python.exe")
+    scriptPath := IniRead(configFile, "Paths", "ScriptPath", "")
+
+    ; Load Settings
+    currentLang := IniRead(configFile, "Settings", "DefaultLanguage", "en")
+    doublePressDelay := IniRead(configFile, "Settings", "DoublePressDelay", 500)
+
+    ; Load Languages and Setup Hotkeys
+    try {
+        langSection := IniRead(configFile, "Languages")
+        for line in StrSplit(langSection, "`n") {
+            if (line = "" || InStr(line, ";") == 1)
+                continue
+            parts := StrSplit(line, "=")
+            code := Trim(parts[1])
+            vals := StrSplit(parts[2], ",")
+
+            info := {
+                text: Trim(vals[1]),
+                bg: Number(Trim(vals[2])),
+                fg: Number(Trim(vals[3])),
+                hotkey: vals.Length >= 4 ? Trim(vals[4]) : ""
+            }
+            langInfo[code] := info
+            langCodes.Push(code)
+
+            ; Register dynamic hotkeys
+            if (info.hotkey != "") {
+                Hotkey(info.hotkey, RunPythonScript.Bind(code))
+            }
+        }
+    } catch Any as e {
+        MsgBox("Error parsing [Languages] section in tts_config.ini:`n" e.Message, "Config Error", "Icon!")
+    }
+
+    UpdateTrayMenu()
 }
 
 ; Update Tray Menu to show current language
@@ -161,8 +173,10 @@ CreateIconFromText(text, bgColor, textColor) {
     return hIcon
 }
 
-; Initial Menu Setup
-UpdateTrayMenu()
+; Check if running as standalone script
+if (A_LineFile = A_ScriptFullPath) {
+    InitializeTTS()
+}
 
 RunPythonScript(lang := "", *) {
     global currentLang, pythonPath, scriptPath
@@ -183,13 +197,13 @@ RunPythonScript(lang := "", *) {
     if !ClipWait(0.5) {
         A_Clipboard := oldClipboard
         if (A_Clipboard != "") {
-            Run('"' pythonPath '" "' scriptPath '" "' A_Clipboard '" "' lang '"', "", "Hide")
+            RunExternal('"' pythonPath '" "' scriptPath '" "' A_Clipboard '" "' lang '"', "", "Hide")
         }
         return
     }
 
     ; Step 2: Execute the external Python TTS script.
-    Run('"' pythonPath '" "' scriptPath '" "' A_Clipboard '" "' lang '"', "", "Hide")
+    RunExternal('"' pythonPath '" "' scriptPath '" "' A_Clipboard '" "' lang '"', "", "Hide")
 
     Sleep(200)
 }
