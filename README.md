@@ -197,7 +197,9 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
   - `Ctrl + Alt + Shift + 3`: Read in German.
   - `Ctrl + Alt + Shift + 4`: Read in Russian.
   - `Ctrl + Alt + Shift + 5`: Read in Ukrainian.
-  - `~LButton & MButton`: Read selected text in the current language (shown in the tray icon).
+  - `~LButton & MButton`: 
+    - **Single Click**: Reads selected text in the current language (shown in the tray icon) after the `DoublePressDelay`.
+    - **Repeated Click**: Cycles through available languages.
 - **Dependencies:** Requires a corresponding Python script (`anki-tts-cli.py`) at a hardcoded path (configured in `tts/config.ini`).
 
 [Back to Top](#table-of-contents)
