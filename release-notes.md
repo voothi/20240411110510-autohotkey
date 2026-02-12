@@ -1,3 +1,17 @@
+# Release Notes (v1.48.24)
+
+## Script-Specific Updates
+
+### `tts/tts.ahk`
+*   **Cyclic Language Switching**: Added support for switching languages by repeatedly clicking the Middle Mouse Button while holding the Left Mouse Button.
+*   **Double-Press Detection**: Integrated a configurable delay (`DoublePressDelay` in `config.ini`) to distinguish between playback and switching.
+*   **Testability Refactor**: Restructured the script to support automated unit and regression testing.
+*   **Unified Test Suite**: Introduced `tests/test_tts.ahk` for comprehensive logic verification.
+
+**RFC**: [20260212173017-cyclic-language-switching](docs/rfcs/20260212173017-cyclic-language-switching.md)
+
+---
+
 # Release Notes (v1.48.22)
 
 ## Script-Specific Updates
