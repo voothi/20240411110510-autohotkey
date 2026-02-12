@@ -2,7 +2,7 @@
 #SingleInstance Force
 
 ; --- Setup Test Environment ---
-global logFile := A_ScriptDir "\test_merged.log"
+global logFile := A_ScriptDir "\test_tts.log"
 try FileDelete(logFile)
 
 LogResult(msg) {
