@@ -36,9 +36,10 @@ DefaultLanguage=en
 DoublePressDelay=500
 
 [Languages]
-en=En,0x0,0xF,^!+2
-de=De,0x0,0xF,^!+3
-ru=Ru,0x0,0xF,^!+4"
+    en=En,0x0,0xF,^!+2
+    de=De,0x0,0xF,^!+3
+    ru=Ru,0x0,0xF,^!+4
+    uk=Uk,0x0,0xF,^!+5"
     )
 FileAppend(configContent, testConfig)
 
@@ -66,8 +67,14 @@ LogResult("--- Starting Unit Tests ---")
 InitializeTTS()
 
 Assert(currentLang == "en", "Initial language should be en")
-Assert(langCodes.Length == 3, "Should have loaded 3 languages")
+Assert(langCodes.Length == 4, "Should have loaded 4 languages")
 Assert(pythonPath == "test_python.exe", "Should have loaded python path from test config")
+
+; Test Language Order (Verification of the fix)
+Assert(langCodes[1] == "en", "Order 1: en")
+Assert(langCodes[2] == "de", "Order 2: de")
+Assert(langCodes[3] == "ru", "Order 3: ru")
+Assert(langCodes[4] == "uk", "Order 4: uk")
 
 ; Test CycleLanguage Logic
 CycleLanguage()
@@ -77,7 +84,10 @@ CycleLanguage()
 Assert(currentLang == "ru", "Cycle: de -> ru")
 
 CycleLanguage()
-Assert(currentLang == "en", "Cycle: ru -> en (wrap)")
+Assert(currentLang == "uk", "Cycle: ru -> uk")
+
+CycleLanguage()
+Assert(currentLang == "en", "Cycle: uk -> en (wrap)")
 
 ; --- PHASE 2: Integration / Behavior Tests ---
 LogResult("--- Starting Integration Tests ---")
