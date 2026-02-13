@@ -83,7 +83,8 @@ UpdateTrayMenu() {
     A_TrayMenu.Disable("1&")
     A_TrayMenu.Add() ; Separator
 
-    for code, info in langInfo {
+    for code in langCodes {
+        info := langInfo[code]
         A_TrayMenu.Add(info.text " (" code ")", ((c, *) => SetLanguage(c)).Bind(code))
     }
 
