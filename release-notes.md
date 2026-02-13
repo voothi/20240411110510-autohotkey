@@ -1,3 +1,15 @@
+# Release Notes (v1.48.26)
+
+## Script-Specific Updates
+
+### `tts/tts.ahk`
+*   **Tray Menu Ordering**: Fixed an issue where the languages in the tray icon context menu were sorted alphabetically. The menu now preserves the order defined in `config.ini`.
+*   **Order Verification Tests**: Introduced automated tests to ensure the language load order remains consistent with the configuration.
+
+**RFC**: [20260213090402-fix-language-order-in-tray-menu](docs/rfcs/20260213090402-fix-language-order-in-tray-menu.md)
+
+---
+
 # Release Notes (v1.48.24)
 
 ## Script-Specific Updates
