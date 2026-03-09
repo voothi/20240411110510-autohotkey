@@ -19,6 +19,9 @@
 
 ^!+q::
 {
+    ; Step 0: CLEAR the clipboard first so ClipWait actually waits for NEW data
+    A_Clipboard := ""
+
     ; Step 1: Copy the currently selected text to the clipboard.
     ; The commented-out lines below are alternative methods for copying.
     ; A_Clipboard := ""

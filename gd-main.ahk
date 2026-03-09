@@ -18,10 +18,13 @@
 
 ^!+1::
 {
+    ; Step 0: CLEAR the clipboard first so ClipWait actually waits for NEW data
+    A_Clipboard := ""
+
     ; Step 1: Copy the currently selected text to the clipboard.
     SendInput("^c")
     ClipWait(1) ; Wait up to 1 second for the copy action to complete.
-    Sleep(100)
+    ; Sleep(100)
 
     ; --- Step 2: Find and Activate the Main GoldenDict Window ---
     main_gd_id := 0
