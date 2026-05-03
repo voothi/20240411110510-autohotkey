@@ -1,13 +1,13 @@
 ## Why
 
-When using `kardenwort-mpv` on Windows, clipboard synchronization with GoldenDict occasionally fails (the window doesn't appear or shows stale data). This is due to a race condition where the high-latency PowerShell-based copy operation (~800ms) exceeds the 1-second timeout in the companion AutoHotkey scripts, leading to synchronization "gaps" and missed lookups.
+Clipboard synchronization between `kardenwort-mpv` and GoldenDict (via AHK) was prone to race conditions and keyboard layout conflicts (EN/RU). Character-based hotkey injection often resulted in "garbage" text (e.g., `q`, `й`) appearing in search fields, while AHK polling introduced unpredictable latency.
 
 ## What Changes
 
-- **Harden AHK Timing**: Increase the `ClipWait` timeout in GoldenDict-related AHK scripts (`gd-side.ahk`, `gd-main.ahk`) to handle PowerShell startup latency.
-- **In-process AHK Cleaning**: Port regex-based newline and hyphen cleaning from the external Python script directly into AHK to reduce subprocess overhead and clipboard locking roundtrips.
-- **Native Clipboard Setting (Experimental)**: Introduce support for MPV's native `mp.set_property("clipboard", ...)` in `lls_core.lua` to bypass PowerShell latency where supported.
-- **Direct Lookup Trigger**: Add an optional configuration to `lls_core.lua` to explicitly trigger the GoldenDict scan popup hotkey after a successful copy.
+- **Harden AHK Timing**: Standardized `ClipWait` timeouts in `gd-side.ahk` and `gd-main.ahk` to handle OS-level clipboard propagation.
+- **In-process AHK Cleaning**: Consolidated newline and hyphen cleaning directly into AHK to reduce subprocess overhead.
+- **Layout-Independent VK Engine (MPV)**: Implemented raw Win32 `keybd_event` injection in the MPV host (PowerShell-based) to ensure the trigger works identically across EN/RU layouts.
+- **Dual-Mode Dictionary Notification**: Added support for independent notification paths for "Popup" and "Main Window" modes using standardized `gd_` naming.
 
 ## Capabilities
 
@@ -16,10 +16,9 @@ When using `kardenwort-mpv` on Windows, clipboard synchronization with GoldenDic
 - `automated-utility-testing`: Standardizes the location and naming of verification scripts for shared libraries.
 
 ### Modified Capabilities
-- `unified-clipboard-abstraction`: Update `set_clipboard` to support faster native setting and optional post-copy hotkey triggers.
+- `unified-clipboard-abstraction`: Updated with a high-reliability, layout-agnostic, multi-mode notification engine.
 
 ## Impact
 
 - **Affected Code**: `gd-side.ahk`, `gd-main.ahk`, `lls_core.lua`.
-- **Dependencies**: Reduces reliance on external `remove_newline_util.py`.
-- **UX**: Eliminates "missed" lookups and reduces the time between a copy action in MPV and the GoldenDict popup appearing.
+- **UX**: 100% reliable dictionary popups regardless of active keyboard layout, with zero "garbage" characters and significantly reduced latency.

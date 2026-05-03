@@ -1,42 +1,42 @@
 ## Context
 
-The current bridge between `kardenwort-mpv` and GoldenDict AHK scripts relies on high-latency PowerShell commands to update the system clipboard. This latency (~800ms) often exceeds the 1-second timeout in the AHK scripts, causing GoldenDict to miss the update or display stale data. Furthermore, the AHK script uses an external Python script for simple text cleaning, adding unnecessary subprocess overhead.
+The bridge between `kardenwort-mpv` and GoldenDict was prone to race conditions and keyboard layout inconsistencies (EN/RU). Character-based hotkey injection often resulted in "garbage" text (e.g., `q`, `й`) appearing in search fields, while AHK polling introduced unpredictable latency.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Eliminate the race condition by increasing AHK timeouts and decreasing MPV copy latency.
-- Reduce system overhead by porting Python-based text cleaning logic into AHK.
-- Improve GoldenDict responsiveness by optionally triggering its popup directly from the host application.
+- Provide a 100% layout-independent trigger for GoldenDict (EN/RU).
+- Support dual-mode lookups (Side Popup vs. Main Window).
+- Eliminate "garbage" character injection (`q`, `й`) during hotkey triggering.
+- Port Python-based text cleaning logic into native AHK for performance.
 
 **Non-Goals:**
-- Completely rewriting the AHK scripts or GoldenDict itself.
-- Changing the internal data structures of `lls_core.lua` beyond clipboard handling.
+- Modifying GoldenDict's internal logic.
 
 ## Decisions
 
-### 1. Increase AHK `ClipWait` Timeout
-- **Decision**: Increase `ClipWait` from `1` to `3` in `gd-side.ahk` and `gd-main.ahk`.
-- **Rationale**: 3 seconds is sufficient to cover even the slowest PowerShell startup and retry loops, ensuring the script doesn't give up before the data arrives.
+### 1. Standardized Naming (Cross-Project)
+- **Decision**: Adopt the `gd_` prefix for bridge settings and `dw_` for trigger keys in both MPV and AHK contexts.
+- **Rationale**: Ensures consistency and clarity when configuring the system across multiple tools.
 
-### 2. In-Process AHK Text Cleaning
+### 2. Layout-Independent VK Injection
+- **Decision**: In the MPV host, use Win32 `keybd_event` via PowerShell to send raw Virtual Key (VK) signals.
+- **Rationale**: Unlike character-based triggers, VK signals are layout-agnostic and prevent search field pollution.
+
+### 3. Dual-Mode Dictionary Notification
+- **Decision**: Implement independent notification paths for "Popup" (side) and "Main Window" lookups.
+- **Rationale**: Matches the existing AHK architecture while providing precise control from the player host.
+
+### 4. Native AHK Text Cleaning
 - **Decision**: Implement the logic from `remove_newline_util.py` using AHK `RegExReplace`.
-- **Rationale**: Eliminates the overhead of starting a Python interpreter and two extra clipboard operations (Read/Write), making the bridge faster and more robust.
-
-### 3. Native MPV Clipboard Support
-- **Decision**: Update `lls_core.lua` to prioritize `mp.set_property("clipboard", text)`.
-- **Rationale**: This is a nearly zero-latency operation compared to PowerShell. We will keep PowerShell as a fallback for systems where the native property is unavailable.
-
-### 4. Optional Post-Copy GoldenDict Trigger
-- **Decision**: Add a `lls-goldendict_trigger` option (default `no`) to `lls_core.lua` to send `^!+n` after copying.
-- **Rationale**: Directly triggering the popup from the copy source ensures the lookup happens even if the AHK observer fails or if GoldenDict's internal clipboard monitor is disabled.
+- **Rationale**: Eliminates the overhead of starting a Python interpreter and reduces clipboard locking roundtrips.
 
 ### 5. Standardized Testing Infrastructure
 - **Decision**: Establish a top-level `tests/` directory and use the `test_<LibName>.ahk` naming convention.
-- **Rationale**: Moving tests out of `scratch/` and into a formal directory prevents accidental deletion (as `scratch/` is often ignored or cleared) and aligns with best practices for modular development.
+- **Rationale**: Aligns with best practices for modular development and ensures long-term maintainability.
 
 ## Risks / Trade-offs
 
-- **[Risk] Native Clipboard Failure** → **Mitigation**: Implement a robust fallback to PowerShell if the native property call fails or is unsupported.
-- **[Risk] AHK Regex Parity** → **Mitigation**: Carefully port the Python regexes (especially German hyphenation) to AHK's PCRE engine and verify with test cases.
-- **[Risk] Duplicate Popups** → **Mitigation**: If both MPV and AHK trigger the popup, GoldenDict might flicker. Recommendation: Disable AHK trigger if using MPV trigger.
+- **[Risk] Shell Overhead (Trigger)** → **Mitigation**: Asynchronous execution in MPV ensures player stability.
+- **[Risk] AHK Regex Parity** → **Mitigation**: Verified German hyphenation porting with test cases in `tests/test_ClipboardUtil.ahk`.
+- **[Risk] Type Compilation Delay (PowerShell)** → **Mitigation**: Using `Add-Type -AssemblyName` where possible and unique class names for session safety.
