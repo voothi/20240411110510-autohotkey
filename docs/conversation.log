@@ -9,7 +9,11 @@
 20260503135646 Well, it worked, only the combinations need to be put into mpv.conf and translated into the combinations accepted in this file, understandable to the user, saving him from the specifics of the .NET, AHK implementation.
 20260503140143 Okay, but we only did this for gb-side.apk, and I need to do Ctrl Alt C in a similar way so that gb-main.ahk is called.
 20260503140808 Improve your naming lls_core.lua#L199-201
-
-
+20260503141124 I don’t understand, you should somehow process Ctrl+Alt+C in mpv, not just Ctrl C? Now only Ctrl+Alt+C works
+20260503142057 No, you are always wrong, here are the correct combinations gd_hotkey_popup = "Ctrl+Alt+Shift+Q", gd_hotkey_main = "Ctrl+Alt+Shift+1", which are in AHK
+20260503142313 But how does this work, where are these Ctrl C, Ctrl Alt C set in the code? Is it hardwired?
+20260503142538 These are both in mpv.conf with comments dw_key_copy = "Ctrl+c Ctrl+c", dw_key_copy_main = "Ctrl+Alt+c Ctrl+Alt+c"? And in Options?
+20260503142730 This is a pretty good naming? mpv.conf#L363-367
+20260503142801 How will copying dw_key_copy_main work if gd_trigger_enabled=no?
 
 
