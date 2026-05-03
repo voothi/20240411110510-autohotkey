@@ -15,5 +15,5 @@
 20260503142538 These are both in mpv.conf with comments dw_key_copy = "Ctrl+c Ctrl+c", dw_key_copy_main = "Ctrl+Alt+c Ctrl+Alt+c"? And in Options?
 20260503142730 This is a pretty good naming? mpv.conf#L363-367
 20260503142801 How will copying dw_key_copy_main work if gd_trigger_enabled=no?
-
+20260503143319 I updated the combinations to work in EN/RU mpv.conf#L363-367
 
