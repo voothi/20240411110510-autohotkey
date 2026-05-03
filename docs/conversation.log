@@ -2,7 +2,7 @@
 20260503131332 opsx-propose
 20260503132841 We can move the test test_clipboard_util.ahk in a folder separate for such things, can create it if it doesn’t exist yet. Also rename according to best practice?
 20260503133128 You, as a specification architect and pedant, update the openspec\changes\20260503131400-harden-clipboard-reliability specs based on anchors 20260503120727 20260503131332 20260503132841
-
+20260503133535 Show me now a document that I can transfer to the chat in another project `..\20260308110646-kardenwort-mpv` for drawing up a propose based on it. Or create such a propose from this chat, in the catalog `..\20260308110646-kardenwort-mpv\openspec\changes\20260503131410-harden-clipboard-reliability`
 
 
 
