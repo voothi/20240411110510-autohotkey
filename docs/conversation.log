@@ -16,4 +16,5 @@
 20260503142730 This is a pretty good naming? mpv.conf#L363-367
 20260503142801 How will copying dw_key_copy_main work if gd_trigger_enabled=no?
 20260503143319 I updated the combinations to work in EN/RU mpv.conf#L363-367
-
+20260503143637 Roll back changes to this, it stopped working in Ctrl C lls_core.lua#L5776-5781
+20260503144938 Make it work in EN/RU mpv.conf#L364-367 No loops, write the combinations explicitly script-opts-append=lls-gd_hotkey_popup=Ctrl+Alt+Shift+q Ctrl+Alt+Shift+й
