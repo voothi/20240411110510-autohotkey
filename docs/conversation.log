@@ -1,6 +1,6 @@
 20260503120727 opsx-explore How to improve the reliability of copying, now from my kardenwort-mpv utility it sometimes skips copying, when the kardenwort-mpv utility writes that it was copied, the word ends up in the clipboard, I see it in the clipboard manager, but the side window does not appear gd-main.ahk gd-side.ahk The utility is located here `..\20260308110646-kardenwort-mpv`
 20260503131332 opsx-propose
-
+20260503132841 We can move the test test_clipboard_util.ahk in a folder separate for such things, can create it if it doesn’t exist yet. Also rename according to best practice?
 
 
 
