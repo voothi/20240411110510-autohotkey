@@ -1,22 +1,22 @@
-﻿#Requires AutoHotkey v2.0
+#Requires AutoHotkey v2.0
 
 ; ===================================================================================
 ; Script:       GoldenDict Side/Pop-up Lookup
 ; Hotkey:       Ctrl + Alt + Shift + Q (^!+q)
 ;
 ; Description:  This script copies the selected text, cleans it by removing any
-;               newline characters using an external Python script, and then
-;               triggers GoldenDict's global hotkey for its "scan pop-up" or
-;               "translate from clipboard" feature.
+;               newline characters and handling German hyphenation in-process, 
+;               and then triggers GoldenDict's global hotkey for its 
+;               "scan pop-up" or "translate from clipboard" feature.
 ;
 ; Dependencies:
-;   - Python 3 must be installed.
-;   - A Python script for removing newlines must exist at the specified path.
+;   - ClipboardUtil.ahk must exist in the Lib folder.
 ;   - GoldenDict must be configured with a global hotkey for its pop-up feature.
 ;   - IMPORTANT: You MUST update the paths and hotkeys in this script to match
 ;     your system's configuration.
 ; ===================================================================================
 
+#Include "Lib\ClipboardUtil.ahk"
 ^!+q::
 {
     ; Step 0: CLEAR the clipboard first so ClipWait actually waits for NEW data
@@ -28,14 +28,12 @@
     ; SendInput("{LControl Down}c{LControl Up}")
     SendInput("^c")
 
-    ; Step 2: Proceed only if the copy operation was successful within 1 second.
-    if ClipWait(1)
+    ; Step 2: Proceed only if the copy operation was successful within 3 seconds.
+    if ClipWait(3)
     {
-        ; Run an external Python script to process the clipboard content.
-        ; This is typically used to remove newline characters, which can interfere
-        ; with lookups of multi-line selections.
-        ; The 'Hide' option prevents the command window from appearing.
-        RunWait('C:\Python\Python312\python.exe "U:\voothi\20240310195111-remove-newline-util\remove_newline_util.py"', '', 'Hide')
+        ; Clean the clipboard content in-process.
+        ; This removes newlines and handles hyphenated words.
+        A_Clipboard := CleanClipboardText(A_Clipboard)
     }
     
     ; The commented-out Sleep is a potential delay, currently disabled.

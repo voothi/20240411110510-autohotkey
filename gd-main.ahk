@@ -1,4 +1,4 @@
-﻿#Requires AutoHotkey v2.0
+#Requires AutoHotkey v2.0
 
 ; ===================================================================================
 ; Script:       Advanced GoldenDict Lookup
@@ -6,15 +6,17 @@
 ;
 ; Description:  This script performs a lookup of the selected text in GoldenDict.
 ;               It intelligently finds and activates the main GoldenDict window,
-;               pre-processes the selected text by removing newlines using a Python
-;               script, and then pastes the cleaned text to perform the search.
+;               pre-processes the selected text by removing newlines and handling
+;               German hyphenation in-process, and then pastes the cleaned text
+;               to perform the search.
 ;
 ; Dependencies:
-;   - Python 3 must be installed.
-;   - A Python script for removing newlines must exist.
+;   - ClipboardUtil.ahk must exist in the Lib folder.
 ;   - IMPORTANT: You MUST update the paths in the RunWait command below to match
 ;     your system.
 ; ===================================================================================
+
+#Include "Lib\ClipboardUtil.ahk"
 
 ^!+1::
 {
@@ -23,7 +25,7 @@
 
     ; Step 1: Copy the currently selected text to the clipboard.
     SendInput("^c")
-    ClipWait(1) ; Wait up to 1 second for the copy action to complete.
+    ClipWait(3) ; Wait up to 3 seconds for the copy action to complete.
     ; Sleep(100)
 
     ; --- Step 2: Find and Activate the Main GoldenDict Window ---
@@ -77,10 +79,9 @@
     ; !d is a common shortcut for this (Alt+D).
     SendInput("!d") 
 
-    ; Step 4: Run an external Python script to clean the clipboard content.
-    ; This script is expected to remove newline characters from the text.
-    ; The 'Hide' option prevents the command window from appearing.
-    RunWait('C:\Python\Python312\python.exe "U:\voothi\20240310195111-remove-newline-util\remove_newline_util.py"', '', 'Hide')
+    ; Step 4: Clean the clipboard content in-process.
+    ; This removes newlines and handles hyphenated words.
+    A_Clipboard := CleanClipboardText(A_Clipboard)
     Sleep(100)
 
     ; Step 5: Paste the cleaned text into the search bar and execute the search.
