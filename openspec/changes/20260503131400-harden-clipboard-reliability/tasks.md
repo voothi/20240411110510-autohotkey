@@ -18,3 +18,8 @@
 - [x] 3.2 Verify that German hyphenated words are correctly joined in GoldenDict
 - [x] 3.3 Verify PowerShell fallback works if native clipboard setting is forced to fail (test case)
 - [x] 3.4 (Optional) Archive `remove_newline_util.py` if no longer used by other scripts
+
+## 4. Testing Infrastructure
+
+- [x] 4.1 Create root `tests/` directory for automated verification scripts
+- [x] 4.2 Migrate and rename `scratch\test_clipboard_util.ahk` to `tests\test_ClipboardUtil.ahk`

@@ -31,6 +31,10 @@ The current bridge between `kardenwort-mpv` and GoldenDict AHK scripts relies on
 - **Decision**: Add a `lls-goldendict_trigger` option (default `no`) to `lls_core.lua` to send `^!+n` after copying.
 - **Rationale**: Directly triggering the popup from the copy source ensures the lookup happens even if the AHK observer fails or if GoldenDict's internal clipboard monitor is disabled.
 
+### 5. Standardized Testing Infrastructure
+- **Decision**: Establish a top-level `tests/` directory and use the `test_<LibName>.ahk` naming convention.
+- **Rationale**: Moving tests out of `scratch/` and into a formal directory prevents accidental deletion (as `scratch/` is often ignored or cleared) and aligns with best practices for modular development.
+
 ## Risks / Trade-offs
 
 - **[Risk] Native Clipboard Failure** → **Mitigation**: Implement a robust fallback to PowerShell if the native property call fails or is unsupported.

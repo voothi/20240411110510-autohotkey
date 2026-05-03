@@ -13,6 +13,7 @@ When using `kardenwort-mpv` on Windows, clipboard synchronization with GoldenDic
 
 ### New Capabilities
 - `goldendict-bridge-latency`: Establishes a robust timing contract between the MPV host and AHK/GoldenDict observers.
+- `automated-utility-testing`: Standardizes the location and naming of verification scripts for shared libraries.
 
 ### Modified Capabilities
 - `unified-clipboard-abstraction`: Update `set_clipboard` to support faster native setting and optional post-copy hotkey triggers.
