@@ -19,6 +19,8 @@
 20260503143637 Roll back changes to this, it stopped working in Ctrl C lls_core.lua#L5776-5781
 20260503144938 Make it work in EN/RU mpv.conf#L364-367 No loops, write the combinations explicitly script-opts-append=lls-gd_hotkey_popup=Ctrl+Alt+Shift+q Ctrl+Alt+Shift+й
 20260503150357 Figure out why it doesn't work for me, garbage gets into the search, 2 windows open according to This is what I see in the GD search field Spezialisiert auf Warehousing und KontraktlogistikQ I just need these 2 modes in EN/RU to work correctly, windows corresponding to the call appear, there is no garbage, it works reliably. Figure out the config, I agree not to explicitly indicate the combination with RU there, only EN, the main thing is that it works. You can't change.ahk
+20260503151340 Still being added q Q йq 
+20260503151606 Kicks out the program
 
 
 
