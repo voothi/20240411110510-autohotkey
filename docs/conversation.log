@@ -8,8 +8,7 @@
 20260503135239 Doesn't work.
 20260503135646 Well, it worked, only the combinations need to be put into mpv.conf and translated into the combinations accepted in this file, understandable to the user, saving him from the specifics of the .NET, AHK implementation.
 20260503140143 Okay, but we only did this for gb-side.apk, and I need to do Ctrl Alt C in a similar way so that gb-main.ahk is called.
-
-
+20260503140808 Improve your naming lls_core.lua#L199-201
 
 
 
