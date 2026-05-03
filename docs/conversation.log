@@ -30,6 +30,10 @@
 20260503154820 Okay, let's now try to take the modification from commit 20260503151103 189e4a03c73d0fe025afb71f362ffcf919de2c02, add a second parameter, rename the variables, and carefully, minimally invasively implement it based on the current version.
 20260503155759 Where are the ctrl+alt+c combinations in mpv.conf?
 20260503155853 Check mpv.conf#L361-365
+20260503160006 Why is Ctrl+Alt+c now calling popup?
+20260503160419 Okay, it works, the question is the speed of displaying the window using ctrl+c and ctrl+alt+c, is it possible to speed up the display, what’s with the delays? Is it possible not to change ahk?
+20260503160819 But this requires python, another dependency, you don’t need that. What about the delays in the apk? What did we change today?
+20260503161543 Optimize the current code without changing your approach too much.
 
 
 
