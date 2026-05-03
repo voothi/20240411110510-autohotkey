@@ -1,15 +1,15 @@
 ## MODIFIED Requirements
 
-### Requirement: Low-Latency Clipboard Setting
-The `set_clipboard(text)` function SHALL utilize the fastest available platform-specific method (e.g., MPV native `clipboard` property) before falling back to shell-based utilities.
+### Requirement: Layout-Independent Trigger Engine
+The `set_clipboard(text, mode)` function SHALL explicitly notify the dictionary tool using a layout-independent mechanism (e.g., Virtual Key signals) to ensure reliable operation across EN/RU keyboard layouts.
 
-#### Scenario: Native clipboard update
-- **WHEN** the host environment supports a native clipboard API
-- **THEN** the system SHALL update the clipboard without spawning a shell process
+#### Scenario: Multi-layout dictionary trigger
+- **WHEN** the user triggers a dictionary lookup in any keyboard layout
+- **THEN** the system SHALL send the raw VK signal for the configured hotkey without typing character-specific "ghost" letters
 
-### Requirement: Explicit Post-Copy Hooks
-The system SHALL support an optional hook to trigger a keyboard shortcut (e.g., GoldenDict scan popup) immediately after a successful clipboard update.
+### Requirement: Unified Multi-Mode Configuration
+The system SHALL expose a consistent naming standard (`gd_` prefix) for all dictionary-related settings, supporting independent notification paths for "Popup" and "Main Window" modes.
 
-#### Scenario: Automatic GoldenDict trigger
-- **WHEN** `lls-goldendict_trigger` is enabled
-- **THEN** the system SHALL send `^!+n` after `set_clipboard` completes
+#### Scenario: Mode-specific hotkey triggering
+- **WHEN** `gd_hotkey_popup` or `gd_hotkey_main` are signaled
+- **THEN** the system SHALL dispatch the correct notification signal based on the intended window target

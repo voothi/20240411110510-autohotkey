@@ -1,15 +1,15 @@
 ## ADDED Requirements
 
-### Requirement: Robust Clipboard Change Detection
-The AHK bridge SHALL wait up to 3 seconds for clipboard changes to accommodate background utility startup latency (e.g., PowerShell).
+### Requirement: Layout-Agnostic Change Notification
+The bridge SHALL utilize a layout-independent notification mechanism (e.g., Virtual Key signals) to ensure the observer (AHK) is triggered reliably across different system keyboard layouts (EN/RU).
 
-#### Scenario: Delayed clipboard update from MPV
-- **WHEN** the user triggers a copy operation in MPV that uses a high-latency backend
-- **THEN** the AHK script SHALL successfully detect the new data without timing out after 1 second
+#### Scenario: Triggering in non-Latin layout
+- **WHEN** the system is set to Russian layout
+- **THEN** the bridge SHALL successfully signal the dictionary tool without being intercepted by layout translation layers
 
-### Requirement: In-Process Text Normalization
-The AHK bridge SHALL perform text cleaning (newline removal and hyphen joining) using internal logic instead of external subprocesses to reduce clipboard locking frequency.
+### Requirement: Optimized Text Normalization
+The bridge SHALL perform text cleaning (newline removal and German hyphen joining) using high-performance internal logic (e.g., AHK RegExReplace) to ensure zero-latency preparation for the dictionary lookup.
 
-#### Scenario: Immediate lookup after copy
-- **WHEN** text is copied to the clipboard
-- **THEN** the AHK script SHALL normalize the text and trigger GoldenDict within 50ms of detection
+#### Scenario: Snap-to-popup performance
+- **WHEN** text is signaled as ready from the host application
+- **THEN** the bridge SHALL normalize the text and present it to GoldenDict in <20ms
