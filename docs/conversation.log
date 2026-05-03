@@ -21,6 +21,7 @@
 20260503150357 Figure out why it doesn't work for me, garbage gets into the search, 2 windows open according to This is what I see in the GD search field Spezialisiert auf Warehousing und KontraktlogistikQ I just need these 2 modes in EN/RU to work correctly, windows corresponding to the call appear, there is no garbage, it works reliably. Figure out the config, I agree not to explicitly indicate the combination with RU there, only EN, the main thing is that it works. You can't change.ahk
 20260503151340 Still being added q Q йq 
 20260503151606 Kicks out the program
-
+20260503152802 I rolled it back mpv to 20260503135848, see how you can improve the simplified version, with one window, so that it works in EN/RU
+20260503153113 I don't need a delay.
 
 
