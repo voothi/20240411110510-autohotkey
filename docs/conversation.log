@@ -23,5 +23,20 @@
 20260503151606 Kicks out the program
 20260503152802 I rolled it back mpv to 20260503135848, see how you can improve the simplified version, with one window, so that it works in EN/RU
 20260503153113 I don't need a delay.
+20260503153750 Look again and improve.
+20260503154030 I added a combination for RU, but it doesn’t work, remove it as well and do it asynchronously.
+20260503154335 I added script-opts-append=lls-goldendict_hotkey=Ctrl+Alt+Shift+q Ctrl+Alt+Shift+й Why does this not work in RU, the GD window is not called?
+20260503154647 Error
+20260503154820 Okay, let's now try to take the modification from commit 20260503151103 189e4a03c73d0fe025afb71f362ffcf919de2c02, add a second parameter, rename the variables, and carefully, minimally invasively implement it based on the current version.
+20260503155759 Where are the ctrl+alt+c combinations in mpv.conf?
+20260503155853 Check mpv.conf#L361-365
+
+
+
+
+
+
+
+
 
 
