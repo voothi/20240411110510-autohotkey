@@ -36,12 +36,21 @@ CleanClipboardText(text) {
  * Tries to copy selected text. If no text is selected, it preserves the existing clipboard.
  * Returns true if the clipboard contains content (newly copied or preserved).
  */
-SmartCopy(timeout := 0.2) {
+SmartCopy(timeout := 0.7) {
     OldClip := A_Clipboard
     A_Clipboard := ""
-    Send("^c")
+    
+    ; Use SendInput for better reliability during the copy phase.
+    SendInput("^c")
+    
     if !ClipWait(timeout) {
+        ; Fallback to existing clipboard if no selection captured.
         A_Clipboard := OldClip
     }
+    
+    ; Mandatory stability delay for the system clipboard to register changes.
+    Sleep(200)
+    
+    ; Return true if the clipboard now contains any content (new or old).
     return A_Clipboard != ""
 }

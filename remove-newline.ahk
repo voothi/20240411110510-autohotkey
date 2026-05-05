@@ -38,9 +38,12 @@
     ; The `Hide` option prevents a command window from appearing.
     RunWait("C:\Python\Python312\python.exe U:\voothi\20240310195111-remove-newline-util\remove_newline_util.py", "", "Hide")
     
-    ; A short pause to ensure the clipboard is updated before pasting.
-    Sleep(100)
+    ; A slightly longer pause to ensure the clipboard is fully updated by the 
+    ; Python script and that the OS is ready for the paste operation.
+    Sleep(300)
 
     ; Step 3: Paste the modified, single-line text from the clipboard.
+    ; Standard Send often handles modifier key restoration better than SendInput 
+    ; for paste operations in some target applications.
     Send("^v")
 }

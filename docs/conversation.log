@@ -44,6 +44,7 @@
 20260503164808 You should have added it to the top of the block header.
 20260503165247 You proposed a solution via python vk injector - anchor 20260503160632, commit 20260503160809, can you make this implementation, but included as an option in mpv.conf?
 20260505120135 See if I can safely change the behavior of the utility U:\voothi\20240310195111-remove-newline-util for current dependent utilities so that it can read the clipboard when called, and not just read when text is selected? Sometimes I need to copy text from a chat in the IDE to the clipboard, place the cursor in Notepad and press Ctrl+Alt+N to paste it on one line. remove-newline.ahk
+20260505121047 I don’t know if you did everything correctly, but SmartCopy, but my case still doesn’t work when I copy to the clipboard, and then press Ctrl Alt N elsewhere in the text document and it should paste the text that was then copied, but formatted.
 
 
 
