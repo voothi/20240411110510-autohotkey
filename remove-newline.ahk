@@ -33,17 +33,15 @@
     if !SmartCopy()
         return
 
-    ; Step 2: Execute the external Python script to process the clipboard content.
-    ; `RunWait` pauses this script's execution until the Python script has finished.
-    ; The `Hide` option prevents a command window from appearing.
+    ; Execute the external Python script to process the clipboard content.
     RunWait("C:\Python\Python312\python.exe U:\voothi\20240310195111-remove-newline-util\remove_newline_util.py", "", "Hide")
     
-    ; A slightly longer pause to ensure the clipboard is fully updated by the 
-    ; Python script and that the OS is ready for the paste operation.
-    Sleep(300)
+    ; CRITICAL: Wait for the user to release the modifier keys (Alt and Control).
+    ; If these are still held down, the application might see "Ctrl+Alt+V" instead 
+    ; of "Ctrl+V", which often results in nothing being pasted.
+    KeyWait "Alt"
+    KeyWait "Control"
 
     ; Step 3: Paste the modified, single-line text from the clipboard.
-    ; Standard Send often handles modifier key restoration better than SendInput 
-    ; for paste operations in some target applications.
     Send("^v")
 }

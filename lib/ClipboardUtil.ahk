@@ -10,11 +10,8 @@ CleanClipboardText(text) {
     marks := "[-¬]"
     
     ; 1. Handle hyphenated word breaks.
-    ; If followed by common German conjunctions, it's likely a compositional hyphen.
-    ; In those cases, we keep the hyphen and add a space instead of joining.
+    ; Handles both \n and \r\n explicitly.
     text := RegExReplace(text, "((?<!\s)[" . marks . "])\s*\r?\n\s*(?=" . conjunctions . "\b)", "$1 ")
-    
-    ; Standard hyphenated word breaks (remove hyphen and join).
     text := RegExReplace(text, "[" . marks . "]\s*\r?\n\s*", "")
     
     ; 2. Replace remaining newlines with spaces.
@@ -29,6 +26,9 @@ CleanClipboardText(text) {
     ; 5. Remove space before punctuation marks
     text := RegExReplace(text, "\s+([:;,.!?])", "$1")
     
+    ; 6. Remove non-printable characters (ported from Python)
+    text := RegExReplace(text, "[\x00-\x1F\x7F-\x9F]", "")
+    
     return Trim(text)
 }
 
@@ -36,21 +36,20 @@ CleanClipboardText(text) {
  * Tries to copy selected text. If no text is selected, it preserves the existing clipboard.
  * Returns true if the clipboard contains content (newly copied or preserved).
  */
-SmartCopy(timeout := 0.7) {
+SmartCopy(timeout := 0.5) {
     OldClip := A_Clipboard
     A_Clipboard := ""
     
-    ; Use SendInput for better reliability during the copy phase.
-    SendInput("^c")
+    ; Using SendEvent for better reliability in some target applications
+    SendEvent("^c")
     
     if !ClipWait(timeout) {
         ; Fallback to existing clipboard if no selection captured.
         A_Clipboard := OldClip
     }
     
-    ; Mandatory stability delay for the system clipboard to register changes.
-    Sleep(200)
+    ; Brief delay for system stability
+    Sleep(100)
     
-    ; Return true if the clipboard now contains any content (new or old).
     return A_Clipboard != ""
 }
