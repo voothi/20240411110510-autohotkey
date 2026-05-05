@@ -1,4 +1,4 @@
-﻿#Requires AutoHotkey v2.0
+#Requires AutoHotkey v2.0
 
 ; ===================================================================================
 ; Script:       Convert Selected Text to Uppercase
@@ -19,11 +19,14 @@
 ; #Persistent ; Ensures the script stays running. Note: In AHKv2, this is generally
               ; not needed for scripts that contain hotkeys, as they make it persistent by default.
 
+#Include "Lib\ClipboardUtil.ahk"
 ^!U::
 {
-    ; Step 1: Copy the selected text to the clipboard.
-    Send("^c")
-    ClipWait(1) ; Wait up to 1 second for the clipboard to contain the copied data.
+    ; Step 1: Capture the text to process.
+    ; SmartCopy tries to copy the selection, but falls back to the existing clipboard 
+    ; content if no text is selected.
+    if !SmartCopy()
+        return
 
     ; Step 2: Execute the external Python script to process the clipboard content.
     ; `RunWait` pauses this script's execution until the Python script has finished.

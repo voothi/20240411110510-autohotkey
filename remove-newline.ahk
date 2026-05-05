@@ -1,4 +1,4 @@
-﻿#Requires AutoHotkey v2.0
+#Requires AutoHotkey v2.0
 
 ; ===================================================================================
 ; Script:       Remove Newlines from Selection
@@ -24,24 +24,23 @@
 ; #Persistent ; Ensures the script stays running. Note: In AHKv2, this is generally
               ; not needed for scripts that contain hotkeys, as they make it persistent by default.
 
+#Include "Lib\ClipboardUtil.ahk"
 ^!N::
 {
-    ; Step 1: Copy the selected text to the clipboard.
-    Send("^c")
-    ClipWait(1) ; Wait up to 1 second for the clipboard to contain the copied data.
+    ; Step 1: Capture the text to process.
+    ; SmartCopy tries to copy the selection, but falls back to the existing clipboard 
+    ; content if no text is selected.
+    if !SmartCopy()
+        return
 
     ; Step 2: Execute the external Python script to process the clipboard content.
     ; `RunWait` pauses this script's execution until the Python script has finished.
     ; The `Hide` option prevents a command window from appearing.
     RunWait("C:\Python\Python312\python.exe U:\voothi\20240310195111-remove-newline-util\remove_newline_util.py", "", "Hide")
     
-    ; A pause after the external script finishes. This might be a safeguard for certain
-    ; system-specific delays. It can likely be adjusted or removed.
-    Sleep(1000)
+    ; A short pause to ensure the clipboard is updated before pasting.
+    Sleep(100)
 
     ; Step 3: Paste the modified, single-line text from the clipboard.
     Send("^v")
-
-    ; The commented-out line below could be used to add an additional delay after pasting, if needed.
-    ; Sleep(1000)
 }

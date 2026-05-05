@@ -31,3 +31,17 @@ CleanClipboardText(text) {
     
     return Trim(text)
 }
+
+/**
+ * Tries to copy selected text. If no text is selected, it preserves the existing clipboard.
+ * Returns true if the clipboard contains content (newly copied or preserved).
+ */
+SmartCopy(timeout := 0.2) {
+    OldClip := A_Clipboard
+    A_Clipboard := ""
+    Send("^c")
+    if !ClipWait(timeout) {
+        A_Clipboard := OldClip
+    }
+    return A_Clipboard != ""
+}
