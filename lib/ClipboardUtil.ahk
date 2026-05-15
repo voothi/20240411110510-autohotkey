@@ -7,7 +7,7 @@
  */
 CleanClipboardText(text) {
     conjunctions := "(?:und|oder|sowie|bzw|bis)"
-    marks := "[-¬]"
+    marks := "-¬"
     
     ; 1. Handle hyphenated word breaks.
     ; If followed by common German conjunctions, it's likely a compositional hyphen.
@@ -16,6 +16,12 @@ CleanClipboardText(text) {
     
     ; Standard hyphenated word breaks (remove hyphen and join).
     text := RegExReplace(text, "[" . marks . "]\s*\r?\n\s*", "")
+
+    ; Also handle the case where the symbol is present but followed by a space on the same line,
+    ; if it's clearly intended as a hyphen (common in some PDF extractions).
+    ; Refinement: Don't join if preceded by a space (likely a dash) 
+    ; or followed by a common conjunction (German compositional hyphen).
+    text := RegExReplace(text, "(?<!\s)[" . marks . "]\s+(?!" . conjunctions . "\b)", "")
     
     ; 2. Replace remaining newlines with spaces.
     text := RegExReplace(text, "\r?\n", " ")
