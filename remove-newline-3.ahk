@@ -1,54 +1,83 @@
 #Requires AutoHotkey v2.0
 
 ; ===================================================================================
-; Script:       Smart Remove Newlines Utility
-; Hotkey:       Ctrl + Alt + X (^!X)
-;
-; Description:  A smart utility that handles both selection and existing clipboard:
-;               1. It attempts to copy any currently selected text.
-;               2. If a selection is found, it processes and replaces it.
-;               3. If NO selection is found (e.g. cursor is just blinking), it 
-;                  processes the text ALREADY on the clipboard and pastes it.
-;
-; Dependencies:
-;   - Python 3 must be installed.
-;   - A Python script that removes newlines from clipboard content must exist.
-;   - IMPORTANT: Update paths in the RunWait command below to match your system.
+; CONFIGURATION PARAMETERS
 ; ===================================================================================
+; Time in milliseconds to wait for a second press of the 'X' key.
+Global G_MultiTapTimeout := 300 
+
+; Full path to the Python executable.
+Global G_PythonPath := "C:\Python\Python312\python.exe"
+
+; Full path to the removal utility script.
+Global G_ScriptPath := "U:\voothi\20240310195111-remove-newline-util\remove_newline_util.py"
+; ===================================================================================
+
+; Internal state to track the number of presses.
+Global G_PressCount := 0
 
 ^!X::
 {
-    ; Save the current clipboard content in case we need to fall back to it.
-    OriginalClipboard := A_Clipboard
+    Global G_PressCount
+    G_PressCount += 1
     
-    ; Clear the clipboard to detect if a "Copy" operation actually puts new text there.
-    A_Clipboard := ""
-    
-    ; Step 1: Try to copy any currently selected text.
-    ; We send ^c and wait a very short time.
-    Send("^c")
-    
-    ; Wait up to 150ms for the clipboard to receive TEXT data.
-    ; If it times out OR the result is still empty, we assume no selection exists.
-    if !ClipWait(0.15, 0) or (A_Clipboard == "")
+    ; Start the timer on the first press.
+    if (G_PressCount == 1)
     {
-        ; Restore the original clipboard content since nothing new was selected.
-        A_Clipboard := OriginalClipboard
+        ; The minus sign in -300 means "run once after 300ms".
+        SetTimer(HandleSmartAction, -G_MultiTapTimeout)
     }
+}
 
-    ; If the clipboard is empty (nothing copied and nothing was there initially), do nothing.
+HandleSmartAction()
+{
+    Global G_PressCount
+    Taps := G_PressCount
+    G_PressCount := 0 ; Reset for next time.
+    
+    if (Taps == 1)
+    {
+        ; SINGLE PRESS: Use the current clipboard (Paste Existing).
+        ; This handles the case where you copied text elsewhere and just want to paste it cleaned.
+        ExecuteUtility(false)
+    }
+    else
+    {
+        ; DOUBLE PRESS: Copy selection first, then process and paste.
+        ; This handles the case where you have text selected in the current window.
+        ExecuteUtility(true)
+    }
+}
+
+ExecuteUtility(ShouldCopySelection)
+{
+    if (ShouldCopySelection)
+    {
+        ; Save the original clipboard just in case the copy fails.
+        OriginalClip := A_Clipboard
+        A_Clipboard := ""
+        Send("^c")
+        
+        ; Wait up to 500ms for the copy to complete.
+        if !ClipWait(0.5, 0)
+        {
+            ; If copy failed, restore original and continue (or you could return).
+            A_Clipboard := OriginalClip
+        }
+    }
+    
+    ; If the clipboard is empty, there is nothing to process.
     if (A_Clipboard == "")
     {
         return
     }
 
-    ; Step 2: Execute the external Python script to process the clipboard content.
-    ; The script is expected to modify the clipboard in-place.
-    RunWait("C:\Python\Python312\python.exe U:\voothi\20240310195111-remove-newline-util\remove_newline_util.py", "", "Hide")
+    ; Execute the Python script to process the clipboard content.
+    RunWait(G_PythonPath . " " . G_ScriptPath, "", "Hide")
     
-    ; A generous pause to ensure the system and the target application are ready for the paste.
-    Sleep(600)
+    ; A short pause to ensure the clipboard is ready for pasting.
+    Sleep(500)
 
-    ; Step 3: Paste the modified text.
+    ; Paste the result.
     Send("^v")
 }
