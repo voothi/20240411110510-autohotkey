@@ -6,12 +6,7 @@
 ; Time in milliseconds to wait for a second press of the 'X' key.
 Global G_MultiTapTimeout := 300 
 
-; Full path to the Python executable.
-Global G_PythonPath := "C:\Python\Python312\python.exe"
-
-; Full path to the removal utility script.
-Global G_ScriptPath := "U:\voothi\20240310195111-remove-newline-util\remove_newline_util.py"
-; ===================================================================================
+#Include Lib\ClipboardUtil.ahk
 
 ; Internal state to track the number of presses.
 Global G_PressCount := 0
@@ -53,17 +48,9 @@ ExecuteUtility(ShouldCopySelection)
 {
     if (ShouldCopySelection)
     {
-        ; Save the original clipboard just in case the copy fails.
-        OriginalClip := A_Clipboard
-        A_Clipboard := ""
-        Send("^c")
-        
-        ; Wait up to 500ms for the copy to complete.
-        if !ClipWait(0.5, 0)
-        {
-            ; If copy failed, restore original and continue.
-            A_Clipboard := OriginalClip
-        }
+        ; Use SmartCopy for reliable selection capture (ZID: 20260505122804)
+        if !SmartCopy(0.5)
+            return
     }
     
     ; If the clipboard is empty, there is nothing to process.
@@ -72,11 +59,12 @@ ExecuteUtility(ShouldCopySelection)
         return
     }
 
-    ; Execute the Python script to process the clipboard content.
-    RunWait(G_PythonPath . " " . G_ScriptPath, "", "Hide")
+    ; NATIVE SPEEDUP: Process the text in AHK instead of calling external Python.
+    A_Clipboard := CleanClipboardText(A_Clipboard)
     
-    ; A short pause to ensure the clipboard is ready for pasting.
-    Sleep(500)
+    ; CRITICAL: Wait for the user to release the modifier keys (Alt and Control).
+    KeyWait "Alt"
+    KeyWait "Control"
 
     ; Paste the result.
     Send("^v")
