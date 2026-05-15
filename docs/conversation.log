@@ -51,4 +51,5 @@
 20260515085507 Is it possible to make one combination at a time to work in a smart way?
 20260515090302 No, this only works if you select the text.
 20260515091055 Doesn't work. A trick that can be done is to track the number of clicks at a certain time, all this must be configured with parameters in the script header, for example, I first pressed Ctrl Alt in any sequence, then, while holding it, pressed `x`, and if I pressed while continuing to hold `x` a second time, this key key, the letter, then it works. This is so that there is no need to occupy X and N separately.
+20260515091805 Just let’s do it for compatibility so that it’s the other way around between one and double clicks.
 

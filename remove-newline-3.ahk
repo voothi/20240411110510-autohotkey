@@ -37,15 +37,15 @@ HandleSmartAction()
     
     if (Taps == 1)
     {
-        ; SINGLE PRESS: Use the current clipboard (Paste Existing).
-        ; This handles the case where you copied text elsewhere and just want to paste it cleaned.
-        ExecuteUtility(false)
+        ; SINGLE PRESS: Copy selection first, then process and paste.
+        ; (Backward compatibility with the original selection-based behavior)
+        ExecuteUtility(true)
     }
     else
     {
-        ; DOUBLE PRESS: Copy selection first, then process and paste.
-        ; This handles the case where you have text selected in the current window.
-        ExecuteUtility(true)
+        ; DOUBLE PRESS: Use the current clipboard (Paste Existing).
+        ; (Special mode to clean whatever you already copied elsewhere)
+        ExecuteUtility(false)
     }
 }
 
@@ -61,7 +61,7 @@ ExecuteUtility(ShouldCopySelection)
         ; Wait up to 500ms for the copy to complete.
         if !ClipWait(0.5, 0)
         {
-            ; If copy failed, restore original and continue (or you could return).
+            ; If copy failed, restore original and continue.
             A_Clipboard := OriginalClip
         }
     }
