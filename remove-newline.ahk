@@ -1,47 +1,52 @@
-﻿#Requires AutoHotkey v2.0
+#Requires AutoHotkey v2.0
 
 ; ===================================================================================
-; Script:       Remove Newlines from Selection
-; Hotkey:       Ctrl + Alt + N (^!N)
+; Script:       Smart Remove Newlines Utility
+; Hotkey:       Ctrl + Alt + X (^!X)
 ;
-; Description:  This script takes the currently selected text, runs it through an
-;               external Python script to remove all newline characters, and then
-;               pastes the result back as a single line of text. This is extremely
-;               useful for cleaning up text copied from PDFs or websites with poor
-;               formatting.
+; Description:  A smart utility that handles both selection and existing clipboard:
+;               1. It attempts to copy any currently selected text.
+;               2. If text is selected, it processes that selection.
+;               3. If NO text is selected, it processes what is ALREADY on the clipboard.
+;               4. The result is then pasted back.
 ;
 ; Dependencies:
 ;   - Python 3 must be installed.
 ;   - A Python script that removes newlines from clipboard content must exist.
-;   - IMPORTANT: You MUST update the paths in the RunWait command below to match
-;     your system's configuration.
-;
-; Integration Note: This AHK script encapsulates a multi-step process (Copy, Process,
-;                   Paste) into a single hotkey, which can simplify or replace
-;                   complex macros in other tools like JoyToKey.
+;   - IMPORTANT: Update paths in the RunWait command below to match your system.
 ; ===================================================================================
 
-; #Persistent ; Ensures the script stays running. Note: In AHKv2, this is generally
-              ; not needed for scripts that contain hotkeys, as they make it persistent by default.
-
-^!N::
+^!X::
 {
-    ; Step 1: Copy the selected text to the clipboard.
+    ; Save the current clipboard content in case nothing new is selected.
+    OriginalClipboard := A_Clipboard
+    
+    ; Clear the clipboard to detect if a copy operation actually occurs.
+    A_Clipboard := ""
+    
+    ; Step 1: Try to copy any currently selected text.
     Send("^c")
-    ClipWait(1) ; Wait up to 1 second for the clipboard to contain the copied data.
+    
+    ; Wait up to 250ms for the clipboard to receive data from the copy command.
+    if !ClipWait(0.25)
+    {
+        ; If nothing was copied (timeout), restore the original clipboard content.
+        A_Clipboard := OriginalClipboard
+    }
+
+    ; If the clipboard is empty (nothing copied and nothing was there), exit early.
+    if (A_Clipboard == "")
+    {
+        return
+    }
 
     ; Step 2: Execute the external Python script to process the clipboard content.
-    ; `RunWait` pauses this script's execution until the Python script has finished.
-    ; The `Hide` option prevents a command window from appearing.
+    ; This script is expected to modify the clipboard content in-place.
     RunWait("C:\Python\Python312\python.exe U:\voothi\20240310195111-remove-newline-util\remove_newline_util.py", "", "Hide")
     
-    ; A pause after the external script finishes. This might be a safeguard for certain
-    ; system-specific delays. It can likely be adjusted or removed.
-    Sleep(1000)
+    ; A brief pause to ensure the Python script's changes are fully committed to the OS.
+    Sleep(500)
 
-    ; Step 3: Paste the modified, single-line text from the clipboard.
+    ; Step 3: Paste the modified text.
     Send("^v")
-
-    ; The commented-out line below could be used to add an additional delay after pasting, if needed.
-    ; Sleep(1000)
 }
