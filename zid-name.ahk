@@ -1,4 +1,4 @@
-﻿#Requires AutoHotkey v2.0
+#Requires AutoHotkey v2.0
 
 ; ===================================================================================
 ; Script:       Zettelkasten ID Note Title Formatter
@@ -20,7 +20,7 @@
 ; #Persistent ; Ensures the script stays running. Note: In AHKv2, this is generally
               ; not needed for scripts that contain hotkeys, as they make it persistent by default.
 
-^!;::
+^!;:: ; See: CRITICAL Safeguard below
 {
     ; Step 1: Copy the selected text to the clipboard.
     Send("^c")
@@ -34,6 +34,12 @@
     ; A pause after the external script finishes. This might be a safeguard for certain
     ; system-specific delays. It can likely be adjusted or removed.
     Sleep(1000)
+
+    ; CRITICAL Safeguard (ZID: 20260515102336):
+    ; Wait for the user to physically release Alt and Control. This prevents the
+    ; target application from seeing "Ctrl+Alt+V" instead of "Ctrl+V" (Modifier Bleed).
+    KeyWait "Alt"
+    KeyWait "Control"
 
     ; Step 3: Paste the modified content (the new ZID-prefixed title) from the clipboard.
     Send("^v")

@@ -11,7 +11,7 @@ Global G_MultiTapTimeout := 300
 ; Internal state to track the number of presses.
 Global G_PressCount := 0
 
-^!X::
+^!X:: ; See: CRITICAL Safeguard (ExecuteUtility)
 {
     Global G_PressCount
     G_PressCount += 1
@@ -62,7 +62,10 @@ ExecuteUtility(ShouldCopySelection)
     ; NATIVE SPEEDUP: Process the text in AHK instead of calling external Python.
     A_Clipboard := CleanClipboardText(A_Clipboard)
     
-    ; CRITICAL: Wait for the user to release the modifier keys (Alt and Control).
+    ; CRITICAL Safeguard (ZID: 20260515102336):
+    ; Wait for the user to physically release Alt and Control. This prevents the
+    ; target application from seeing "Ctrl+Alt+V" instead of "Ctrl+V" (Modifier Bleed),
+    ; which is the most common cause of paste failure in these utilities.
     KeyWait "Alt"
     KeyWait "Control"
 
