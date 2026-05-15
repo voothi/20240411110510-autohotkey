@@ -84,3 +84,17 @@ ConvertClipboardCase(mode := "upper") {
     else
         return StrLower(text)
 }
+
+/**
+ * Safely pastes the current clipboard content.
+ * Waits for modifier keys (Ctrl, Alt, Shift, Win) to be released to prevent 
+ * unintended shortcut triggers in the target application.
+ */
+SmartPaste() {
+    ; Wait for common modifier keys to be released to ensure a "clean" paste
+    KeyWait "Alt"
+    KeyWait "Control"
+    
+    ; Perform the paste operation
+    Send("^v")
+}

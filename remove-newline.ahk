@@ -55,17 +55,11 @@ ExecuteUtility(ShouldCopySelection)
     
     ; If the clipboard is empty, there is nothing to process.
     if (A_Clipboard == "")
-    {
         return
-    }
 
     ; NATIVE SPEEDUP: Process the text in AHK instead of calling external Python.
     A_Clipboard := CleanClipboardText(A_Clipboard)
     
-    ; CRITICAL: Wait for the user to release the modifier keys (Alt and Control).
-    KeyWait "Alt"
-    KeyWait "Control"
-
-    ; Paste the result.
-    Send("^v")
+    ; Paste the result safely using SmartPaste (handles KeyWait logic internally)
+    SmartPaste()
 }

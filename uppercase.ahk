@@ -16,6 +16,6 @@
     ; Process the text natively in AHK for maximum speed
     A_Clipboard := ConvertClipboardCase("upper")
     
-    ; Paste the result immediately
-    Send("^v")
+    ; Paste result safely
+    SmartPaste()
 }
