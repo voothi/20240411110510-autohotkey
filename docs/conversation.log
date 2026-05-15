@@ -64,5 +64,5 @@
 20260515102240 You can make footnotes, cross-references in the comments to ^!;:: KeyWait "Alt" KeyWait "Control" so as not to forget when changing.
 20260515102433 You should have put a link right next to ^!U::: and the like to the bottom block with those KeyWaiters.
 20260515102530 I have added inline cross-references right next to the hotkey definitions in all five scripts. These "links" explicitly point to the CRITICAL Safeguard blocks at the bottom of each function, ensuring that the reliability requirements are immediately visible during maintenance or future changes. Final Verification: Each hotkey (e.g., ^!U::, ^!I::, ^!X::) now includes an inline comment: autohotkey ^!U::; See: CRITICAL Safeguard below This completes the hardening and documentation of the clipboard utility suite.
-
+20260515102928 Add to Lib\ClipboardUtil.ahk a link to the project on the basis of which this is made - https://github.com/voothi/20240310195111-remove-newline-util
 

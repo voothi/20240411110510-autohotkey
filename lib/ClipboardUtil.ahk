@@ -3,7 +3,8 @@
 /**
  * Cleans the text: handles word hyphenation, removes HTML tags,
  * extra spaces, and other unnecessary characters. 
- * Ported from remove_newline_util.py (ZID: 20260503131400)
+ * Ported from: https://github.com/voothi/20240310195111-remove-newline-util
+ * Base logic: remove_newline_util.py (ZID: 20260503131400)
  */
 CleanClipboardText(text) {
     conjunctions := "(?:und|oder|sowie|bzw|bis)"
