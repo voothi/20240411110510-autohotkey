@@ -6,9 +6,9 @@
 ;
 ; Description:  A smart utility that handles both selection and existing clipboard:
 ;               1. It attempts to copy any currently selected text.
-;               2. If text is selected, it processes that selection.
-;               3. If NO text is selected, it processes what is ALREADY on the clipboard.
-;               4. The result is then pasted back.
+;               2. If a selection is found, it processes and replaces it.
+;               3. If NO selection is found (e.g. cursor is just blinking), it 
+;                  processes the text ALREADY on the clipboard and pastes it.
 ;
 ; Dependencies:
 ;   - Python 3 must be installed.
@@ -18,34 +18,36 @@
 
 ^!X::
 {
-    ; Save the current clipboard content in case nothing new is selected.
+    ; Save the current clipboard content in case we need to fall back to it.
     OriginalClipboard := A_Clipboard
     
-    ; Clear the clipboard to detect if a copy operation actually occurs.
+    ; Clear the clipboard to detect if a "Copy" operation actually puts new text there.
     A_Clipboard := ""
     
     ; Step 1: Try to copy any currently selected text.
+    ; We send ^c and wait a very short time.
     Send("^c")
     
-    ; Wait up to 250ms for the clipboard to receive data from the copy command.
-    if !ClipWait(0.25)
+    ; Wait up to 150ms for the clipboard to receive TEXT data.
+    ; If it times out OR the result is still empty, we assume no selection exists.
+    if !ClipWait(0.15, 0) or (A_Clipboard == "")
     {
-        ; If nothing was copied (timeout), restore the original clipboard content.
+        ; Restore the original clipboard content since nothing new was selected.
         A_Clipboard := OriginalClipboard
     }
 
-    ; If the clipboard is empty (nothing copied and nothing was there), exit early.
+    ; If the clipboard is empty (nothing copied and nothing was there initially), do nothing.
     if (A_Clipboard == "")
     {
         return
     }
 
     ; Step 2: Execute the external Python script to process the clipboard content.
-    ; This script is expected to modify the clipboard content in-place.
+    ; The script is expected to modify the clipboard in-place.
     RunWait("C:\Python\Python312\python.exe U:\voothi\20240310195111-remove-newline-util\remove_newline_util.py", "", "Hide")
     
-    ; A brief pause to ensure the Python script's changes are fully committed to the OS.
-    Sleep(500)
+    ; A generous pause to ensure the system and the target application are ready for the paste.
+    Sleep(600)
 
     ; Step 3: Paste the modified text.
     Send("^v")
