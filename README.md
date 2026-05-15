@@ -167,8 +167,10 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
 [Back to Top](#table-of-contents)
 
 ### remove-newline.ahk
-- **Description:** Copies the selected text, processes it with an external Python script to remove all newline characters, and pastes the result back as a single line. Excellent for cleaning text from PDFs.
-- **Hotkey:** `Ctrl + Alt + N`
+- **Description:** A smart utility that handles both selection and existing clipboard content. It removes newline characters using an external Python script.
+- **Hotkeys:** 
+  - `Ctrl + Alt + X` (Single Tap): Processes currently selected text (Compatibility mode).
+  - `Ctrl + Alt + X` (Double Tap): Processes the existing clipboard content (Clipboard mode).
 - **Dependencies:** Requires a corresponding Python script (`remove_newline_util.py`) at a hardcoded path.
 
 [Back to Top](#table-of-contents)
