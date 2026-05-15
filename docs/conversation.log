@@ -48,5 +48,6 @@
 20260505122036 x Doesn't work, did you understand the task? I take and copy from one text file ``` 20260505122132 20260505122134 20260505122136 ``` Then I go to another txt, put the pointer, caret and click Ctrl Alt N to get here what I copied to the clipboard earlier, but already passed through the utility to remove line breaks and other things. Now I don't get anything.
 20260515084657 I created a copy remove-newline-2.ahk, I need ^!X:: to do the same thing, but without waiting for the selected text, and I need to copy what is already on the clipboard. 
 20260515085300 Ok, it works now, is there any way now to merge remove-newline.ahk remove-newline-2.ahk into remove-newline-3.ahk?
+20260515085507 Is it possible to make one combination at a time to work in a smart way?
 
 
