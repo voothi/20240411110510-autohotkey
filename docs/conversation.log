@@ -46,5 +46,6 @@
 20260505120135 x See if I can safely change the behavior of the utility U:\voothi\20240310195111-remove-newline-util for current dependent utilities so that it can read the clipboard when called, and not just read when text is selected? Sometimes I need to copy text from a chat in the IDE to the clipboard, place the cursor in Notepad and press Ctrl+Alt+N to paste it on one line. remove-newline.ahk
 20260505121047 x I don’t know if you did everything correctly, but SmartCopy, but my case still doesn’t work when I copy to the clipboard, and then press Ctrl Alt N elsewhere in the text document and it should paste the text that was then copied, but formatted.
 20260505122036 x Doesn't work, did you understand the task? I take and copy from one text file ``` 20260505122132 20260505122134 20260505122136 ``` Then I go to another txt, put the pointer, caret and click Ctrl Alt N to get here what I copied to the clipboard earlier, but already passed through the utility to remove line breaks and other things. Now I don't get anything.
+20260515084657 I created a copy remove-newline-2.ahk, I need ^!X:: to do the same thing, but without waiting for the selected text, and I need to copy what is already on the clipboard. 
 
 
