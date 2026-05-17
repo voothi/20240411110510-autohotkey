@@ -26,6 +26,8 @@ global currentHIcon := 0
 global langCodes := []
 global langInfo := Map()
 global RunExternal := Run ; Delegate for Run command to allow mocking
+global ttsIsBusy := false
+global queuedLang := ""
 
 InitializeTTS() {
     global
@@ -180,7 +182,7 @@ if (A_LineFile = A_ScriptFullPath) {
 }
 
 RunPythonScript(lang := "", *) {
-    global currentLang, pythonPath, scriptPath
+    global currentLang, pythonPath, scriptPath, ttsIsBusy, queuedLang
     if (lang != "" && lang != 0) {
         currentLang := lang
         UpdateTrayMenu()
@@ -188,25 +190,42 @@ RunPythonScript(lang := "", *) {
         lang := currentLang
     }
 
-    ; Step 1: Copy the selected text to the clipboard.
-    oldClipboard := A_Clipboard
-    A_Clipboard := ""
-
-    Sleep(50)
-    Send("^c")
-
-    if !ClipWait(0.5) {
-        A_Clipboard := oldClipboard
-        if (A_Clipboard != "") {
-            RunExternal('"' pythonPath '" "' scriptPath '" "' A_Clipboard '" "' lang '"', "", "Hide")
-        }
+    ; Prevent overlapping runs: keep only the latest requested language as pending.
+    if (ttsIsBusy) {
+        queuedLang := lang
         return
     }
 
-    ; Step 2: Execute the external Python TTS script.
-    RunExternal('"' pythonPath '" "' scriptPath '" "' A_Clipboard '" "' lang '"', "", "Hide")
+    ttsIsBusy := true
+    try {
+        selectedText := CopySelectedText()
+        if (selectedText = "")
+            return
 
-    Sleep(200)
+        RunExternal('"' pythonPath '" "' scriptPath '" "' selectedText '" "' lang '"', "", "Hide")
+    } finally {
+        ttsIsBusy := false
+        if (queuedLang != "") {
+            nextLang := queuedLang
+            queuedLang := ""
+            SetTimer(RunPythonScript.Bind(nextLang), -10)
+        }
+    }
+}
+
+CopySelectedText() {
+    savedClipboard := ClipboardAll()
+    A_Clipboard := ""
+    SendInput("^c")
+
+    if !ClipWait(0.7) {
+        A_Clipboard := savedClipboard
+        return ""
+    }
+
+    copiedText := A_Clipboard
+    A_Clipboard := savedClipboard
+    return copiedText
 }
 
 ; --- Static Mouse Trigger ---
