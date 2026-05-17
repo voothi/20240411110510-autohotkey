@@ -218,18 +218,16 @@ RunPythonScript(lang := "", *) {
 
 GetTextForHotkeyTrigger() {
     copiedText := CopySelectedText()
-    if (copiedText != "")
-        return copiedText
-
-    return A_Clipboard
+    return copiedText
 }
 
 CopySelectedText() {
     savedClipboard := ClipboardAll()
     A_Clipboard := ""
+    Sleep(30)
     SendInput("^c")
 
-    if !ClipWait(0.7) {
+    if !ClipWait(1.0) {
         A_Clipboard := savedClipboard
         return ""
     }
