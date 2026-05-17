@@ -183,7 +183,8 @@ if (A_LineFile = A_ScriptFullPath) {
 
 RunPythonScript(lang := "", *) {
     global currentLang, pythonPath, scriptPath, ttsIsBusy, queuedLang
-    if (lang != "" && lang != 0) {
+    explicitLangRequest := (lang != "" && lang != 0)
+    if (explicitLangRequest) {
         currentLang := lang
         UpdateTrayMenu()
     } else {
@@ -198,7 +199,10 @@ RunPythonScript(lang := "", *) {
 
     ttsIsBusy := true
     try {
-        selectedText := CopySelectedText()
+        ; Hotkey-triggered calls (explicit language) are often fed by external tools
+        ; that already copied fresh text into clipboard (e.g. mpv integrations).
+        ; In that case, do not force another ^c to avoid replaying stale selection.
+        selectedText := explicitLangRequest ? ReadClipboardText() : CopySelectedText()
         if (selectedText = "")
             return
 
@@ -211,6 +215,10 @@ RunPythonScript(lang := "", *) {
             SetTimer(RunPythonScript.Bind(nextLang), -10)
         }
     }
+}
+
+ReadClipboardText() {
+    return A_Clipboard
 }
 
 CopySelectedText() {
