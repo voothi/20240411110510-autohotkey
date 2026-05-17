@@ -1,3 +1,29 @@
+# Release Notes (v1.50.0)
+
+## Overview
+This major release eliminates Python invocation latency across the ecosystem by migrating core text normalization into native AutoHotkey. The introduction of `ClipboardUtil.ahk` provides zero-latency text cleaning, smart clipboard fallback, and robust modifier bleed protection, dramatically accelerating GoldenDict lookups and general text manipulation utilities.
+
+## Core Infrastructure
+
+### `lib/ClipboardUtil.ahk` (New Core Library)
+*   **Zero-Latency Normalization**: Implemented `CleanClipboardText()` in native AHK to handle German hyphenation joining, HTML tag removal, and newline stripping instantly, replacing previous Python scripts.
+*   **Smart Copy Abstraction**: Added `SmartCopy()` to safely attempt copying selected text while preserving existing clipboard content if the selection is empty.
+
+### Testing Framework
+*   **Automated Test Suite**: Established a standardized `tests/` directory, introducing `test_ClipboardUtil.ahk` to programmatically verify complex text formatting and edge cases without manual GUI interaction.
+
+## Script-Specific Updates
+
+### `gd-main.ahk` & `gd-side.ahk`
+*   **Instant Lookups**: Integrated the native text cleaning library, removing the ~300ms Python startup penalty for "snap-to-popup" and main window lookups.
+*   **Layout-Agnostic Notification Trigger**: Upgraded logic to use Virtual Key signaling to ensure hotkeys fire reliably across different system keyboard layouts (e.g., Russian vs English).
+
+### Text Utilities (`remove-newline.ahk`, `uppercase.ahk`, `lowercase.ahk`)
+*   **Native Execution**: Migrated all utilities to natively process text using `ClipboardUtil.ahk`. 
+*   **Modifier Bleed Protection**: Added explicit `KeyWait` logic for `Ctrl` and `Alt` modifiers before pasting, fixing an issue where holding the trigger hotkeys could intercept the paste command.
+
+---
+
 # Release Notes (v1.48.26)
 
 ## Script-Specific Updates

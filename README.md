@@ -105,16 +105,16 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
 [Back to Top](#table-of-contents)
 
 ### gd-main.ahk
-- **Description:** A complex macro to look up selected text in the main GoldenDict window. It intelligently finds/activates the main window, cleans the selected text by removing newlines via a Python script, and pastes it into the search bar.
+- **Description:** A complex macro to look up selected text in the main GoldenDict window. It intelligently finds/activates the main window, cleans the selected text by removing newlines natively in-process, and pastes it into the search bar.
 - **Hotkey:** `Ctrl + Alt + Shift + 1`
-- **Dependencies:** Requires a corresponding Python script (`remove_newline_util.py`) at a hardcoded path.
+- **Dependencies:** Requires `ClipboardUtil.ahk` in the `Lib` folder.
 
 [Back to Top](#table-of-contents)
 
 ### gd-side.ahk
-- **Description:** Looks up the selected text using GoldenDict's "scan pop-up" feature. It first copies the text, cleans it by removing newlines via a Python script, and then triggers GoldenDict's global pop-up hotkey.
+- **Description:** Looks up the selected text using GoldenDict's "scan pop-up" feature. It first copies the text, cleans it by removing newlines natively in-process, and then triggers GoldenDict's global pop-up hotkey.
 - **Hotkey:** `Ctrl + Alt + Shift + Q`
-- **Dependencies:** Requires a Python script (`remove_newline_util.py`) and assumes GoldenDict's pop-up hotkey is configured to `^!+n`.
+- **Dependencies:** Requires `ClipboardUtil.ahk` in the `Lib` folder and assumes GoldenDict's pop-up hotkey is configured to `^!+n`.
 
 [Back to Top](#table-of-contents)
 
@@ -140,9 +140,9 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
 [Back to Top](#table-of-contents)
 
 ### lowercase.ahk
-- **Description:** Copies the selected text, processes it with an external Python script to convert it to lowercase, and pastes the result back, replacing the original selection.
+- **Description:** Copies the selected text, natively processes it to convert to lowercase, and pastes the result back, replacing the original selection.
 - **Hotkey:** `Ctrl + Alt + I`
-- **Dependencies:** Requires a corresponding Python script (`lowercase_util.py`) at a hardcoded path.
+- **Dependencies:** Requires `ClipboardUtil.ahk` in the `Lib` folder.
 
 [Back to Top](#table-of-contents)
 
@@ -167,11 +167,11 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
 [Back to Top](#table-of-contents)
 
 ### remove-newline.ahk
-- **Description:** A smart utility that handles both selection and existing clipboard content. It removes newline characters using an external Python script.
+- **Description:** A smart utility that handles both selection and existing clipboard content. It cleanly removes newline characters and handles hyphenation natively.
 - **Hotkeys:** 
   - `Ctrl + Alt + X` (Single Tap): Processes currently selected text (Compatibility mode).
   - `Ctrl + Alt + X` (Double Tap): Processes the existing clipboard content (Clipboard mode).
-- **Dependencies:** Requires a corresponding Python script (`remove_newline_util.py`) at a hardcoded path.
+- **Dependencies:** Requires `ClipboardUtil.ahk` in the `Lib` folder.
 
 [Back to Top](#table-of-contents)
 
@@ -207,9 +207,9 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
 [Back to Top](#table-of-contents)
 
 ### uppercase.ahk
-- **Description:** Copies the selected text, processes it with an external Python script to convert it to UPPERCASE, and pastes the result back, replacing the original selection.
+- **Description:** Copies the selected text, natively processes it to convert to UPPERCASE, and pastes the result back, replacing the original selection.
 - **Hotkey:** `Ctrl + Alt + U`
-- **Dependencies:** Requires a corresponding Python script (`uppercase_util.py`) at a hardcoded path.
+- **Dependencies:** Requires `ClipboardUtil.ahk` in the `Lib` folder.
 
 [Back to Top](#table-of-contents)
 
