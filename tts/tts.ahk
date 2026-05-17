@@ -199,10 +199,9 @@ RunPythonScript(lang := "", *) {
 
     ttsIsBusy := true
     try {
-        ; Hotkey-triggered calls (explicit language) are often fed by external tools
-        ; that already copied fresh text into clipboard (e.g. mpv integrations).
-        ; In that case, do not force another ^c to avoid replaying stale selection.
-        selectedText := explicitLangRequest ? ReadClipboardText() : CopySelectedText()
+        ; For direct language hotkeys, first try to capture fresh text via ^c so
+        ; one keypress is enough. If that fails, fall back to current clipboard.
+        selectedText := explicitLangRequest ? GetTextForHotkeyTrigger() : CopySelectedText()
         if (selectedText = "")
             return
 
@@ -217,7 +216,11 @@ RunPythonScript(lang := "", *) {
     }
 }
 
-ReadClipboardText() {
+GetTextForHotkeyTrigger() {
+    copiedText := CopySelectedText()
+    if (copiedText != "")
+        return copiedText
+
     return A_Clipboard
 }
 
