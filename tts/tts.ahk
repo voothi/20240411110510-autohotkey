@@ -199,8 +199,8 @@ RunPythonScript(lang := "", *) {
 
     ttsIsBusy := true
     try {
-        ; For direct language hotkeys, first try to capture fresh text via ^c so
-        ; one keypress is enough. If that fails, fall back to current clipboard.
+        ; Direct language hotkeys capture fresh text via ^c so one keypress is enough.
+        ; If capture fails, skip playback to avoid speaking stale clipboard content.
         selectedText := explicitLangRequest ? GetTextForHotkeyTrigger() : CopySelectedText()
         if (selectedText = "")
             return
@@ -217,8 +217,7 @@ RunPythonScript(lang := "", *) {
 }
 
 GetTextForHotkeyTrigger() {
-    copiedText := CopySelectedText()
-    return copiedText
+    return CopySelectedText()
 }
 
 CopySelectedText() {
