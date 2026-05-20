@@ -47,10 +47,30 @@ CleanClipboardText(text) {
 }
 
 /**
+ * Waits for physically pressed modifier keys (Ctrl, Alt, Shift, Win) to be released
+ * to prevent race conditions and modifier "bleed" during simulated keystrokes.
+ */
+WaitForModifiers() {
+    if GetKeyState("Ctrl", "P")
+        KeyWait("Ctrl")
+    if GetKeyState("Alt", "P")
+        KeyWait("Alt")
+    if GetKeyState("Shift", "P")
+        KeyWait("Shift")
+    if GetKeyState("LWin", "P")
+        KeyWait("LWin")
+    if GetKeyState("RWin", "P")
+        KeyWait("RWin")
+}
+
+/**
  * Tries to copy selected text. If no text is selected, it preserves the existing clipboard.
  * Returns true if the clipboard contains content (newly copied or preserved).
  */
-SmartCopy(timeout := 0.5) {
+SmartCopy(timeout := 0.5, waitForModifiers := true) {
+    if (waitForModifiers) {
+        WaitForModifiers()
+    }
     OldClip := A_Clipboard
     A_Clipboard := ""
     

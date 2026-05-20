@@ -19,17 +19,8 @@
 #Include "Lib\ClipboardUtil.ahk"
 ^!+q::
 {
-    ; Step 0: CLEAR the clipboard first so ClipWait actually waits for NEW data
-    A_Clipboard := ""
-
-    ; Step 1: Copy the currently selected text to the clipboard.
-    ; The commented-out lines below are alternative methods for copying.
-    ; A_Clipboard := ""
-    ; SendInput("{LControl Down}c{LControl Up}")
-    SendInput("^c")
-
-    ; Step 2: Proceed only if the copy operation was successful within 3 seconds.
-    if ClipWait(3)
+    ; Step 1: Copy the currently selected text to the clipboard safely.
+    if SmartCopy(3)
     {
         ; Clean the clipboard content in-process.
         ; This removes newlines and handles hyphenated words.
