@@ -67,8 +67,8 @@ WaitForModifiers() {
  * Tries to copy selected text. If no text is selected, it preserves the existing clipboard.
  * Returns true if the clipboard contains content (newly copied or preserved).
  */
-SmartCopy(timeout := 0.5, waitForModifiers := true) {
-    if (waitForModifiers) {
+SmartCopy(timeout := 0.5, shouldWait := true) {
+    if (shouldWait) {
         WaitForModifiers()
     }
     OldClip := A_Clipboard
