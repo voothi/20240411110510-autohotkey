@@ -28,6 +28,9 @@
     if (workspace != "") {
         cmd .= " --workspace `"" . workspace . "`""
     }
+    if (activeTitle != "") {
+        cmd .= " --title `"" . activeTitle . "`""
+    }
 
     ; RunWait pauses execution until the script finishes.
     ; The "Hide" option keeps it silent and fast in the background.
