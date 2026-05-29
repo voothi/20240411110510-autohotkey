@@ -28,36 +28,29 @@
 
     ; ---- 1. Try to extract a full absolute .md path from the title ---------------
     ;  Terminals, some IDEs, and the system title bar can surface the full path.
+    ;  Use backtick-escaped quotes (`") inside the string to avoid linter warnings.
     activeFile := ""
-    if RegExMatch(activeTitle, "([A-Za-z]:\\[^\x00-\x1F""*<>?|]+\.md)", &mFile) {
+    if RegExMatch(activeTitle, "([A-Za-z]:\\[^\x00-\x1F`"*<>?|]+\.md)", &mFile) {
         activeFile := mFile[1]
     }
 
-    ; ---- 2. Try to extract just the .md filename --------------------------------
-    mdFilename := ""
-    if (activeFile = "") {
-        if RegExMatch(activeTitle, "([\w-]+\.md)\b", &mName) {
-            mdFilename := mName[1]
-        }
-    }
-
-    ; ---- 3. Extract ZID-prefixed workspace token from the title -----------------
+    ; ---- 2. Extract ZID-prefixed workspace token from the title -----------------
     workspace := ""
     if RegExMatch(activeTitle, "(\d{14}-[\w-]+)", &mWs) {
         workspace := mWs[1]
     }
 
     ; ---- Build command -----------------------------------------------------------
+    ;  --title  always carries the full window title; Python parses the .md
+    ;           filename from it internally (no need for a separate branch here).
+    ;  --active-file  is passed only when a full absolute path was found.
     cmd := "C:\Python\Python312\python.exe U:\voothi\20260529201233-obsidian-paste-image\src\paste_image.py"
 
     if (activeFile != "") {
         cmd .= " --active-file `"" . activeFile . "`""
-    } else if (mdFilename != "") {
-        cmd .= " --title `"" . mdFilename . "`""
     }
 
     if (activeTitle != "") {
-        ; Always pass the full title so the Python script can do its own parsing
         cmd .= " --title `"" . activeTitle . "`""
     }
 
