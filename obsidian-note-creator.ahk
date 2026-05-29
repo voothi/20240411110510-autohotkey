@@ -9,11 +9,30 @@
 ;               updates the active conversation log MOC, copies the formatted
 ;               Obsidian wikilinks back to the clipboard, and pastes them.
 ;
+;               A ToolTip confirms the created notes or errors. Auto-dismisses
+;               after 4 seconds.
+;
 ; Dependencies:
 ;   - Python 3 must be installed.
 ;   - Pyperclip must be installed in Python.
 ;   - `note_creator.py` at `U:\voothi\20260529182202-obsidian-note-creator\src\note_creator.py`.
 ; ===================================================================================
+
+; ---- Helper: run a command and return its full stdout+stderr output --------------
+RunAndCapture(cmd, workDir := "") {
+    tempFile := A_Temp . "\note_creator_" . A_TickCount . ".txt"
+    fullCmd  := 'cmd /c ' . cmd . ' > "' . tempFile . '" 2>&1'
+    if (workDir != "")
+        RunWait(fullCmd, workDir, "Hide")
+    else
+        RunWait(fullCmd, , "Hide")
+    output := ""
+    if FileExist(tempFile) {
+        output := FileRead(tempFile, "UTF-8")
+        FileDelete(tempFile)
+    }
+    return output
+}
 
 ^!k::
 {
@@ -38,10 +57,50 @@
         cmd .= " --workspace `"" . workspace . "`""
     }
 
-    ; RunWait pauses execution until the script finishes.
-    ; The "Hide" option keeps it silent and fast in the background.
-    RunWait(cmd, "U:\voothi\20260529182202-obsidian-note-creator", "Hide")
+    ; Run and capture all output (no console window shown)
+    output := RunAndCapture(cmd, "U:\voothi\20260529182202-obsidian-note-creator")
     
+    ; ---- Show ToolTip with result ------------------------------------------------
+    createdNotes := []
+    errors := []
+    alreadyExistsCount := 0
+    noZidFound := false
+    
+    for line in StrSplit(output, "`n") {
+        trimmed := Trim(line)
+        if InStr(trimmed, "[+] Created Note:") {
+            noteName := Trim(RegExReplace(trimmed, "^\[\+\] Created Note:\s*", ""))
+            createdNotes.Push(noteName)
+        } else if InStr(trimmed, "[Error]") {
+            errors.Push(Trim(RegExReplace(trimmed, "^\[Error\]\s*", "")))
+        } else if InStr(trimmed, "already exists. Skipping file creation") {
+            alreadyExistsCount++
+        } else if InStr(trimmed, "No ZID matches found") {
+            noZidFound := true
+        }
+    }
+    
+    if (errors.Length > 0) {
+        tipText := "✗ " . errors[1]
+    } else if (createdNotes.Length > 0) {
+        if (createdNotes.Length = 1)
+            tipText := "✓ Created: " . createdNotes[1]
+        else
+            tipText := "✓ Created " . createdNotes.Length . " notes"
+    } else if (alreadyExistsCount > 0) {
+        if (alreadyExistsCount = 1)
+            tipText := "! Note already exists"
+        else
+            tipText := "! " . alreadyExistsCount . " notes already exist"
+    } else if (noZidFound) {
+        tipText := "✗ No ZIDs found"
+    } else {
+        tipText := "✓ Note creator done"
+    }
+
+    ToolTip(tipText)
+    SetTimer(() => ToolTip(), -4000)
+
     ; Pause for system-specific clipboard update delay
     Sleep(300)
 
