@@ -9,6 +9,9 @@
 ;               to save the image inside the vault with a unique ZID filename, and
 ;               automatically pastes the formatted Obsidian wikilink back.
 ;
+;               A ToolTip confirms the saved path on success, or shows the
+;               error line on failure. Auto-dismisses after 4 seconds.
+;
 ;               Active-file resolution priority:
 ;                 1. VS Code / Antigravity IDE "Copy Path" command
 ;                    Sends Ctrl+Shift+P → "Copy Path" → reads the full absolute path
@@ -18,22 +21,31 @@
 ;                 3. Window title passed as --title so paste_image.py can scan
 ;                    the vault for the matching filename as a last resort.
 ;
-;               For step 1 to work the active window must be VS Code or an Electron
-;               editor that exposes the standard command palette (Ctrl+Shift+P) and
-;               contains the "Copy Path" command.
-;
 ; Dependencies:
 ;   - Python 3 must be installed with Pillow and pyperclip.
 ;   - `paste_image.py` at `U:\voothi\20260529201233-obsidian-paste-image\src\paste_image.py`.
 ; ===================================================================================
 
+; ---- Helper: run a command and return its full stdout+stderr output --------------
+RunAndCapture(cmd, workDir := "") {
+    tempFile := A_Temp . "\paste_image_" . A_TickCount . ".txt"
+    fullCmd  := 'cmd /c ' . cmd . ' > "' . tempFile . '" 2>&1'
+    if (workDir != "")
+        RunWait(fullCmd, workDir, "Hide")
+    else
+        RunWait(fullCmd, , "Hide")
+    output := ""
+    if FileExist(tempFile) {
+        output := FileRead(tempFile, "UTF-8")
+        FileDelete(tempFile)
+    }
+    return output
+}
+
 ; ---- Helper: ask the editor for the current file path via command palette --------
 ;  Works for VS Code, Antigravity IDE, and any other Electron editor that exposes
 ;  workbench.action.copyFilePath (Ctrl+Shift+P → "Copy Path").
-;
-;  Returns the absolute path string on success, or "" on failure / timeout.
 GetEditorFilePath() {
-    ; Only attempt for known VS Code / Electron editor processes
     try
         activeExe := WinGetProcessName("A")
     catch
@@ -50,30 +62,28 @@ GetEditorFilePath() {
     if !isEditor
         return ""
 
-    ; Save the full clipboard (images, rich text, etc.) so we can restore it
+    ; Save the full clipboard (images, rich text, etc.)
     savedClip := ClipboardAll()
     A_Clipboard := ""
 
     ; Open command palette and invoke "Copy Path"
-    ; Use SendEvent to send raw key events, bypassing AHK's own hotkey layer
     SendEvent("^+p")
     Sleep(350)
     SendEvent("Copy Path{Enter}")
 
-    ; Wait up to 1.2 s for the clipboard to be filled with the file path
     gotClip := ClipWait(1.2)
 
     candidate := ""
     if gotClip {
-        candidate := A_Clipboard
-        ; Validate: must be an absolute Windows path to a markdown file
-        if !RegExMatch(candidate, "^[A-Za-z]:\\.+\.md$")
+        candidate := Trim(A_Clipboard)
+        ; Validate: must be an absolute Windows path (any extension — Python decides
+        ; whether it is inside the vault or not)
+        if !RegExMatch(candidate, "^[A-Za-z]:\\.+\\.[a-zA-Z0-9]+$")
             candidate := ""
     }
 
     ; Restore whatever was in the clipboard before
     A_Clipboard := savedClip
-
     return candidate
 }
 
@@ -98,9 +108,6 @@ GetEditorFilePath() {
         workspace := mWs[1]
 
     ; ---- Build command -----------------------------------------------------------
-    ;  --active-file   exact path if we obtained it (steps 1 or 2)
-    ;  --title         full window title; Python scans the vault as last resort
-    ;  --workspace     ZID token; Python infers the project assets directory
     cmd := "C:\Python\Python312\python.exe U:\voothi\20260529201233-obsidian-paste-image\src\paste_image.py"
 
     if (activeFile != "")
@@ -112,9 +119,35 @@ GetEditorFilePath() {
     if (workspace != "")
         cmd .= " --workspace `"" . workspace . "`""
 
-    ; RunWait pauses execution until the script finishes.
-    ; The "Hide" option keeps it silent and fast in the background.
-    RunWait(cmd, "U:\voothi\20260529201233-obsidian-paste-image", "Hide")
+    ; Run and capture all output (no console window shown)
+    output := RunAndCapture(cmd, "U:\voothi\20260529201233-obsidian-paste-image")
+
+    ; ---- Show ToolTip with result ------------------------------------------------
+    if InStr(output, "[+] Saved:") {
+        ; Extract the saved path from the output line  "[+] Saved: <path>"
+        savedPath := ""
+        for line in StrSplit(output, "`n") {
+            if InStr(line, "[+] Saved:") {
+                savedPath := Trim(RegExReplace(line, "^\[\+\] Saved:\s*", ""))
+                break
+            }
+        }
+        tipText := savedPath != "" ? "✓ " . savedPath : "✓ Image saved to vault"
+    } else {
+        ; Extract the first error line for display
+        errLine := ""
+        for line in StrSplit(output, "`n") {
+            trimmed := Trim(line)
+            if (SubStr(trimmed, 1, 3) = "[!]") {
+                errLine := trimmed
+                break
+            }
+        }
+        tipText := "✗ " . (errLine != "" ? errLine : "paste_image.py failed — check log")
+    }
+
+    ToolTip(tipText)
+    SetTimer(() => ToolTip(), -4000)
 
     ; Pause for system-specific clipboard update delay
     Sleep(300)
