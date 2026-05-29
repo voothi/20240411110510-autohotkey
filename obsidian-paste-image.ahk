@@ -148,13 +148,13 @@ GetEditorFilePath() {
 
     ; Read tooltip setting from config.ini
     configPath := "U:\voothi\20260529201233-obsidian-paste-image\config.ini"
-    tooltipDuration := 30000 ; default to 30 seconds
+    tooltipDuration := 4000 ; default to 4 seconds
     try {
-        tooltipVal := IniRead(configPath, "Obsidian", "tooltip", "30000")
+        tooltipVal := IniRead(configPath, "Obsidian", "tooltip", "4000")
         if (tooltipVal = "" || tooltipVal = "0" || tooltipVal = "false" || tooltipVal = "no" || tooltipVal = "off") {
             tooltipDuration := 0
         } else if (tooltipVal = "1" || tooltipVal = "true" || tooltipVal = "yes" || tooltipVal = "on") {
-            tooltipDuration := 30000 ; treat as enabled with default duration
+            tooltipDuration := 4000 ; treat as enabled with default duration
         } else {
             tooltipDuration := Integer(tooltipVal)
         }
