@@ -44,10 +44,25 @@ RunAndCapture(cmd, workDir := "") {
     }
 
     ; Step 1: Copy the selected text to system clipboard.
+    ; Preserve existing clipboard if nothing is selected (preventing empty overwrite)
+    savedClip := ClipboardAll()
+    A_Clipboard := ""
+    
     Send("^c")
-    if !ClipWait(1.5) ; Wait up to 1.5 seconds for clipboard content
+    if !ClipWait(0.3) ; Wait briefly for copy
     {
-        MsgBox("Clipboard copy failed or timed out.", "Error", 16)
+        ; No selection: restore previously copied content
+        A_Clipboard := savedClip
+    } else {
+        ; Check if copied text is empty or just whitespace/newlines
+        if (Trim(A_Clipboard, " `t`r`n") = "") {
+            A_Clipboard := savedClip
+        }
+    }
+
+    if (A_Clipboard = "")
+    {
+        MsgBox("Clipboard is empty and nothing is selected.", "Error", 16)
         return
     }
 

@@ -51,7 +51,7 @@ GetEditorFilePath() {
     catch
         return ""
 
-    knownEditors := ["antigravity.exe", "code.exe", "cursor.exe", "windsurf.exe"]
+    knownEditors := ["antigravity.exe", "antigravity ide.exe", "code.exe", "cursor.exe", "windsurf.exe"]
     isEditor := false
     for _, exe in knownEditors {
         if (StrLower(activeExe) = exe) {
