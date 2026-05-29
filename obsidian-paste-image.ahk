@@ -146,8 +146,24 @@ GetEditorFilePath() {
         tipText := "✗ " . (errLine != "" ? errLine : "paste_image.py failed — check log")
     }
 
-    ToolTip(tipText)
-    SetTimer(() => ToolTip(), -4000)
+    ; Read tooltip setting from config.ini
+    configPath := "U:\voothi\20260529201233-obsidian-paste-image\config.ini"
+    tooltipDuration := 30000 ; default to 30 seconds
+    try {
+        tooltipVal := IniRead(configPath, "Obsidian", "tooltip", "30000")
+        if (tooltipVal = "" || tooltipVal = "0" || tooltipVal = "false" || tooltipVal = "no" || tooltipVal = "off") {
+            tooltipDuration := 0
+        } else if (tooltipVal = "1" || tooltipVal = "true" || tooltipVal = "yes" || tooltipVal = "on") {
+            tooltipDuration := 30000 ; treat as enabled with default duration
+        } else {
+            tooltipDuration := Integer(tooltipVal)
+        }
+    }
+
+    if (tooltipDuration > 0) {
+        ToolTip(tipText)
+        SetTimer(() => ToolTip(), -tooltipDuration)
+    }
 
     ; Pause for system-specific clipboard update delay
     Sleep(300)
