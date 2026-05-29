@@ -17,6 +17,13 @@
 
 ^!k::
 {
+    ; Extract the active window title to parse the workspace (e.g., 20260308110646-kardenwort-mpv)
+    activeTitle := WinGetTitle("A")
+    workspace := ""
+    if RegExMatch(activeTitle, "(\d{14}-[\w-]+)", &match) {
+        workspace := match[1]
+    }
+
     ; Step 1: Copy the selected text to system clipboard.
     Send("^c")
     if !ClipWait(1.5) ; Wait up to 1.5 seconds for clipboard content
@@ -26,9 +33,14 @@
     }
 
     ; Step 2: Run the note creator script with the --clipboard flag.
+    cmd := "C:\Python\Python312\python.exe U:\voothi\20260529182202-obsidian-note-creator\src\note_creator.py --clipboard"
+    if (workspace != "") {
+        cmd .= " --workspace `"" . workspace . "`""
+    }
+
     ; RunWait pauses execution until the script finishes.
     ; The "Hide" option keeps it silent and fast in the background.
-    RunWait("C:\Python\Python312\python.exe U:\voothi\20260529182202-obsidian-note-creator\src\note_creator.py --clipboard", "U:\voothi\20260529182202-obsidian-note-creator", "Hide")
+    RunWait(cmd, "U:\voothi\20260529182202-obsidian-note-creator", "Hide")
     
     ; Pause for system-specific clipboard update delay
     Sleep(300)
