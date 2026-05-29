@@ -34,7 +34,7 @@ RunAndCapture(cmd, workDir := "") {
     return output
 }
 
-^!k::
+^!z::
 {
     ; Extract the active window title to parse the workspace (e.g., 20260308110646-kardenwort-mpv)
     activeTitle := WinGetTitle("A")
