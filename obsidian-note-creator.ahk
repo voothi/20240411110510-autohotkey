@@ -79,6 +79,9 @@ RunAndCapture(cmd, workDir := "") {
     createdNotes := []
     errors := []
     alreadyExistsNotes := []
+    resolvedExistingNotes := []
+    mocUpdated := false
+    mocSkipped := false
     noZidFound := false
     
     for line in StrSplit(output, "`n") {
@@ -94,6 +97,16 @@ RunAndCapture(cmd, workDir := "") {
             } else {
                 alreadyExistsNotes.Push("Note")
             }
+        } else if InStr(trimmed, "Found existing note for ZID") {
+            if RegExMatch(trimmed, "ZID \d+: ([^\s]+)", &match) {
+                resolvedExistingNotes.Push(match[1])
+            } else {
+                resolvedExistingNotes.Push("Note")
+            }
+        } else if InStr(trimmed, "Successfully updated MOC") {
+            mocUpdated := true
+        } else if InStr(trimmed, "already exists in conversation MOC") {
+            mocSkipped := true
         } else if InStr(trimmed, "No ZID") {
             noZidFound := true
         }
@@ -106,11 +119,18 @@ RunAndCapture(cmd, workDir := "") {
             tipText := "✓ Created: " . createdNotes[1]
         else
             tipText := "✓ Created " . createdNotes.Length . " notes"
-    } else if (alreadyExistsNotes.Length > 0) {
-        if (alreadyExistsNotes.Length = 1)
-            tipText := "! Already exists: " . alreadyExistsNotes[1]
-        else
-            tipText := "! " . alreadyExistsNotes.Length . " notes already exist"
+    } else if (alreadyExistsNotes.Length > 0 || resolvedExistingNotes.Length > 0) {
+        existingName := resolvedExistingNotes.Length > 0 ? resolvedExistingNotes[1] : alreadyExistsNotes[1]
+        ; Strip paths to keep filenames short and legible in the tooltip
+        if RegExMatch(existingName, "[^\\]+$", &mName) {
+            existingName := mName[0]
+        }
+        
+        if (mocUpdated) {
+            tipText := "✓ Linked existing: " . existingName
+        } else {
+            tipText := "! Already linked: " . existingName
+        }
     } else if (noZidFound) {
         tipText := "✗ No ZIDs found in clipboard"
     } else {
