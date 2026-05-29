@@ -63,19 +63,23 @@ RunAndCapture(cmd, workDir := "") {
     ; ---- Show ToolTip with result ------------------------------------------------
     createdNotes := []
     errors := []
-    alreadyExistsCount := 0
+    alreadyExistsNotes := []
     noZidFound := false
     
     for line in StrSplit(output, "`n") {
         trimmed := Trim(line)
         if InStr(trimmed, "[+] Created Note:") {
-            noteName := Trim(RegExReplace(trimmed, "^\[\+\] Created Note:\s*", ""))
-            createdNotes.Push(noteName)
+            notePath := Trim(RegExReplace(trimmed, "^\[\+\] Created Note:\s*", ""))
+            createdNotes.Push(notePath)
         } else if InStr(trimmed, "[Error]") {
             errors.Push(Trim(RegExReplace(trimmed, "^\[Error\]\s*", "")))
         } else if InStr(trimmed, "already exists. Skipping file creation") {
-            alreadyExistsCount++
-        } else if InStr(trimmed, "No ZID matches found") {
+            if RegExMatch(trimmed, "'([^']+)'", &match) {
+                alreadyExistsNotes.Push(match[1])
+            } else {
+                alreadyExistsNotes.Push("Note")
+            }
+        } else if InStr(trimmed, "No ZID") {
             noZidFound := true
         }
     }
@@ -87,15 +91,15 @@ RunAndCapture(cmd, workDir := "") {
             tipText := "✓ Created: " . createdNotes[1]
         else
             tipText := "✓ Created " . createdNotes.Length . " notes"
-    } else if (alreadyExistsCount > 0) {
-        if (alreadyExistsCount = 1)
-            tipText := "! Note already exists"
+    } else if (alreadyExistsNotes.Length > 0) {
+        if (alreadyExistsNotes.Length = 1)
+            tipText := "! Already exists: " . alreadyExistsNotes[1]
         else
-            tipText := "! " . alreadyExistsCount . " notes already exist"
+            tipText := "! " . alreadyExistsNotes.Length . " notes already exist"
     } else if (noZidFound) {
-        tipText := "✗ No ZIDs found"
+        tipText := "✗ No ZIDs found in clipboard"
     } else {
-        tipText := "✓ Note creator done"
+        tipText := "✓ Note creator completed"
     }
 
     ; Read tooltip setting from config.ini
