@@ -13,13 +13,10 @@
 ;               error line on failure. Auto-dismisses after 4 seconds.
 ;
 ;               Active-file resolution priority:
-;                 1. VS Code / Antigravity IDE "Copy Path" command
-;                    Sends Ctrl+Shift+P → "Copy Path" → reads the full absolute path
-;                    directly from the editor. Zero guesswork, zero scanning.
-;                 2. Full absolute .md path embedded in the window title (rare,
-;                    some terminals surface it).
+;                 1. Full absolute .md path embedded in the window title.
+;                 2. Optional editor "Copy Path" probe (disabled by default).
 ;                 3. Window title passed as --title so paste_image.py can scan
-;                    the vault for the matching filename as a last resort.
+;                    only inside scoped workspace vault project.
 ;
 ; Dependencies:
 ;   - Python 3 must be installed with Pillow and pyperclip.
@@ -87,25 +84,43 @@ GetEditorFilePath() {
     return candidate
 }
 
+UseEditorCopyPathProbe() {
+    configPath := "U:\voothi\20260529201233-obsidian-paste-image\config.ini"
+    try {
+        val := IniRead(configPath, "Obsidian", "editor_copy_path_probe", "false")
+    } catch {
+        return false
+    }
+
+    normalized := StrLower(Trim(val))
+    return normalized = "1" || normalized = "true" || normalized = "yes" || normalized = "on"
+}
+
 ; ==================================================================================
 
-^!a::
+^!i::
 {
     activeTitle := WinGetTitle("A")
 
-    ; ---- 1. Ask the editor directly (most reliable) ------------------------------
-    activeFile := GetEditorFilePath()
-
-    ; ---- 2. Fallback: try to parse a full absolute path from the window title ----
-    if (activeFile = "") {
-        if RegExMatch(activeTitle, "([A-Za-z]:\\[^\x00-\x1F`"*<>?|]+\.md)", &mFile)
+    ; ---- 1. Passive: parse a full absolute path from the window title ------------
+    activeFile := ""
+    if RegExMatch(activeTitle, "([A-Za-z]:\\[^\x00-\x1F`\"*<>?|]+\.md)", &mFile) {
+        if FileExist(mFile[1])
             activeFile := mFile[1]
+    }
+
+    ; ---- 2. Optional active probe: ask the editor directly ------------------------
+    if (activeFile = "" && UseEditorCopyPathProbe()) {
+        activeFile := GetEditorFilePath()
     }
 
     ; ---- 3. Extract ZID-prefixed workspace token from the title -----------------
     workspace := ""
-    if RegExMatch(activeTitle, "(\d{14}-[\w-]+)", &mWs)
-        workspace := mWs[1]
+    startPos := 1
+    while (pos := RegExMatch(activeTitle, "\d{14}-[\w-]+", &mWs, startPos)) {
+        workspace := mWs[0]
+        startPos := pos + StrLen(mWs[0])
+    }
 
     ; ---- Build command -----------------------------------------------------------
     cmd := "C:\Python\Python312\python.exe U:\voothi\20260529201233-obsidian-paste-image\src\paste_image.py"
