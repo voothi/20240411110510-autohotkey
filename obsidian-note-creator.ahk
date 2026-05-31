@@ -39,8 +39,12 @@ RunAndCapture(cmd, workDir := "") {
     ; Extract the active window title to parse the workspace (e.g., 20260308110646-kardenwort-mpv)
     activeTitle := WinGetTitle("A")
     workspace := ""
-    if RegExMatch(activeTitle, "(\d{14}-[\w-]+)", &match) {
-        workspace := match[1]
+    startPos := 1
+    while (pos := RegExMatch(activeTitle, "\d{14}-[\w-]+", &match, startPos)) {
+        ; VSCode window titles can include both the file slug and workspace slug.
+        ; Keep the rightmost match, which is typically the workspace token.
+        workspace := match[0]
+        startPos := pos + StrLen(match[0])
     }
 
     ; Step 1: Copy the selected text to system clipboard.
@@ -91,6 +95,12 @@ RunAndCapture(cmd, workDir := "") {
             createdNotes.Push(notePath)
         } else if InStr(trimmed, "[Error]") {
             errors.Push(Trim(RegExReplace(trimmed, "^\[Error\]\s*", "")))
+        } else if InStr(trimmed, "[!] Clipboard is empty.") {
+            errors.Push("Clipboard is empty.")
+        } else if InStr(trimmed, "Traceback (most recent call last):") {
+            errors.Push("Python traceback detected. See note creator output.")
+        } else if RegExMatch(trimmed, "^(FileNotFoundError|PermissionError|ModuleNotFoundError|RuntimeError|Exception):") {
+            errors.Push(trimmed)
         } else if InStr(trimmed, "already exists. Skipping file creation") {
             if RegExMatch(trimmed, "'([^']+)'", &match) {
                 alreadyExistsNotes.Push(match[1])
