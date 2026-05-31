@@ -7,7 +7,7 @@
 ; Description:  Copies selected text (which starts with or contains ZID lines),
 ;               calls note_creator.py to batch create notes exactly 1-to-1,
 ;               updates the active conversation log MOC, copies the formatted
-;               Obsidian wikilinks back to the clipboard, and pastes them.
+;               Obsidian wikilinks back to the clipboard, and optionally pastes them.
 ;
 ;               A ToolTip confirms the created notes or errors. Auto-dismisses
 ;               after 4 seconds.
@@ -32,6 +32,18 @@ RunAndCapture(cmd, workDir := "") {
         FileDelete(tempFile)
     }
     return output
+}
+
+ShouldAutoPasteWikilinks() {
+    configPath := "U:\voothi\20260529182202-obsidian-note-creator\config.ini"
+    try {
+        val := IniRead(configPath, "Obsidian", "auto_paste_wikilinks", "false")
+    } catch {
+        return false
+    }
+
+    normalized := StrLower(Trim(val))
+    return normalized = "1" || normalized = "true" || normalized = "yes" || normalized = "on"
 }
 
 ^!z::
@@ -174,6 +186,8 @@ RunAndCapture(cmd, workDir := "") {
     KeyWait "Alt"
     KeyWait "Control"
 
-    ; Step 3: Paste the formatted wikilinks back, replacing the selection.
-    Send("^v")
+    if ShouldAutoPasteWikilinks() {
+        ; Step 3: Paste the formatted wikilinks back, replacing the selection.
+        Send("^v")
+    }
 }
