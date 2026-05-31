@@ -54,6 +54,11 @@ DetectWorkspaceHint(activeTitle) {
         return Trim(mProject[1])
     }
 
+    ; Backward compatibility: allow vault project root path without /conversations suffix.
+    if RegExMatch(activeTitle, '(?:Private Vault[\\/]|U:\\voothi\.vault\\)([^\\/]+)(?:[\\/]|$)', &mProjectRoot) {
+        return Trim(mProjectRoot[1])
+    }
+
     ; 2) Prefer .code-workspace slugs when present.
     if RegExMatch(activeTitle, '(\d{14}-[\w-]+)\.code-workspace', &mWorkspace) {
         return mWorkspace[1]
@@ -207,4 +212,5 @@ DetectWorkspaceHint(activeTitle) {
         Send("^v")
     }
 }
+
 
