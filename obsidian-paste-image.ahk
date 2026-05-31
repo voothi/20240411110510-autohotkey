@@ -96,6 +96,18 @@ UseEditorCopyPathProbe() {
     return normalized = "1" || normalized = "true" || normalized = "yes" || normalized = "on"
 }
 
+ShouldAutoPasteWikilinks() {
+    configPath := "U:\voothi\20260529201233-obsidian-paste-image\config.ini"
+    try {
+        val := IniRead(configPath, "Obsidian", "auto_paste_wikilinks", "true")
+    } catch {
+        return true
+    }
+
+    normalized := StrLower(Trim(val))
+    return normalized = "1" || normalized = "true" || normalized = "yes" || normalized = "on"
+}
+
 ; ==================================================================================
 
 ^!i::
@@ -188,6 +200,8 @@ UseEditorCopyPathProbe() {
     KeyWait "Alt"
     KeyWait "Control"
 
-    ; Paste the formatted wikilink back, replacing the selection.
-    Send("^v")
+    if ShouldAutoPasteWikilinks() {
+        ; Paste the formatted wikilink back, replacing the selection.
+        Send("^v")
+    }
 }
