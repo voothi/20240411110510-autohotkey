@@ -1,4 +1,4 @@
-#Requires AutoHotkey v2.0
+﻿#Requires AutoHotkey v2.0
 
 ; ===================================================================================
 ; Script:       Obsidian ZID Note Creator Hotkey
@@ -46,18 +46,34 @@ ShouldAutoPasteWikilinks() {
     return normalized = "1" || normalized = "true" || normalized = "yes" || normalized = "on"
 }
 
-^!z::
-{
-    ; Extract the active window title to parse the workspace (e.g., 20260308110646-kardenwort-mpv)
-    activeTitle := WinGetTitle("A")
+DetectWorkspaceHint(activeTitle) {
+    ; 1) Prefer explicit vault-like tab paths used by Antigravity/IDE tabs.
+    ;    Examples: "Private Vault/obsidian-note-creator/conversations/..."
+    ;              "U:\voothi.vault\obsidian-note-creator\conversations\..."
+    if RegExMatch(activeTitle, '(?:Private Vault[\\/]|U:\\voothi\.vault\\)([^\\/]+)[\\/]conversations(?:[\\/]|$)', &mProject) {
+        return Trim(mProject[1])
+    }
+
+    ; 2) Prefer .code-workspace slugs when present.
+    if RegExMatch(activeTitle, '(\d{14}-[\w-]+)\.code-workspace', &mWorkspace) {
+        return mWorkspace[1]
+    }
+
+    ; 3) Fallback: rightmost ZID slug from title.
     workspace := ""
     startPos := 1
-    while (pos := RegExMatch(activeTitle, "\d{14}-[\w-]+", &match, startPos)) {
-        ; VSCode window titles can include both the file slug and workspace slug.
-        ; Keep the rightmost match, which is typically the workspace token.
-        workspace := match[0]
-        startPos := pos + StrLen(match[0])
+    while (pos := RegExMatch(activeTitle, '\d{14}-[\w-]+', &mSlug, startPos)) {
+        workspace := mSlug[0]
+        startPos := pos + StrLen(mSlug[0])
     }
+    return workspace
+}
+
+^!z::
+{
+    ; Extract workspace hint from focused IDE title (Antigravity/VS Code compatible)
+    activeTitle := WinGetTitle("A")
+    workspace := DetectWorkspaceHint(activeTitle)
 
     ; Step 1: Copy the selected text to system clipboard.
     ; Preserve existing clipboard if nothing is selected (preventing empty overwrite)
@@ -191,3 +207,4 @@ ShouldAutoPasteWikilinks() {
         Send("^v")
     }
 }
+
