@@ -47,31 +47,9 @@ ShouldAutoPasteWikilinks() {
 }
 
 DetectWorkspaceHint(activeTitle) {
-    ; 1) Prefer explicit vault-like tab paths used by Antigravity/IDE tabs.
-    ;    Examples: "Private Vault/obsidian-note-creator/conversations/..."
-    ;              "U:\voothi.vault\obsidian-note-creator\conversations\..."
-    if RegExMatch(activeTitle, '(?:Private Vault[\\/]|U:\\voothi\.vault\\)([^\\/]+)[\\/]conversations(?:[\\/]|$)', &mProject) {
-        return Trim(mProject[1])
-    }
-
-    ; Backward compatibility: allow vault project root path without /conversations suffix.
-    if RegExMatch(activeTitle, '(?:Private Vault[\\/]|U:\\voothi\.vault\\)([^\\/]+)(?:[\\/]|$)', &mProjectRoot) {
-        return Trim(mProjectRoot[1])
-    }
-
-    ; 2) Prefer .code-workspace slugs when present.
-    if RegExMatch(activeTitle, '(\d{14}-[\w-]+)\.code-workspace', &mWorkspace) {
-        return mWorkspace[1]
-    }
-
-    ; 3) Fallback: rightmost ZID slug from title.
-    workspace := ""
-    startPos := 1
-    while (pos := RegExMatch(activeTitle, '\d{14}-[\w-]+', &mSlug, startPos)) {
-        workspace := mSlug[0]
-        startPos := pos + StrLen(mSlug[0])
-    }
-    return workspace
+    ; Keep launcher generic: pass full title/path context to Python.
+    ; Python note_creator.py performs configurable workspace detection.
+    return Trim(activeTitle)
 }
 
 ^!z::
@@ -212,5 +190,6 @@ DetectWorkspaceHint(activeTitle) {
         Send("^v")
     }
 }
+
 
 
