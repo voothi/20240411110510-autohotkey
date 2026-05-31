@@ -116,7 +116,7 @@ ShouldAutoPasteWikilinks() {
 
     ; ---- 1. Passive: parse a full absolute path from the window title ------------
     activeFile := ""
-    if RegExMatch(activeTitle, "([A-Za-z]:\\[^\x00-\x1F`\"*<>?|]+\.md)", &mFile) {
+    if RegExMatch(activeTitle, '([A-Za-z]:\\[^\x00-\x1F"*<>?|]+\.md)', &mFile) {
         if FileExist(mFile[1])
             activeFile := mFile[1]
     }
