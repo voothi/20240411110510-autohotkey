@@ -2,7 +2,7 @@
 
 ; ===================================================================================
 ; Script:       Obsidian ZID Paste Image Hotkey
-; Hotkey:       Ctrl + Alt + I (^!i)
+; Hotkey:       Ctrl + Alt + A (^!a)
 ;
 ; Description:  Extracts the exact path of the currently open markdown file from
 ;               the editor, takes the image from the clipboard, runs paste_image.py
@@ -110,7 +110,7 @@ ShouldAutoPasteWikilinks() {
 
 ; ==================================================================================
 
-^!i::
+^!a::
 {
     activeTitle := WinGetTitle("A")
 
