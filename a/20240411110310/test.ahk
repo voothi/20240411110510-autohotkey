@@ -1,3 +1,3 @@
-﻿#IfWinActive, ahk_exe notepad.exe
+#IfWinActive, ahk_exe notepad.exe
     i::^+V
 #IfWinActive

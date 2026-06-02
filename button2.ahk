@@ -1,4 +1,4 @@
-﻿#Requires AutoHotkey v2.0
+#Requires AutoHotkey v2.0
 
 ; ====================================================================================
 ; Script:       Short-Press vs. Long-Press Button

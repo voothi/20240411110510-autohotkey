@@ -1,4 +1,4 @@
-﻿SetBatchLines, -1
+SetBatchLines, -1
 
 Send, ^!q
 Exit

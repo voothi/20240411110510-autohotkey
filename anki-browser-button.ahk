@@ -1,4 +1,4 @@
-﻿; This is a commented-out code block, left for reference.
+; This is a commented-out code block, left for reference.
 ; ^!+]:: {
 ;     If WinActive("ahk_exe anki.exe") {
 ;         Click()

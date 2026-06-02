@@ -1,2 +1,2 @@
-﻿Send, ^c^c
+Send, ^c^c
 Exit

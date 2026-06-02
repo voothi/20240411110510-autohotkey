@@ -1,4 +1,4 @@
-﻿#Requires AutoHotkey v2.0
+#Requires AutoHotkey v2.0
 
 ; ===================================================================================
 ; Script:       Obsidian ZID Note Creator Hotkey

@@ -1,2 +1,2 @@
-﻿Send, ^!q
+Send, ^!q
 Send, ^!w

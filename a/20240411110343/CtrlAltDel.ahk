@@ -1,2 +1,2 @@
-﻿; send ^!{Delete}
+; send ^!{Delete}
 ; exit

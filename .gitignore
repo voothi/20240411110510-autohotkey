@@ -98,3 +98,4 @@ settings.ini
 tts/tests/test_merged.log
 tts/tests/test_tts.log
 scratch/
+.agent/

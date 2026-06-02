@@ -1,4 +1,4 @@
-﻿^+':: ; Привязываем к комбинации клавиш Ctrl + Shift + Alt + Quote
+^+':: ; Привязываем к комбинации клавиш Ctrl + Shift + Alt + Quote
     global ScrollDownTimer
     ScrollDownCount := 3 ; Количество строк, на которое вы хотите прокрутить вниз (измените по своему усмотрению)
     Loop, %ScrollDownCount%
