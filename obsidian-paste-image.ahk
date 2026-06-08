@@ -126,13 +126,8 @@ ShouldAutoPasteWikilinks() {
         activeFile := GetEditorFilePath()
     }
 
-    ; ---- 3. Extract ZID-prefixed workspace token from the title -----------------
-    workspace := ""
-    startPos := 1
-    while (pos := RegExMatch(activeTitle, "\d{14}-[\w-]+", &mWs, startPos)) {
-        workspace := mWs[0]
-        startPos := pos + StrLen(mWs[0])
-    }
+    ; ---- 3. Use active title as workspace context (Python handles extraction) ----
+    workspace := Trim(activeTitle)
 
     ; ---- Build command -----------------------------------------------------------
     cmd := "C:\Python\Python312\python.exe U:\voothi\20260529201233-obsidian-paste-image\src\paste_image.py"
