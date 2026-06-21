@@ -10,7 +10,7 @@
 
 ; --- Global State Variables ---
 global lemCurrentLang := "AU"
-global lemLangCodes := ["AU", "EN", "DE", "RU", "UK"]
+global lemLangCodes := ["AU", "EN", "DE", "RU", "UK", "OFF"]
 global lemLangInfo := Map()
 global lemHIcon := 0
 
@@ -19,6 +19,7 @@ lemLangInfo["EN"] := { text: "EN", bg: 0x008000, fg: 0xFFFFFF, langs: "en" }    
 lemLangInfo["DE"] := { text: "DE", bg: 0x8B0000, fg: 0xFFFFFF, langs: "de" }       ; Dark Red
 lemLangInfo["RU"] := { text: "RU", bg: 0x00008B, fg: 0xFFFFFF, langs: "ru" }       ; Dark Blue
 lemLangInfo["UK"] := { text: "UK", bg: 0xFFD700, fg: 0x000000, langs: "uk" }       ; Yellow/Black
+lemLangInfo["OFF"] := { text: "OF", bg: 0x808080, fg: 0xFFFFFF, langs: "" }          ; Grey (OFF)
 
 ; Initialize AHK Integration automatically if included
 UpdateLemTrayMenu()
@@ -103,6 +104,11 @@ LemCreateIconFromText(text, bgColor, textColor) {
 
 LemmatizeWord(word) {
     global lemCurrentLang, lemLangInfo
+    
+    ; If the lemmatizer is turned off, skip it entirely
+    if (lemCurrentLang == "OFF") {
+        return word
+    }
     
     ; Only lemmatize if the word contains no spaces and is not empty
     if (word != "" && !RegExMatch(word, "\s"))
