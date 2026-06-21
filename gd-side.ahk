@@ -24,7 +24,30 @@
     {
         ; Clean the clipboard content in-process.
         ; This removes newlines and handles hyphenated words.
-        A_Clipboard := CleanClipboardText(A_Clipboard)
+        cleaned := CleanClipboardText(A_Clipboard)
+
+        ; --- Lemmatization via kardenwort-lite ---
+        inFile := A_Temp "\gd_in.txt"
+        outFile := A_Temp "\gd_out.txt"
+        
+        if FileExist(inFile)
+            FileDelete(inFile)
+        FileAppend(cleaned, inFile, "UTF-8")
+        
+        pythonScript := "U:\voothi\20241223170748-kardenwort\src\kardenwort\core\kardenwort_lite.py"
+        RunWait('cmd.exe /c python "' pythonScript '" < "' inFile '" > "' outFile '"', , "Hide")
+        
+        if FileExist(outFile) {
+            lemmatizedWord := FileRead(outFile, "UTF-8")
+            FileDelete(outFile)
+            if (lemmatizedWord != "")
+                cleaned := lemmatizedWord
+        }
+        if FileExist(inFile)
+            FileDelete(inFile)
+        ; -----------------------------------------
+
+        A_Clipboard := cleaned
     }
     
     ; The commented-out Sleep is a potential delay, currently disabled.
