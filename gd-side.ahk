@@ -17,6 +17,8 @@
 ; ===================================================================================
 
 #Include "Lib\ClipboardUtil.ahk"
+#Include "*i Lib\gd-lemmatizer.ahk"
+
 ^!+q::
 {
     ; Step 1: Copy the currently selected text to the clipboard safely.
@@ -26,18 +28,12 @@
         ; This removes newlines and handles hyphenated words.
         cleaned := CleanClipboardText(A_Clipboard)
 
-        ; --- Lemmatization via kardenwort-lite ---
-        ; Only lemmatize if the clipboard contains exactly one word (no spaces)
-        if (cleaned != "" && !RegExMatch(cleaned, "\s"))
+        if (lem_fn := HasFunc("LemmatizeWord"))
         {
-            pythonScript := "U:\voothi\20241223170748-kardenwort\src\kardenwort\core\kardenwort_lite.py"
-            RunWait('python "' . pythonScript . '" "' . cleaned . '"', , "Hide")
+            cleaned := lem_fn(cleaned)
         }
-        else
-        {
-            A_Clipboard := cleaned
-        }
-        ; -----------------------------------------
+        
+        A_Clipboard := cleaned
     }
     
     ; The commented-out Sleep is a potential delay, currently disabled.

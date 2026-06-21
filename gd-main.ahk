@@ -17,6 +17,7 @@
 ; ===================================================================================
 
 #Include "Lib\ClipboardUtil.ahk"
+#Include "*i Lib\gd-lemmatizer.ahk"
 
 ^!+1::
 {
@@ -76,7 +77,12 @@
 
     ; Step 4: Clean the clipboard content in-process.
     ; This removes newlines and handles hyphenated words.
-    A_Clipboard := CleanClipboardText(A_Clipboard)
+    cleaned := CleanClipboardText(A_Clipboard)
+    if (lem_fn := HasFunc("LemmatizeWord"))
+    {
+        cleaned := lem_fn(cleaned)
+    }
+    A_Clipboard := cleaned
     Sleep(100)
 
     ; Step 5: Paste the cleaned text into the search bar and execute the search.
