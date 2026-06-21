@@ -35,7 +35,7 @@
         FileAppend(cleaned, inFile, "UTF-8")
         
         pythonScript := "U:\voothi\20241223170748-kardenwort\src\kardenwort\core\kardenwort_lite.py"
-        RunWait('cmd.exe /c python "' . pythonScript . '" < "' . inFile . '" > "' . outFile . '"', , "Hide")
+        RunWait('cmd.exe /c python "' . pythonScript . '" < "' . inFile . '" > "' . outFile . '" 2>&1', , "Hide")
         
         if FileExist(outFile) {
             lemmatizedWord := FileRead(outFile, "UTF-8")
