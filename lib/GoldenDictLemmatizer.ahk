@@ -27,14 +27,23 @@ UpdateLemTrayMenu()
 UpdateLemTrayMenu() {
     global lemCurrentLang, lemLangInfo, lemLangCodes
     
-    lemMenu := Menu()
-    for code in lemLangCodes {
-        info := lemLangInfo[code]
-        lemMenu.Add(info.text " (" code ")", ((c, *) => SetLemLanguage(c)).Bind(code))
-    }
-    
     try {
-        A_TrayMenu.Add("Lemmatizer Language", lemMenu)
+        A_TrayMenu.Delete()
+        A_TrayMenu.Add("Lemmatizer: " . lemCurrentLang, (*) => 0)
+        A_TrayMenu.Disable("1&")
+        A_TrayMenu.Add() ; Separator
+        
+        for code in lemLangCodes {
+            info := lemLangInfo[code]
+            itemName := info.text " (" code ")"
+            A_TrayMenu.Add(itemName, ((c, *) => SetLemLanguage(c)).Bind(code))
+            if (code == lemCurrentLang) {
+                A_TrayMenu.Check(itemName)
+            }
+        }
+        
+        A_TrayMenu.Add() ; Separator
+        A_TrayMenu.AddStandard()
     }
     
     UpdateLemTrayIcon()
@@ -42,7 +51,7 @@ UpdateLemTrayMenu() {
 
 SetLemLanguage(lang) {
     global lemCurrentLang := lang
-    UpdateLemTrayIcon()
+    UpdateLemTrayMenu()
 }
 
 UpdateLemTrayIcon() {
