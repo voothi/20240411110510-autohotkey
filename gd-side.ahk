@@ -29,7 +29,8 @@
         cleaned := CleanClipboardText(A_Clipboard)
 
         try {
-            cleaned := %"LemmatizeWord"%(cleaned)
+            lemFn := "LemmatizeWord"
+            cleaned := %lemFn%(cleaned)
         }
         
         A_Clipboard := cleaned

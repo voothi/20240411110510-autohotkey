@@ -79,7 +79,8 @@
     ; This removes newlines and handles hyphenated words.
     cleaned := CleanClipboardText(A_Clipboard)
     try {
-        cleaned := %"LemmatizeWord"%(cleaned)
+        lemFn := "LemmatizeWord"
+        cleaned := %lemFn%(cleaned)
     }
     A_Clipboard := cleaned
     Sleep(100)
