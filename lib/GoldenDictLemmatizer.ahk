@@ -109,17 +109,27 @@ LemmatizeWord(word) {
     {
         pythonScript := "U:\voothi\20241223170748-kardenwort\src\kardenwort\core\kardenwort_lite.py"
         
-        ; Build language argument
-        langArg := ""
-        if (lemLangInfo.Has(lemCurrentLang)) {
-            langArg := ' --langs="' . lemLangInfo[lemCurrentLang].langs . '"'
+        if FileExist(pythonScript) {
+            ; Build language argument
+            langArg := ""
+            if (lemLangInfo.Has(lemCurrentLang)) {
+                langArg := ' --langs="' . lemLangInfo[lemCurrentLang].langs . '"'
+            }
+            
+            ; Escape double quotes in the word to prevent command line injection
+            safeWord := StrReplace(word, '"', '\"')
+            
+            ; Set clipboard, run python silently, and wait
+            A_Clipboard := word
+            try {
+                RunWait('python "' . pythonScript . '" "' . safeWord . '"' . langArg, , "Hide")
+                return A_Clipboard
+            } catch {
+                ; Fallback if python fails to run (e.g. not in PATH)
+                return word
+            }
         }
-        
-        ; Set clipboard, run pythonw silently, and wait
-        A_Clipboard := word
-        RunWait('python "' . pythonScript . '" "' . word . '"' . langArg, , "Hide")
-        
-        return A_Clipboard
     }
     return word
 }
+
