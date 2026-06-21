@@ -117,7 +117,7 @@ LemmatizeWord(word) {
         
         ; Set clipboard, run pythonw silently, and wait
         A_Clipboard := word
-        RunWait('pythonw "' . pythonScript . '" "' . word . '"' . langArg, , "Hide")
+        RunWait('python "' . pythonScript . '" "' . word . '"' . langArg, , "Hide")
         
         return A_Clipboard
     }
