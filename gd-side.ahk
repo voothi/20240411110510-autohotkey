@@ -27,27 +27,17 @@
         cleaned := CleanClipboardText(A_Clipboard)
 
         ; --- Lemmatization via kardenwort-lite ---
-        inFile := A_Temp . "\gd_in.txt"
-        outFile := A_Temp . "\gd_out.txt"
-        
-        if FileExist(inFile)
-            FileDelete(inFile)
-        FileAppend(cleaned, inFile, "UTF-8")
-        
-        pythonScript := "U:\voothi\20241223170748-kardenwort\src\kardenwort\core\kardenwort_lite.py"
-        RunWait('cmd.exe /c python "' . pythonScript . '" < "' . inFile . '" > "' . outFile . '" 2>&1', , "Hide")
-        
-        if FileExist(outFile) {
-            lemmatizedWord := FileRead(outFile, "UTF-8")
-            FileDelete(outFile)
-            if (lemmatizedWord != "")
-                cleaned := lemmatizedWord
+        ; Only lemmatize if the clipboard contains exactly one word (no spaces)
+        if (cleaned != "" && !RegExMatch(cleaned, "\s"))
+        {
+            pythonScript := "U:\voothi\20241223170748-kardenwort\src\kardenwort\core\kardenwort_lite.py"
+            RunWait('python "' . pythonScript . '" "' . cleaned . '"', , "Hide")
         }
-        if FileExist(inFile)
-            FileDelete(inFile)
+        else
+        {
+            A_Clipboard := cleaned
+        }
         ; -----------------------------------------
-
-        A_Clipboard := cleaned
     }
     
     ; The commented-out Sleep is a potential delay, currently disabled.
