@@ -17,7 +17,7 @@
 ; ===================================================================================
 
 #Include "Lib\ClipboardUtil.ahk"
-#Include "*i Lib\gd-lemmatizer.ahk"
+#Include "*i Lib\GoldenDictLemmatizer.ahk"
 
 ^!+q::
 {
