@@ -27,15 +27,15 @@
         cleaned := CleanClipboardText(A_Clipboard)
 
         ; --- Lemmatization via kardenwort-lite ---
-        inFile := A_Temp "\gd_in.txt"
-        outFile := A_Temp "\gd_out.txt"
+        inFile := A_Temp . "\gd_in.txt"
+        outFile := A_Temp . "\gd_out.txt"
         
         if FileExist(inFile)
             FileDelete(inFile)
         FileAppend(cleaned, inFile, "UTF-8")
         
         pythonScript := "U:\voothi\20241223170748-kardenwort\src\kardenwort\core\kardenwort_lite.py"
-        RunWait('cmd.exe /c python "' pythonScript '" < "' inFile '" > "' outFile '"', , "Hide")
+        RunWait('cmd.exe /c python "' . pythonScript . '" < "' . inFile . '" > "' . outFile . '"', , "Hide")
         
         if FileExist(outFile) {
             lemmatizedWord := FileRead(outFile, "UTF-8")
