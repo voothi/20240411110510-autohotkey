@@ -51,9 +51,34 @@ FindNextInGoldenDict()
         else ; Otherwise, this is a new search.
         {
             lastSearchTerm := currentSelection ; Store the new selection as the last search term.
+
+            ; --- Lemmatization via kardenwort-lite ---
+            inFile := A_Temp "\gd_in.txt"
+            outFile := A_Temp "\gd_out.txt"
+            
+            if FileExist(inFile)
+                FileDelete(inFile)
+            FileAppend(currentSelection, inFile, "UTF-8")
+            
+            pythonScript := "U:\voothi\20241223170748-kardenwort\src\kardenwort\core\kardenwort_lite.py"
+            RunWait('cmd.exe /c python "' pythonScript '" < "' inFile '" > "' outFile '"', , "Hide")
+            
+            if FileExist(outFile) {
+                lemmatizedWord := FileRead(outFile, "UTF-8")
+                FileDelete(outFile)
+                if (lemmatizedWord != "")
+                    currentSelection := lemmatizedWord
+            }
+            if FileExist(inFile)
+                FileDelete(inFile)
+            ; -----------------------------------------
+
+            A_Clipboard := currentSelection ; Update clipboard with the lemmatized word for pasting
+            ClipWait(0.5)
+
             Send("^f") ; Open the find dialog.
             Sleep(150)
-            Send("^v") ; Paste the search term. (Alternatively: Send(currentSelection))
+            Send("^v") ; Paste the search term.
             Send("{Enter}")
         }
     }
