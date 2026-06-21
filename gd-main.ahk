@@ -78,9 +78,8 @@
     ; Step 4: Clean the clipboard content in-process.
     ; This removes newlines and handles hyphenated words.
     cleaned := CleanClipboardText(A_Clipboard)
-    if (lem_fn := Func("LemmatizeWord"))
-    {
-        cleaned := lem_fn(cleaned)
+    try {
+        cleaned := %"LemmatizeWord"%(cleaned)
     }
     A_Clipboard := cleaned
     Sleep(100)
