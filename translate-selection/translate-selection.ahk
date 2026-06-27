@@ -42,20 +42,20 @@ PythonPath := "U:/voothi/20241122093311-deep-translator/venv/Scripts/python.exe"
 ScriptPath_Google := "U:/voothi/20241122093311-deep-translator/translate_google.py"
 ScriptPath_DeepL := "U:/voothi/20241122093311-deep-translator/translate_deepl.py"
 
-GetGoogleCommand(text, src, tgt, outFile) {
+GetGoogleCommand(text, src, tgt, outFile, errFile) {
     return A_ComSpec ' /c chcp 65001 > nul && "' . PythonPath . '" "' . ScriptPath_Google . '" --text ' . EscapeCmdArg(
         text) .
-    ' --source ' . src . ' --target ' . tgt . ' > "' . outFile . '" 2>&1'
+    ' --source ' . src . ' --target ' . tgt . ' > "' . outFile . '" 2> "' . errFile . '"'
 }
 
-GetDeepLCommand(text, src, tgt, outFile) {
+GetDeepLCommand(text, src, tgt, outFile, errFile) {
     apiKey := GetDeepLKey()
     if (apiKey == "") {
         return ""
     }
     return A_ComSpec ' /c chcp 65001 > nul && "' . PythonPath . '" "' . ScriptPath_DeepL . '" --text ' . EscapeCmdArg(
         text) .
-    ' --source ' . src . ' --target ' . tgt . ' --deepl-api-key "' . apiKey . '" > "' . outFile . '" 2>&1'
+    ' --source ' . src . ' --target ' . tgt . ' --deepl-api-key "' . apiKey . '" > "' . outFile . '" 2> "' . errFile . '"'
 }
 
 EscapeCmdArg(str) {
@@ -260,9 +260,13 @@ TranslateSelection(SourceLang, TargetLang) {
     if FileExist(OutputFile)
         FileDelete OutputFile
 
+    ErrorFile := A_Temp . "\ahk_translate_err.txt"
+    if FileExist(ErrorFile)
+        FileDelete ErrorFile
+
     ; Get command for current provider
     ProviderFunc := Providers[TranslationSession.CurrentProvider]
-    CommandStr := ProviderFunc(ProcessText, SourceLang, TargetLang, OutputFile)
+    CommandStr := ProviderFunc(ProcessText, SourceLang, TargetLang, OutputFile, ErrorFile)
 
     if (CommandStr == "")
         return
@@ -271,10 +275,12 @@ TranslateSelection(SourceLang, TargetLang) {
     try {
         ExitCode := RunWait(CommandStr, , "Hide")
         if (ExitCode != 0) {
-            ErrorLog := FileExist(OutputFile) ? FileRead(OutputFile, "UTF-8") : "No error output captured."
+            ErrorLog := FileExist(ErrorFile) ? FileRead(ErrorFile, "UTF-8") : "No error output captured."
             MsgBox "Translation failed (Exit Code " . ExitCode . "):`n`n" . ErrorLog
             if FileExist(OutputFile)
                 FileDelete OutputFile
+            if FileExist(ErrorFile)
+                FileDelete ErrorFile
             return
         }
     } catch as err {
@@ -342,5 +348,7 @@ TranslateSelection(SourceLang, TargetLang) {
 
         ; Cleanup
         FileDelete OutputFile
+        if FileExist(ErrorFile)
+            FileDelete ErrorFile
     }
 }
