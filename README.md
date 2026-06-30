@@ -21,6 +21,7 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
     - [gd-main.ahk](#gd-mainahk)
     - [gd-side.ahk](#gd-sideahk)
     - [hotkeys.ahk](#hotkeysahk)
+    - [kardenwort-window/kardenwort-window.ahk](#kardenwort-windowkardenwort-windowahk)
     - [kill-ffplay.ahk](#kill-ffplayahk)
     - [lowercase.ahk](#lowercaseahk)
     - [lute.ahk](#luteahk)
@@ -130,6 +131,13 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
     - `Ctrl + Enter`: Native behavior (Submit/Commit).
     - `Shift+Enter`: Native behavior (New Line).
 - **Context:** Active in Chrome ("Google AI Studio") or the Antigravity application.
+
+[Back to Top](#table-of-contents)
+
+### kardenwort-window/kardenwort-window.ahk
+- **Description:** Spawns a resizable AutoHotkey GUI window containing a browser view of analyzed vocabulary and phrases from selected text. It interfaces with the `kardenwort-desk` python utility to render inflections, lemmas, translations, and frequency ordering, supporting inline editing and Favorites selection.
+- **Hotkey:** `Ctrl + Alt + Shift + F1`
+- **Dependencies:** Requires `Lib/ClipboardUtil.ahk` and `Lib/B64Util.ahk` in the `Lib` folder.
 
 [Back to Top](#table-of-contents)
 

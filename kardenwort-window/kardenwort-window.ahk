@@ -781,8 +781,8 @@ HandleSmartAction() {
     LaunchKardenwortWindow(G_CapturedText, textMode)
 }
 
-; Register global hotkey Ctrl+Alt+Shift+D
-^+!d::
+; Register global hotkey Ctrl+Alt+Shift+F1
+^+!F1::
 {
     global G_PressCount, G_CapturedText, G_MultiTapTimeout
     G_PressCount += 1
