@@ -1023,4 +1023,42 @@ $^c::
     }
     Send("^c")
 }
+
+$^z::
+{
+    activeHwnd := WinActive("A")
+    try {
+        g := GuiFromHwnd(activeHwnd)
+        if (g && g.HasProp("wb")) {
+            el := g.wb.document.activeElement
+            if (el && el.tagName == "INPUT" && InStr(el.className, "edit-input")) {
+                Send("^z")
+                return
+            }
+            g.wb.document.parentWindow.undo()
+            return
+        }
+    } catch {
+    }
+    Send("^z")
+}
+
+$^y::
+{
+    activeHwnd := WinActive("A")
+    try {
+        g := GuiFromHwnd(activeHwnd)
+        if (g && g.HasProp("wb")) {
+            el := g.wb.document.activeElement
+            if (el && el.tagName == "INPUT" && InStr(el.className, "edit-input")) {
+                Send("^y")
+                return
+            }
+            g.wb.document.parentWindow.redo()
+            return
+        }
+    } catch {
+    }
+    Send("^y")
+}
 #HotIf
