@@ -262,7 +262,12 @@ LaunchRestore(filePath) {
     UpdateTrayMenu()
     UpdateTrayIcon()
 
-    LaunchKardenwortWindow(sourceText, "multi", ZID)
+    inferredMode := "single"
+    if (InStr(sourceText, "`n") || InStr(sourceText, "`r")) {
+        inferredMode := "multi"
+    }
+
+    LaunchKardenwortWindow(sourceText, inferredMode, ZID)
 }
 
 LaunchDesk(filePath, textMode) {
