@@ -663,9 +663,10 @@ OnReprocessClick(guiObj, *) {
     guiObj.StatusTxt.Text := "Preparing re-process..."
     
     ; Grab selection BEFORE any saves or reloads
+    jsonStr := "[]"
     try {
-        selectedRowsJSON := guiObj.wb.document.parentWindow.getSelectedRowsArray()
-        if (selectedRowsJSON.length == 0) {
+        jsonStr := guiObj.wb.document.parentWindow.getSelectedRows()
+        if (jsonStr == "[]") {
             MsgBox("Please select rows to re-process.", "Kardenwort", 48)
             guiObj.StatusTxt.Text := "Ready"
             return
@@ -674,12 +675,6 @@ OnReprocessClick(guiObj, *) {
         MsgBox("Failed to get selected rows.", "Kardenwort Error", 16)
         guiObj.StatusTxt.Text := "Ready"
         return
-    }
-    
-    try {
-        jsonStr := guiObj.wb.document.parentWindow.getSelectedRows()
-    } catch {
-        jsonStr := "[]"
     }
 
     ; Check if dirty and save first
