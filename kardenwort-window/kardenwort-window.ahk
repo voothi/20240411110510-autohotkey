@@ -658,19 +658,9 @@ OnDeleteClick(guiObj, *) {
 }
 
 OnReprocessClick(guiObj, *) {
-    ; Check if dirty and save first
-    isDirty := false
-    try {
-        isDirty := guiObj.wb.document.getElementById("save-btn").className.indexOf("dirty") !== -1
-    } catch {
-    }
-    
-    if (isDirty) {
-        OnSaveClick(guiObj, "")
-        Sleep(500)
-    }
-
     guiObj.StatusTxt.Text := "Preparing re-process..."
+    
+    ; Grab selection BEFORE any saves or reloads
     try {
         selectedRowsJSON := guiObj.wb.document.parentWindow.getSelectedRowsArray()
         if (selectedRowsJSON.length == 0) {
@@ -688,6 +678,19 @@ OnReprocessClick(guiObj, *) {
         jsonStr := guiObj.wb.document.parentWindow.getSelectedRows()
     } catch {
         jsonStr := "[]"
+    }
+
+    ; Check if dirty and save first
+    isDirty := false
+    try {
+        isDirty := guiObj.wb.document.getElementById("save-btn").className.indexOf("dirty") !== -1
+    } catch {
+    }
+    
+    if (isDirty) {
+        guiObj.IsReloading := true ; Prevent WatchFile from reloading while we reprocess
+        OnSaveClick(guiObj, "")
+        Sleep(100)
     }
 
     tsvPathStr := StrReplace(guiObj.TsvPath, "\", "\\")
@@ -713,6 +716,10 @@ OnReprocessClick(guiObj, *) {
     } else {
         guiObj.StatusTxt.Text := "Re-process failed"
         MsgBox("Failed to start re-processing:`n" errJSON, "Kardenwort Error", 16)
+    }
+
+    if (isDirty) {
+        guiObj.IsReloading := false
     }
 }
 
