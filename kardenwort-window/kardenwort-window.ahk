@@ -730,18 +730,7 @@ GuiClose(thisGui) {
     if (thisGui.HasOwnProp("TimerFn")) {
         SetTimer(thisGui.TimerFn, 0)
     }
-    try {
-        minMax := WinGetMinMax("ahk_id " thisGui.Hwnd)
-        if (minMax == 0) {
-            thisGui.GetPos(&outX, &outY, &outW, &outH)
-            configPath := A_ScriptDir "\config.ini"
-            IniWrite(outX, configPath, "Window", "X")
-            IniWrite(outY, configPath, "Window", "Y")
-            IniWrite(outW, configPath, "Window", "Width")
-            IniWrite(outH, configPath, "Window", "Height")
-        }
-    } catch {
-    }
+    ; Window position saving disabled to maintain fixed size from config
 
     thisGui.wb := ""
     thisGui.Destroy()
