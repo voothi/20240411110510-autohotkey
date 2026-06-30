@@ -401,7 +401,8 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     )
     SendBtn := MyGui.Add("Text", "x135 y615 w120 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
     DeleteBtn := MyGui.Add("Text", "x265 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor, "Delete")
-    StatusTxt := MyGui.Add("Text", "x385 y615 w420 h30 +BackgroundTrans +0x200", "Ready")
+    ReprocBtn := MyGui.Add("Text", "x385 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor, "Re-process")
+    StatusTxt := MyGui.Add("Text", "x505 y615 w300 h30 +BackgroundTrans +0x200", "Ready")
     StatusTxt.SetFont(G_GuiTextColor)
 
     ; Store references on GUI object
@@ -410,6 +411,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     MyGui.SaveBtn := SaveBtn
     MyGui.SendBtn := SendBtn
     MyGui.DeleteBtn := DeleteBtn
+    MyGui.ReprocBtn := ReprocBtn
     MyGui.StatusTxt := StatusTxt
     MyGui.ZID := ZID
     MyGui.Lang := lang
@@ -421,6 +423,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     SaveBtn.OnEvent("Click", OnSaveClick.Bind(MyGui))
     SendBtn.OnEvent("Click", OnSendToAnkiClick.Bind(MyGui))
     DeleteBtn.OnEvent("Click", OnDeleteClick.Bind(MyGui))
+    ReprocBtn.OnEvent("Click", OnReprocessClick.Bind(MyGui))
 
     configPath := A_ScriptDir "\config.ini"
     initX := Trim(StrSplit(IniRead(configPath, "Window", "X", ""), ";")[1])
@@ -647,6 +650,52 @@ OnDeleteClick(guiObj, *) {
     }
 }
 
+OnReprocessClick(guiObj, *) {
+    guiObj.StatusTxt.Text := "Preparing re-process..."
+    try {
+        selectedRowsJSON := guiObj.wb.document.parentWindow.getSelectedRowsArray()
+        if (selectedRowsJSON.length == 0) {
+            MsgBox("Please select rows to re-process.", "Kardenwort", 48)
+            guiObj.StatusTxt.Text := "Ready"
+            return
+        }
+    } catch {
+        MsgBox("Failed to get selected rows.", "Kardenwort Error", 16)
+        guiObj.StatusTxt.Text := "Ready"
+        return
+    }
+    
+    try {
+        jsonStr := guiObj.wb.document.parentWindow.getSelectedRows()
+    } catch {
+        jsonStr := "[]"
+    }
+
+    manifest := '{"selected_row_ids": ' jsonStr ', "zid": "' guiObj.ZID '"}'
+    tmpManifestFile := A_Temp "\karden_manifest_" guiObj.ZID "_reproc.json"
+    try {
+        FileAppend(manifest, tmpManifestFile, "UTF-8-RAW")
+    } catch as e {
+        guiObj.StatusTxt.Text := "Manifest write failed"
+        MsgBox("Failed to write temporary manifest file: " e.Message, "Kardenwort Error", 16)
+        return
+    }
+
+    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" reprocess --selection-manifest "' tmpManifestFile '" --language ' guiObj.Lang
+    exitCode := RunSilent(cmd, &outStr, &errJSON)
+    try {
+        FileDelete(tmpManifestFile)
+    } catch {
+    }
+
+    if (exitCode == 0) {
+        guiObj.StatusTxt.Text := "Re-processing started"
+    } else {
+        guiObj.StatusTxt.Text := "Re-process failed"
+        MsgBox("Failed to start re-processing:`n" errJSON, "Kardenwort Error", 16)
+    }
+}
+
 WatchFile(guiObj) {
     if (guiObj.HasOwnProp("IsReloading") && guiObj.IsReloading) {
         return
@@ -824,7 +873,8 @@ GuiSize(thisGui, MinMax, Width, Height) {
     thisGui.SaveBtn.Move(15, btnY)
     thisGui.SendBtn.Move(135, btnY)
     thisGui.DeleteBtn.Move(265, btnY)
-    thisGui.StatusTxt.Move(385, btnY, Width - 400)
+    thisGui.ReprocBtn.Move(385, btnY)
+    thisGui.StatusTxt.Move(505, btnY, Width - 520)
     try {
         if (MinMax == 1) {
             thisGui.wb.document.body.classList.add("maximized")
