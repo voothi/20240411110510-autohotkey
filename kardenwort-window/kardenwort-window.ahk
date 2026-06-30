@@ -463,8 +463,17 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     try {
         tsvPath := wb.document.getElementById("tsv-path").innerText
         MyGui.TsvPath := tsvPath
-        if FileExist(tsvPath) {
+        
+        llmFilled := false
+        try {
+            llmFilled := wb.document.getElementById("llm-filled").innerText == "true"
+        } catch {
+        }
+        
+        if (llmFilled && FileExist(tsvPath)) {
             MyGui.LastMTime := FileGetTime(tsvPath)
+        } else {
+            MyGui.LastMTime := ""
         }
 
         ; Start polling file watcher
