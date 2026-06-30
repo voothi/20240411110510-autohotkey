@@ -584,8 +584,7 @@ OnSaveClick(guiObj, *) {
         return
     }
 
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" edit-save --deltas "' tmpDeltasFile '" --zid ' guiObj.ZID ' --language ' guiObj
-        .Lang
+    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" edit-save --deltas "' tmpDeltasFile '" --zid ' guiObj.ZID ' --language ' guiObj.Lang ' --tsv "' StrReplace(guiObj.TsvPath, "\", "\\") '"'
     exitCode := RunSilent(cmd, &outStr, &errJSON)
     try {
         FileDelete(tmpDeltasFile)
@@ -612,7 +611,8 @@ OnSendToAnkiClick(guiObj, *) {
         selectedRowsJSON := "[]"
     }
 
-    manifest := '{"selected_row_ids": ' selectedRowsJSON ', "zid": "' guiObj.ZID '"}'
+    tsvPathStr := StrReplace(guiObj.TsvPath, "\", "\\")
+    manifest := '{"selected_row_ids": ' selectedRowsJSON ', "zid": "' guiObj.ZID '", "tsv_path": "' tsvPathStr '"}'
     tmpManifestFile := A_Temp "\karden_manifest_" guiObj.ZID ".json"
     try {
         FileAppend(manifest, tmpManifestFile, "UTF-8-RAW")
@@ -690,7 +690,8 @@ OnReprocessClick(guiObj, *) {
         jsonStr := "[]"
     }
 
-    manifest := '{"selected_row_ids": ' jsonStr ', "zid": "' guiObj.ZID '"}'
+    tsvPathStr := StrReplace(guiObj.TsvPath, "\", "\\")
+    manifest := '{"selected_row_ids": ' jsonStr ', "zid": "' guiObj.ZID '", "tsv_path": "' tsvPathStr '"}'
     tmpManifestFile := A_Temp "\karden_manifest_" guiObj.ZID "_reproc.json"
     try {
         FileAppend(manifest, tmpManifestFile, "UTF-8-RAW")
