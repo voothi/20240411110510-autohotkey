@@ -540,9 +540,7 @@ OnSaveClick(guiObj, *) {
         guiObj.wb.document.parentWindow.clearDirty()
         guiObj.SaveBtn.Enabled := false
         guiObj.StatusTxt.Text := "Edits saved successfully"
-        if FileExist(guiObj.TsvPath) {
-            guiObj.LastMTime := FileGetTime(guiObj.TsvPath)
-        }
+        WatchFile(guiObj)
     } else {
         guiObj.StatusTxt.Text := "Save failed"
         MsgBox("Failed to save cell edits:`n" errJSON, "Kardenwort Error", 16)
