@@ -388,8 +388,8 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     wb := wvc.Value
 
     ; Native Footer Buttons
-    SaveBtn := MyGui.Add("Button", "x15 y615 w100 h30 Disabled", "Save (Ctrl+S)")
-    SendBtn := MyGui.Add("Button", "x125 y615 w120 h30", "Send to Anki")
+    SaveBtn := MyGui.Add("Text", "x15 y615 w110 h30 Center +Border +0x200 c0xE3E6EB Disabled", "Save (Ctrl+S)")
+    SendBtn := MyGui.Add("Text", "x135 y615 w120 h30 Center +Border +0x200 c0xE3E6EB", "Send to Anki")
     StatusTxt := MyGui.Add("Text", "x255 y620 w540 h25 +BackgroundTrans", "Ready")
     StatusTxt.SetFont("c0xE3E6EB")
 
@@ -805,7 +805,7 @@ GuiSize(thisGui, MinMax, Width, Height) {
     thisGui.wvc.Move(, , Width - 20, Height - 65)
     btnY := Height - 40
     thisGui.SaveBtn.Move(15, btnY)
-    thisGui.SendBtn.Move(125, btnY)
+    thisGui.SendBtn.Move(135, btnY)
     thisGui.StatusTxt.Move(255, btnY + 5, Width - 270)
     try {
         if (MinMax == 1) {
