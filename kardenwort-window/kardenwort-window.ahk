@@ -378,6 +378,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
 
     ; Create GUI
     MyGui := Gui("+Resize +MinSize400x300", guiTitle)
+    MyGui.BackColor := "0D0F12"
     MyGui.OnEvent("Close", GuiClose)
     MyGui.OnEvent("Size", GuiSize)
     MyGui.OnEvent("Escape", GuiEscape)
@@ -390,6 +391,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     SaveBtn := MyGui.Add("Button", "x15 y615 w100 h30 Disabled", "Save (Ctrl+S)")
     SendBtn := MyGui.Add("Button", "x125 y615 w120 h30", "Send to Anki")
     StatusTxt := MyGui.Add("Text", "x255 y620 w540 h25", "Ready")
+    StatusTxt.SetFont("c0xE3E6EB")
 
     ; Store references on GUI object
     MyGui.wb := wb
