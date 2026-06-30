@@ -425,6 +425,10 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
 
     tmpTextFile := A_Temp "\karden_input_" ZID ".txt"
     try {
+        FileDelete(tmpTextFile)
+    } catch {
+    }
+    try {
         FileAppend(sourceText, tmpTextFile, "UTF-8-RAW")
     } catch as e {
         StatusTxt.Text := "Input write failed"
@@ -591,6 +595,10 @@ OnSendToAnkiClick(guiObj, *) {
 
 
 WatchFile(guiObj) {
+    if (guiObj.HasOwnProp("IsReloading") && guiObj.IsReloading) {
+        return
+    }
+
     logFile := "watcher.log"
     try {
         FileAppend(A_Now " [Tick] Checking window...`n", logFile, "UTF-8")
@@ -638,6 +646,7 @@ WatchFile(guiObj) {
     }
 
     if (currentMTime != guiObj.LastMTime) {
+        guiObj.IsReloading := true
         isDirty := false
         try {
             isDirty := guiObj.wb.document.parentWindow.isDirty()
@@ -649,6 +658,7 @@ WatchFile(guiObj) {
                 "Kardenwort", "YesNo Icon!")
             if (res == "No") {
                 guiObj.LastMTime := currentMTime
+                guiObj.IsReloading := false
                 return
             }
         }
@@ -657,12 +667,17 @@ WatchFile(guiObj) {
 
         tmpTextFile := A_Temp "\karden_input_" guiObj.ZID ".txt"
         try {
+            FileDelete(tmpTextFile)
+        } catch {
+        }
+        try {
             FileAppend(guiObj.SourceText, tmpTextFile, "UTF-8-RAW")
         } catch as e {
             try {
                 FileAppend(A_Now " [Exit] Failed to write temp input: " e.Message "`n", logFile, "UTF-8")
             } catch {
             }
+            guiObj.IsReloading := false
             return
         }
 
@@ -673,6 +688,8 @@ WatchFile(guiObj) {
             FileDelete(tmpTextFile)
         } catch {
         }
+
+        guiObj.IsReloading := false
 
         try {
             FileAppend(A_Now " [Reload] exitCode=" exitCode ", errJSON=" errJSON "`n", logFile, "UTF-8")
