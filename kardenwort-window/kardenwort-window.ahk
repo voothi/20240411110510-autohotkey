@@ -397,9 +397,10 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     wb := wvc.Value
 
     ; Native Footer Buttons
-    SaveBtn := MyGui.Add("Text", "x15 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor " Disabled", "Save (Ctrl+S)")
+    SaveBtn := MyGui.Add("Text", "x15 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor " Disabled", "Save (Ctrl+S)"
+    )
     SendBtn := MyGui.Add("Text", "x135 y615 w120 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
-    DeleteBtn := MyGui.Add("Text", "x265 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor, "Delete (Del)")
+    DeleteBtn := MyGui.Add("Text", "x265 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor, "Delete")
     StatusTxt := MyGui.Add("Text", "x385 y615 w420 h30 +BackgroundTrans +0x200", "Ready")
     StatusTxt.SetFont(G_GuiTextColor)
 
@@ -517,13 +518,13 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     try {
         tsvPath := GetElementText(wb.document.getElementById("tsv-path"))
         MyGui.TsvPath := tsvPath
-        
+
         llmFilled := false
         try {
             llmFilled := GetElementText(wb.document.getElementById("llm-filled")) == "true"
         } catch {
         }
-        
+
         if (FileExist(tsvPath)) {
             MyGui.LastMTime := FileGetTime(tsvPath)
         } else {
@@ -646,9 +647,6 @@ OnDeleteClick(guiObj, *) {
     }
 }
 
-
-
-
 WatchFile(guiObj) {
     if (guiObj.HasOwnProp("IsReloading") && guiObj.IsReloading) {
         return
@@ -715,7 +713,8 @@ WatchFile(guiObj) {
             return
         }
 
-        cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' guiObj.Lang ' --zid ' guiObj.ZID ' --text-mode ' guiObj.TextMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' < "' tmpTextFile '"'
+        cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' guiObj.Lang ' --zid ' guiObj.ZID ' --text-mode ' guiObj
+            .TextMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' < "' tmpTextFile '"'
         exitCode := RunSilent(cmd, &outB64, &errJSON)
         try {
             FileDelete(tmpTextFile)
@@ -737,7 +736,7 @@ WatchFile(guiObj) {
             htmlContent := B64Decode(outB64)
             tmpHtmlFile := A_Temp "\karden_view_" guiObj.ZID "_" A_TickCount ".html"
             FileAppend(htmlContent, tmpHtmlFile, "UTF-8-RAW")
-            
+
             try {
                 guiObj.wvc.Visible := false
                 guiObj.wb.Navigate(tmpHtmlFile)
@@ -751,12 +750,12 @@ WatchFile(guiObj) {
                 guiObj.wvc.Visible := true
                 return
             }
-            
+
             try {
                 FileDelete(tmpHtmlFile)
             } catch {
             }
-            
+
             try {
                 ApplyZoom(guiObj.wb)
                 if (WinGetMinMax(guiObj.Hwnd) == 1) {
@@ -991,6 +990,25 @@ $F2::
     } catch {
     }
     Send("{F2}")
+}
+
+$Delete::
+{
+    activeHwnd := WinActive("A")
+    try {
+        g := GuiFromHwnd(activeHwnd)
+        if (g && g.HasProp("wb")) {
+            el := g.wb.document.activeElement
+            if (el && el.tagName == "INPUT" && InStr(el.className, "edit-input")) {
+                Send("{Delete}")
+                return
+            }
+            g.wb.document.parentWindow.deleteSelectedRows()
+            return
+        }
+    } catch {
+    }
+    Send("{Delete}")
 }
 
 $^a::
