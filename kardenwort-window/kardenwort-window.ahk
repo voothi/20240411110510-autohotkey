@@ -461,12 +461,12 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
 
     ; Retrieve metadata from HTML DOM
     try {
-        tsvPath := wb.document.getElementById("tsv-path").innerText
+        tsvPath := wb.document.getElementById("tsv-path").textContent
         MyGui.TsvPath := tsvPath
         
         llmFilled := false
         try {
-            llmFilled := wb.document.getElementById("llm-filled").innerText == "true"
+            llmFilled := wb.document.getElementById("llm-filled").textContent == "true"
         } catch {
         }
         
@@ -690,7 +690,7 @@ WatchFile(guiObj) {
             guiObj.wb.document.parentWindow.ahkCall := OnAhkCall.Bind(guiObj)
 
             try {
-                guiObj.TsvPath := guiObj.wb.document.getElementById("tsv-path").innerText
+                guiObj.TsvPath := guiObj.wb.document.getElementById("tsv-path").textContent
                 guiObj.LastMTime := FileGetTime(guiObj.TsvPath)
                 guiObj.StatusTxt.Text := "Analysis loaded successfully (Reloaded)"
                 FileAppend(A_Now " [Success] Reloaded successfully, new LastMTime=" guiObj.LastMTime "`n", logFile, "UTF-8")
