@@ -871,7 +871,7 @@ GuiClose(thisGui) {
 }
 
 GuiSize(thisGui, MinMax, Width, Height) {
-    if (MinMax == -1)
+    if (MinMax == -1 || Width == 0 || Height == 0)
         return
     thisGui.wvc.Move(, , Width - 20, Height - 65)
     btnY := Height - 40
