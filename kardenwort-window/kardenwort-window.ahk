@@ -599,22 +599,12 @@ WatchFile(guiObj) {
         return
     }
 
-    logFile := "watcher.log"
-    try {
-        FileAppend(A_Now " [Tick] Checking window...`n", logFile, "UTF-8")
-    } catch {
-    }
-
     try {
         hwnd := guiObj.Hwnd
     } catch {
         hwnd := 0
     }
     if (hwnd == 0 || !WinExist("ahk_id " hwnd)) {
-        try {
-            FileAppend(A_Now " [Exit] Window does not exist`n", logFile, "UTF-8")
-        } catch {
-        }
         if (guiObj.HasOwnProp("TimerFn")) {
             SetTimer(guiObj.TimerFn, 0)
         }
@@ -623,26 +613,13 @@ WatchFile(guiObj) {
 
     tsvPath := guiObj.TsvPath
     if (tsvPath == "" || !FileExist(tsvPath)) {
-        try {
-            FileAppend(A_Now " [Exit] tsvPath is empty or file doesn't exist: " tsvPath "`n", logFile, "UTF-8")
-        } catch {
-        }
         return
     }
 
     try {
         currentMTime := FileGetTime(tsvPath)
     } catch as e {
-        try {
-            FileAppend(A_Now " [Exit] FileGetTime failed: " e.Message "`n", logFile, "UTF-8")
-        } catch {
-        }
         return
-    }
-
-    try {
-        FileAppend(A_Now " [Tick] currentMTime=" currentMTime ", LastMTime=" guiObj.LastMTime "`n", logFile, "UTF-8")
-    } catch {
     }
 
     if (currentMTime != guiObj.LastMTime) {
@@ -673,10 +650,6 @@ WatchFile(guiObj) {
         try {
             FileAppend(guiObj.SourceText, tmpTextFile, "UTF-8-RAW")
         } catch as e {
-            try {
-                FileAppend(A_Now " [Exit] Failed to write temp input: " e.Message "`n", logFile, "UTF-8")
-            } catch {
-            }
             guiObj.IsReloading := false
             return
         }
@@ -690,11 +663,6 @@ WatchFile(guiObj) {
         }
 
         guiObj.IsReloading := false
-
-        try {
-            FileAppend(A_Now " [Reload] exitCode=" exitCode ", errJSON=" errJSON "`n", logFile, "UTF-8")
-        } catch {
-        }
 
         if (exitCode == 0) {
             htmlContent := B64Decode(outB64)
@@ -710,10 +678,8 @@ WatchFile(guiObj) {
                 guiObj.TsvPath := GetElementText(guiObj.wb.document.getElementById("tsv-path"))
                 guiObj.LastMTime := FileGetTime(guiObj.TsvPath)
                 guiObj.StatusTxt.Text := "Analysis loaded successfully (Reloaded)"
-                FileAppend(A_Now " [Success] Reloaded successfully, new LastMTime=" guiObj.LastMTime "`n", logFile, "UTF-8")
             } catch as e {
                 guiObj.StatusTxt.Text := "Metadata binding failed (Reloaded): " e.Message
-                FileAppend(A_Now " [Error] Metadata binding failed after reload: " e.Message "`n", logFile, "UTF-8")
             }
         } else {
             guiObj.StatusTxt.Text := "Reload failed: render error"
