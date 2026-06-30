@@ -695,21 +695,40 @@ WatchFile(guiObj) {
 
         guiObj.IsReloading := false
 
+        try {
+            hwnd := guiObj.Hwnd
+        } catch {
+            hwnd := 0
+        }
+        if (hwnd == 0 || !WinExist("ahk_id " hwnd) || !guiObj.HasProp("wb") || !IsObject(guiObj.wb)) {
+            return
+        }
+
         if (exitCode == 0) {
             htmlContent := B64Decode(outB64)
             tmpHtmlFile := A_Temp "\karden_view_" guiObj.ZID "_" A_TickCount ".html"
             FileAppend(htmlContent, tmpHtmlFile, "UTF-8-RAW")
-            guiObj.wb.Navigate(tmpHtmlFile)
-            while guiObj.wb.ReadyState != 4
-                Sleep(10)
+            
+            try {
+                guiObj.wb.Navigate(tmpHtmlFile)
+                while guiObj.wb.ReadyState != 4
+                    Sleep(10)
+            } catch {
+                try {
+                    FileDelete(tmpHtmlFile)
+                } catch {
+                }
+                return
+            }
+            
             try {
                 FileDelete(tmpHtmlFile)
             } catch {
             }
-            ApplyZoom(guiObj.wb)
-            guiObj.wb.document.parentWindow.ahkCall := OnAhkCall.Bind(guiObj)
-
+            
             try {
+                ApplyZoom(guiObj.wb)
+                guiObj.wb.document.parentWindow.ahkCall := OnAhkCall.Bind(guiObj)
                 guiObj.wb.document.parentWindow.setSelectedRows(selectedRowsJSON)
             } catch {
             }
