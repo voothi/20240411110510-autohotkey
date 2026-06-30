@@ -425,7 +425,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
 
     tmpTextFile := A_Temp "\karden_input_" ZID ".txt"
     try {
-        FileAppend(sourceText, tmpTextFile, "UTF-8")
+        FileAppend(sourceText, tmpTextFile, "UTF-8-RAW")
     } catch as e {
         StatusTxt.Text := "Input write failed"
         MsgBox("Failed to write temporary text input:`n" e.Message, "Kardenwort Error", 16)
@@ -512,7 +512,7 @@ OnSaveClick(guiObj, *) {
 
     tmpDeltasFile := A_Temp "\karden_deltas_" guiObj.ZID ".json"
     try {
-        FileAppend(deltasJSON, tmpDeltasFile, "UTF-8")
+        FileAppend(deltasJSON, tmpDeltasFile, "UTF-8-RAW")
     } catch as e {
         guiObj.StatusTxt.Text := "Deltas write failed"
         MsgBox("Failed to write temporary delta file: " e.Message, "Kardenwort Error", 16)
@@ -552,7 +552,7 @@ OnSendToAnkiClick(guiObj, *) {
     manifest := '{"selected_row_ids": ' selectedRowsJSON ', "zid": "' guiObj.ZID '"}'
     tmpManifestFile := A_Temp "\karden_manifest_" guiObj.ZID ".json"
     try {
-        FileAppend(manifest, tmpManifestFile, "UTF-8")
+        FileAppend(manifest, tmpManifestFile, "UTF-8-RAW")
     } catch as e {
         guiObj.StatusTxt.Text := "Manifest write failed"
         MsgBox("Failed to write temporary manifest file: " e.Message, "Kardenwort Error", 16)
@@ -631,7 +631,7 @@ WatchFile(guiObj) {
 
         tmpTextFile := A_Temp "\karden_input_" guiObj.ZID ".txt"
         try {
-            FileAppend(guiObj.SourceText, tmpTextFile, "UTF-8")
+            FileAppend(guiObj.SourceText, tmpTextFile, "UTF-8-RAW")
         } catch {
             return
         }
