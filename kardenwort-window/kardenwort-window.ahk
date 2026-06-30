@@ -18,6 +18,10 @@ global G_TapDoubleMode := "multi"
 global G_OrdinaryColor := "#ffd700"
 global G_PairedColor := "#9370db"
 global G_DefaultZoom := "100"
+global G_Theme := "dark"
+global G_GuiBgColor := "0D0F12"
+global G_GuiTextColor := "c0xE3E6EB"
+global G_DwmDark := 1
 
 global G_PressCount := 0
 global G_CapturedText := ""
@@ -48,6 +52,10 @@ LoadConfig() {
     global G_OrdinaryColor := IniRead(configPath, "Highlight", "OrdinaryColor", "#ffd700")
     global G_PairedColor := IniRead(configPath, "Highlight", "PairedColor", "#9370db")
     global G_DefaultZoom := IniRead(configPath, "Settings", "DefaultZoom", "100")
+    global G_Theme := IniRead(configPath, "Settings", "Theme", "dark")
+    global G_GuiBgColor := (G_Theme == "light") ? "F6F8FA" : "0D0F12"
+    global G_GuiTextColor := (G_Theme == "light") ? "c0x24292F" : "c0xE3E6EB"
+    global G_DwmDark := (G_Theme == "light") ? 0 : 1
 
     if (G_DeskPythonPath == "" || !FileExist(G_DeskPythonPath)) {
         MsgBox("Python interpreter not found: " G_DeskPythonPath, "Kardenwort Error", 16)
@@ -378,8 +386,8 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
 
     ; Create GUI
     MyGui := Gui("+Resize +MinSize400x300", guiTitle)
-    MyGui.BackColor := "0D0F12"
-    DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", MyGui.Hwnd, "UInt", 20, "Ptr*", 1, "UInt", 4)
+    MyGui.BackColor := G_GuiBgColor
+    DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", MyGui.Hwnd, "UInt", 20, "Ptr*", G_DwmDark, "UInt", 4)
     MyGui.OnEvent("Close", GuiClose)
     MyGui.OnEvent("Size", GuiSize)
     MyGui.OnEvent("Escape", GuiEscape)
@@ -389,10 +397,10 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     wb := wvc.Value
 
     ; Native Footer Buttons
-    SaveBtn := MyGui.Add("Text", "x15 y615 w110 h30 Center +Border +0x200 c0xE3E6EB Disabled", "Save (Ctrl+S)")
-    SendBtn := MyGui.Add("Text", "x135 y615 w120 h30 Center +Border +0x200 c0xE3E6EB", "Send to Anki")
+    SaveBtn := MyGui.Add("Text", "x15 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor " Disabled", "Save (Ctrl+S)")
+    SendBtn := MyGui.Add("Text", "x135 y615 w120 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
     StatusTxt := MyGui.Add("Text", "x265 y615 w540 h30 +BackgroundTrans +0x200", "Ready")
-    StatusTxt.SetFont("c0xE3E6EB")
+    StatusTxt.SetFont(G_GuiTextColor)
 
     ; Store references on GUI object
     MyGui.wb := wb
@@ -462,7 +470,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
         return
     }
 
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' lang ' --zid ' ZID ' --text-mode ' textMode ' --zoom ' G_DefaultZoom ' < "' tmpTextFile '"'
+    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' lang ' --zid ' ZID ' --text-mode ' textMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' < "' tmpTextFile '"'
     exitCode := RunSilent(cmd, &outB64, &errJSON)
     try {
         FileDelete(tmpTextFile)
@@ -697,8 +705,7 @@ WatchFile(guiObj) {
             return
         }
 
-        cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' guiObj.Lang ' --zid ' guiObj.ZID ' --text-mode ' guiObj
-            .TextMode ' --zoom ' G_DefaultZoom ' < "' tmpTextFile '"'
+        cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' guiObj.Lang ' --zid ' guiObj.ZID ' --text-mode ' guiObj.TextMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' < "' tmpTextFile '"'
         exitCode := RunSilent(cmd, &outB64, &errJSON)
         try {
             FileDelete(tmpTextFile)
