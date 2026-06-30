@@ -405,7 +405,20 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     SaveBtn.OnEvent("Click", OnSaveClick.Bind(MyGui))
     SendBtn.OnEvent("Click", OnSendToAnkiClick.Bind(MyGui))
 
-    MyGui.Show("x" x " y" y " w830 h660")
+    configPath := A_ScriptDir "\config.ini"
+    initX := IniRead(configPath, "Window", "X", "")
+    initY := IniRead(configPath, "Window", "Y", "")
+    initW := IniRead(configPath, "Window", "Width", "1143")
+    initH := IniRead(configPath, "Window", "Height", "957")
+
+    if (initX == "" || initY == "") {
+        GetCascadeCoords(&x, &y)
+        showStr := "x" x " y" y " w" initW " h" initH
+    } else {
+        showStr := "x" initX " y" initY " w" initW " h" initH
+    }
+
+    MyGui.Show(showStr)
 
     ; Fetch HTML from Python core
     StatusTxt.Text := "Invoking backend analysis..."
@@ -663,6 +676,19 @@ GuiClose(thisGui) {
     if (thisGui.HasOwnProp("TimerFn")) {
         SetTimer(thisGui.TimerFn, 0)
     }
+    try {
+        minMax := WinGetMinMax("ahk_id " thisGui.Hwnd)
+        if (minMax == 0) {
+            thisGui.GetPos(&outX, &outY, &outW, &outH)
+            configPath := A_ScriptDir "\config.ini"
+            IniWrite(outX, configPath, "Window", "X")
+            IniWrite(outY, configPath, "Window", "Y")
+            IniWrite(outW, configPath, "Window", "Width")
+            IniWrite(outH, configPath, "Window", "Height")
+        }
+    } catch {
+    }
+
     thisGui.wb := ""
     thisGui.Destroy()
 
