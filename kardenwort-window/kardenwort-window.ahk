@@ -588,11 +588,14 @@ OnSendToAnkiClick(guiObj, *) {
 }
 
 
+
+
 WatchFile(guiObj) {
     logFile := "watcher.log"
     try {
         FileAppend(A_Now " [Tick] Checking window...`n", logFile, "UTF-8")
-    } catch {}
+    } catch {
+    }
 
     try {
         hwnd := guiObj.Hwnd
@@ -602,7 +605,8 @@ WatchFile(guiObj) {
     if (hwnd == 0 || !WinExist("ahk_id " hwnd)) {
         try {
             FileAppend(A_Now " [Exit] Window does not exist`n", logFile, "UTF-8")
-        } catch {}
+        } catch {
+        }
         if (guiObj.HasOwnProp("TimerFn")) {
             SetTimer(guiObj.TimerFn, 0)
         }
@@ -613,7 +617,8 @@ WatchFile(guiObj) {
     if (tsvPath == "" || !FileExist(tsvPath)) {
         try {
             FileAppend(A_Now " [Exit] tsvPath is empty or file doesn't exist: " tsvPath "`n", logFile, "UTF-8")
-        } catch {}
+        } catch {
+        }
         return
     }
 
@@ -622,13 +627,15 @@ WatchFile(guiObj) {
     } catch as e {
         try {
             FileAppend(A_Now " [Exit] FileGetTime failed: " e.Message "`n", logFile, "UTF-8")
-        } catch {}
+        } catch {
+        }
         return
     }
 
     try {
         FileAppend(A_Now " [Tick] currentMTime=" currentMTime ", LastMTime=" guiObj.LastMTime "`n", logFile, "UTF-8")
-    } catch {}
+    } catch {
+    }
 
     if (currentMTime != guiObj.LastMTime) {
         isDirty := false
@@ -654,7 +661,8 @@ WatchFile(guiObj) {
         } catch as e {
             try {
                 FileAppend(A_Now " [Exit] Failed to write temp input: " e.Message "`n", logFile, "UTF-8")
-            } catch {}
+            } catch {
+            }
             return
         }
 
@@ -668,7 +676,8 @@ WatchFile(guiObj) {
 
         try {
             FileAppend(A_Now " [Reload] exitCode=" exitCode ", errJSON=" errJSON "`n", logFile, "UTF-8")
-        } catch {}
+        } catch {
+        }
 
         if (exitCode == 0) {
             htmlContent := B64Decode(outB64)
