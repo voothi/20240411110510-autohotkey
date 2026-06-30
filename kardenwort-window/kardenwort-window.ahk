@@ -773,11 +773,6 @@ HandleSmartAction() {
         textMode := G_TapDoubleMode
     }
 
-    ; Release Alt, Control, and Shift to avoid Modifier Bleed
-    KeyWait "Alt"
-    KeyWait "Control"
-    KeyWait "Shift"
-
     LaunchKardenwortWindow(G_CapturedText, textMode)
 }
 
@@ -788,7 +783,7 @@ HandleSmartAction() {
     G_PressCount += 1
     if (G_PressCount == 1) {
         ; Use SmartCopy to securely grab selected text
-        if SmartCopy(0.5, true) {
+        if SmartCopy(0.5, false) {
             G_CapturedText := A_Clipboard
             SetTimer(HandleSmartAction, -G_MultiTapTimeout)
         } else {
