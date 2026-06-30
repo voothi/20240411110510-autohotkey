@@ -456,7 +456,8 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
 
         ; Start polling file watcher
         if (G_FileWatcherIntervalMs > 0) {
-            SetTimer(WatchFile.Bind(MyGui), G_FileWatcherIntervalMs)
+            MyGui.TimerFn := WatchFile.Bind(MyGui)
+            SetTimer(MyGui.TimerFn, G_FileWatcherIntervalMs)
         }
         StatusTxt.Text := "Analysis loaded successfully"
     } catch {
@@ -565,8 +566,15 @@ OnSendToAnkiClick(guiObj, *) {
 }
 
 WatchFile(guiObj) {
-    if (!WinExist("ahk_id " guiObj.Hwnd)) {
-        SetTimer(WatchFile.Bind(guiObj), 0)
+    try {
+        hwnd := guiObj.Hwnd
+    } catch {
+        hwnd := 0
+    }
+    if (hwnd == 0 || !WinExist("ahk_id " hwnd)) {
+        if (guiObj.HasOwnProp("TimerFn")) {
+            SetTimer(guiObj.TimerFn, 0)
+        }
         return
     }
 
@@ -652,7 +660,9 @@ GuiClose(thisGui) {
         }
     }
 
-    SetTimer(WatchFile.Bind(thisGui), 0)
+    if (thisGui.HasOwnProp("TimerFn")) {
+        SetTimer(thisGui.TimerFn, 0)
+    }
     thisGui.wb := ""
     thisGui.Destroy()
 
