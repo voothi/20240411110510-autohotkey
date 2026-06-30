@@ -658,6 +658,18 @@ OnDeleteClick(guiObj, *) {
 }
 
 OnReprocessClick(guiObj, *) {
+    ; Check if dirty and save first
+    isDirty := false
+    try {
+        isDirty := guiObj.wb.document.getElementById("save-btn").className.indexOf("dirty") !== -1
+    } catch {
+    }
+    
+    if (isDirty) {
+        OnSaveClick(guiObj, "")
+        Sleep(500)
+    }
+
     guiObj.StatusTxt.Text := "Preparing re-process..."
     try {
         selectedRowsJSON := guiObj.wb.document.parentWindow.getSelectedRowsArray()
