@@ -462,7 +462,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
         return
     }
 
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' lang ' --zid ' ZID ' --text-mode ' textMode ' < "' tmpTextFile '"'
+    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' lang ' --zid ' ZID ' --text-mode ' textMode ' --zoom ' G_DefaultZoom ' < "' tmpTextFile '"'
     exitCode := RunSilent(cmd, &outB64, &errJSON)
     try {
         FileDelete(tmpTextFile)
@@ -689,7 +689,7 @@ WatchFile(guiObj) {
         }
 
         cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' guiObj.Lang ' --zid ' guiObj.ZID ' --text-mode ' guiObj
-            .TextMode ' < "' tmpTextFile '"'
+            .TextMode ' --zoom ' G_DefaultZoom ' < "' tmpTextFile '"'
         exitCode := RunSilent(cmd, &outB64, &errJSON)
         try {
             FileDelete(tmpTextFile)
