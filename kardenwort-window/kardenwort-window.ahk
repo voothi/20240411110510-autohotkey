@@ -379,6 +379,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     MyGui := Gui("+Resize +MinSize400x300", guiTitle)
     MyGui.OnEvent("Close", GuiClose)
     MyGui.OnEvent("Size", GuiSize)
+    MyGui.OnEvent("Escape", GuiEscape)
 
     ; ActiveX Explorer
     wvc := MyGui.Add("ActiveX", "x10 y10 w800 h600", "Shell.Explorer")
@@ -829,4 +830,11 @@ GetElementText(el) {
     } catch {
     }
     return ""
+}
+
+GuiEscape(thisGui) {
+    try {
+        thisGui.wb.document.parentWindow.clearAllSelectionsAndNotify()
+    } catch {
+    }
 }
