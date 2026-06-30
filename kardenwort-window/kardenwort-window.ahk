@@ -9,6 +9,7 @@
 ; ===================================================================================
 global G_DeskPythonPath := ""
 global G_DeskScriptPath := ""
+global G_DefaultLanguage := "en"
 global G_CurrentLang := "en"
 global G_FileWatcherIntervalMs := 1000
 global G_MultiTapTimeout := 300
@@ -32,6 +33,7 @@ LoadConfig() {
     
     global G_DeskPythonPath := IniRead(configPath, "Paths", "DeskPythonPath", "")
     global G_DeskScriptPath := IniRead(configPath, "Paths", "DeskScriptPath", "")
+    global G_DefaultLanguage := IniRead(configPath, "Settings", "DefaultLanguage", "en")
     global G_CurrentLang := IniRead(configPath, "Settings", "DefaultLanguage", "en")
     global G_FileWatcherIntervalMs := IniRead(configPath, "Settings", "FileWatcherIntervalMs", 1000)
     global G_MultiTapTimeout := IniRead(configPath, "Settings", "MultiTapTimeout", 300)
@@ -218,7 +220,6 @@ if (A_Args.Length > 0) {
     }
 }
 
-
 ; ===================================================================================
 ; Execution Utilities
 ; ===================================================================================
@@ -239,7 +240,8 @@ RunSilent(cmd, &stdout := "", &stderr := "") {
         }
         try {
             FileDelete(tmpOut)
-        } catch {}
+        } catch {
+        }
     }
     if FileExist(tmpErr) {
         try {
@@ -249,7 +251,8 @@ RunSilent(cmd, &stdout := "", &stderr := "") {
         }
         try {
             FileDelete(tmpErr)
-        } catch {}
+        } catch {
+        }
     }
     return exitCode
 }
@@ -264,8 +267,8 @@ GetCascadeCoords(&x, &y) {
 ; ===================================================================================
 ; GUI & Watcher Implementation
 ; ===================================================================================
-LaunchKardenwortWindow(sourceText, textMode) {
-    ZID := A_Now "_" A_TickCount
+LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
+    ZID := presetZID != "" ? presetZID : A_Now "_" A_TickCount
     lang := G_CurrentLang
     
     guiTitle := "Kardenwort - " lang " (" textMode ")"
@@ -319,7 +322,8 @@ LaunchKardenwortWindow(sourceText, textMode) {
     exitCode := RunSilent(cmd, &outB64, &errJSON)
     try {
         FileDelete(tmpTextFile)
-    } catch {}
+    } catch {
+    }
     
     if (exitCode != 0) {
         StatusTxt.Text := "Analysis failed"
@@ -394,7 +398,8 @@ OnSaveClick(guiObj, *) {
     exitCode := RunSilent(cmd, &outStr, &errJSON)
     try {
         FileDelete(tmpDeltasFile)
-    } catch {}
+    } catch {
+    }
     
     if (exitCode == 0 && InStr(outStr, "SUCCESS")) {
         guiObj.wb.document.parentWindow.clearDirty()
@@ -432,7 +437,8 @@ OnSendToAnkiClick(guiObj, *) {
     exitCode := RunSilent(cmd, &outStr, &errJSON)
     try {
         FileDelete(tmpManifestFile)
-    } catch {}
+    } catch {
+    }
     
     if (exitCode == 0) {
         if (SubStr(Trim(outStr), 1, 1) == "{") {
@@ -475,7 +481,8 @@ WatchFile(guiObj) {
         isDirty := false
         try {
             isDirty := guiObj.wb.document.parentWindow.isDirty()
-        } catch {}
+        } catch {
+        }
         
         if (isDirty) {
             res := MsgBox("The working TSV was modified externally. Reload and discard your unsaved edits?", "Kardenwort", "YesNo Icon!")
@@ -497,7 +504,8 @@ WatchFile(guiObj) {
         exitCode := RunSilent(cmd, &outB64, &errJSON)
         try {
             FileDelete(tmpTextFile)
-        } catch {}
+        } catch {
+        }
         
         if (exitCode == 0) {
             htmlContent := B64Decode(outB64)
@@ -518,7 +526,8 @@ GuiClose(thisGui) {
     isDirty := false
     try {
         isDirty := thisGui.wb.document.parentWindow.isDirty()
-    } catch {}
+    } catch {
+    }
     
     if (isDirty) {
         res := MsgBox("You have unsaved edits. Save changes before closing?", "Kardenwort", "YesNoCancel Icon!")
@@ -528,7 +537,8 @@ GuiClose(thisGui) {
                 if (thisGui.wb.document.parentWindow.isDirty()) {
                     return true
                 }
-            } catch {}
+            } catch {
+            }
         } else if (res == "Cancel") {
             return true
         }
