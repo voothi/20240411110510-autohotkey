@@ -643,6 +643,12 @@ WatchFile(guiObj) {
             }
         }
 
+        selectedRowsJSON := "[]"
+        try {
+            selectedRowsJSON := guiObj.wb.document.parentWindow.getSelectedRows()
+        } catch {
+        }
+
         guiObj.StatusTxt.Text := "Reloading..."
 
         tmpTextFile := A_Temp "\karden_input_" guiObj.ZID "_" A_TickCount ".txt"
@@ -680,6 +686,11 @@ WatchFile(guiObj) {
             }
             ApplyZoom(guiObj.wb)
             guiObj.wb.document.parentWindow.ahkCall := OnAhkCall.Bind(guiObj)
+
+            try {
+                guiObj.wb.document.parentWindow.setSelectedRows(selectedRowsJSON)
+            } catch {
+            }
 
             try {
                 guiObj.TsvPath := GetElementText(guiObj.wb.document.getElementById("tsv-path"))
