@@ -845,7 +845,7 @@ $Enter::
         if (g && g.HasProp("wb")) {
             el := g.wb.document.activeElement
             if (el && el.tagName == "INPUT" && InStr(el.className, "edit-input")) {
-                el.blur()
+                g.wb.document.parentWindow.commitActiveEdit()
                 return
             }
         }
