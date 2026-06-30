@@ -598,6 +598,7 @@ OnSaveClick(guiObj, *) {
         WatchFile(guiObj)
     } else {
         guiObj.StatusTxt.Text := "Save failed"
+        FileAppend("Save failed: " errJSON "`n", A_Desktop "\karden_error.txt")
         MsgBox("Failed to save cell edits:`n" errJSON, "Kardenwort Error", 16)
     }
 }
@@ -646,6 +647,7 @@ OnSendToAnkiClick(guiObj, *) {
         MsgBox("Favorites exported successfully!`nOutput: " outStr, "Kardenwort", 64)
     } else {
         guiObj.StatusTxt.Text := "Export failed"
+        FileAppend("Export failed: " errJSON "`n", A_Desktop "\karden_error.txt")
         MsgBox("Failed to export favorites:`n" errJSON, "Kardenwort Error", 16)
     }
 }
@@ -715,6 +717,7 @@ OnReprocessClick(guiObj, *) {
         guiObj.StatusTxt.Text := "Re-processing started"
     } else {
         guiObj.StatusTxt.Text := "Re-process failed"
+        FileAppend("Reprocess failed: " errJSON "`n", A_Desktop "\karden_error.txt")
         MsgBox("Failed to start re-processing:`n" errJSON, "Kardenwort Error", 16)
     }
 
@@ -987,19 +990,15 @@ GetElementText(el) {
     if (!IsObject(el))
         return ""
     try {
+        val := el.innerHTML
+        if (val !== "")
+            return val
+    } catch {
+    }
+    try {
         val := el.textContent
         if (val !== "")
             return val
-    } catch {
-    }
-    try {
-        val := el.text
-        if (val !== "")
-            return val
-    } catch {
-    }
-    try {
-        return el.innerHTML
     } catch {
     }
     return ""
