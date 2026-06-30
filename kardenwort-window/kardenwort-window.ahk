@@ -461,12 +461,12 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
 
     ; Retrieve metadata from HTML DOM
     try {
-        tsvPath := wb.document.getElementById("tsv-path").textContent
+        tsvPath := GetElementText(wb.document.getElementById("tsv-path"))
         MyGui.TsvPath := tsvPath
         
         llmFilled := false
         try {
-            llmFilled := wb.document.getElementById("llm-filled").textContent == "true"
+            llmFilled := GetElementText(wb.document.getElementById("llm-filled")) == "true"
         } catch {
         }
         
@@ -482,8 +482,8 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
             SetTimer(MyGui.TimerFn, G_FileWatcherIntervalMs)
         }
         StatusTxt.Text := "Analysis loaded successfully"
-    } catch {
-        StatusTxt.Text := "Metadata binding failed"
+    } catch as e {
+        StatusTxt.Text := "Metadata binding failed: " e.Message
     }
 }
 
@@ -690,12 +690,12 @@ WatchFile(guiObj) {
             guiObj.wb.document.parentWindow.ahkCall := OnAhkCall.Bind(guiObj)
 
             try {
-                guiObj.TsvPath := guiObj.wb.document.getElementById("tsv-path").textContent
+                guiObj.TsvPath := GetElementText(guiObj.wb.document.getElementById("tsv-path"))
                 guiObj.LastMTime := FileGetTime(guiObj.TsvPath)
                 guiObj.StatusTxt.Text := "Analysis loaded successfully (Reloaded)"
                 FileAppend(A_Now " [Success] Reloaded successfully, new LastMTime=" guiObj.LastMTime "`n", logFile, "UTF-8")
             } catch as e {
-                guiObj.StatusTxt.Text := "Metadata binding failed (Reloaded)"
+                guiObj.StatusTxt.Text := "Metadata binding failed (Reloaded): " e.Message
                 FileAppend(A_Now " [Error] Metadata binding failed after reload: " e.Message "`n", logFile, "UTF-8")
             }
         } else {
@@ -816,4 +816,26 @@ HandleSmartAction() {
         CycleLanguage()
         TrayTip("Kardenwort language: " G_CurrentLang, "Kardenwort", 1)
     }
+}
+
+GetElementText(el) {
+    if (!IsObject(el))
+        return ""
+    try {
+        val := el.textContent
+        if (val !== "")
+            return val
+    } catch {
+    }
+    try {
+        val := el.text
+        if (val !== "")
+            return val
+    } catch {
+    }
+    try {
+        return el.innerHTML
+    } catch {
+    }
+    return ""
 }
