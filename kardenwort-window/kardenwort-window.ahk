@@ -587,13 +587,22 @@ OnSendToAnkiClick(guiObj, *) {
     }
 }
 
+
 WatchFile(guiObj) {
+    logFile := "watcher.log"
+    try {
+        FileAppend(A_Now " [Tick] Checking window...`n", logFile, "UTF-8")
+    } catch {}
+
     try {
         hwnd := guiObj.Hwnd
     } catch {
         hwnd := 0
     }
     if (hwnd == 0 || !WinExist("ahk_id " hwnd)) {
+        try {
+            FileAppend(A_Now " [Exit] Window does not exist`n", logFile, "UTF-8")
+        } catch {}
         if (guiObj.HasOwnProp("TimerFn")) {
             SetTimer(guiObj.TimerFn, 0)
         }
@@ -601,14 +610,25 @@ WatchFile(guiObj) {
     }
 
     tsvPath := guiObj.TsvPath
-    if (tsvPath == "" || !FileExist(tsvPath))
+    if (tsvPath == "" || !FileExist(tsvPath)) {
+        try {
+            FileAppend(A_Now " [Exit] tsvPath is empty or file doesn't exist: " tsvPath "`n", logFile, "UTF-8")
+        } catch {}
         return
+    }
 
     try {
         currentMTime := FileGetTime(tsvPath)
-    } catch {
+    } catch as e {
+        try {
+            FileAppend(A_Now " [Exit] FileGetTime failed: " e.Message "`n", logFile, "UTF-8")
+        } catch {}
         return
     }
+
+    try {
+        FileAppend(A_Now " [Tick] currentMTime=" currentMTime ", LastMTime=" guiObj.LastMTime "`n", logFile, "UTF-8")
+    } catch {}
 
     if (currentMTime != guiObj.LastMTime) {
         isDirty := false
@@ -631,7 +651,10 @@ WatchFile(guiObj) {
         tmpTextFile := A_Temp "\karden_input_" guiObj.ZID ".txt"
         try {
             FileAppend(guiObj.SourceText, tmpTextFile, "UTF-8-RAW")
-        } catch {
+        } catch as e {
+            try {
+                FileAppend(A_Now " [Exit] Failed to write temp input: " e.Message "`n", logFile, "UTF-8")
+            } catch {}
             return
         }
 
@@ -643,6 +666,10 @@ WatchFile(guiObj) {
         } catch {
         }
 
+        try {
+            FileAppend(A_Now " [Reload] exitCode=" exitCode ", errJSON=" errJSON "`n", logFile, "UTF-8")
+        } catch {}
+
         if (exitCode == 0) {
             htmlContent := B64Decode(outB64)
             guiObj.wb.Navigate("about:blank")
@@ -652,9 +679,18 @@ WatchFile(guiObj) {
             guiObj.wb.document.close()
             ApplyZoom(guiObj.wb)
             guiObj.wb.document.parentWindow.ahkCall := OnAhkCall.Bind(guiObj)
-            guiObj.StatusTxt.Text := "Reloaded successfully"
+
+            try {
+                guiObj.TsvPath := guiObj.wb.document.getElementById("tsv-path").innerText
+                guiObj.LastMTime := FileGetTime(guiObj.TsvPath)
+                guiObj.StatusTxt.Text := "Analysis loaded successfully (Reloaded)"
+                FileAppend(A_Now " [Success] Reloaded successfully, new LastMTime=" guiObj.LastMTime "`n", logFile, "UTF-8")
+            } catch as e {
+                guiObj.StatusTxt.Text := "Metadata binding failed (Reloaded)"
+                FileAppend(A_Now " [Error] Metadata binding failed after reload: " e.Message "`n", logFile, "UTF-8")
+            }
         } else {
-            guiObj.StatusTxt.Text := "Reload failed"
+            guiObj.StatusTxt.Text := "Reload failed: render error"
         }
     }
 }
