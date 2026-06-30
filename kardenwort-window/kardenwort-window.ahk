@@ -486,6 +486,14 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     } catch {
     }
     ApplyZoom(wb)
+    try {
+        if (WinGetMinMax(MyGui.Hwnd) == 1) {
+            wb.document.body.classList.add("maximized")
+        } else {
+            wb.document.body.classList.remove("maximized")
+        }
+    } catch {
+    }
 
     ; Bind callback for bidirectional updates and dirty flag
     wb.document.parentWindow.ahkCall := OnAhkCall.Bind(MyGui)
@@ -728,6 +736,11 @@ WatchFile(guiObj) {
             
             try {
                 ApplyZoom(guiObj.wb)
+                if (WinGetMinMax(guiObj.Hwnd) == 1) {
+                    guiObj.wb.document.body.classList.add("maximized")
+                } else {
+                    guiObj.wb.document.body.classList.remove("maximized")
+                }
                 guiObj.wb.document.parentWindow.ahkCall := OnAhkCall.Bind(guiObj)
                 guiObj.wb.document.parentWindow.setSelectedRows(selectedRowsJSON)
             } catch {
@@ -788,6 +801,14 @@ GuiSize(thisGui, MinMax, Width, Height) {
     thisGui.SaveBtn.Move(15, btnY)
     thisGui.SendBtn.Move(125, btnY)
     thisGui.StatusTxt.Move(255, btnY + 5, Width - 270)
+    try {
+        if (MinMax == 1) {
+            thisGui.wb.document.body.classList.add("maximized")
+        } else {
+            thisGui.wb.document.body.classList.remove("maximized")
+        }
+    } catch {
+    }
 }
 
 ; ===================================================================================
