@@ -136,7 +136,7 @@ This repository is a collection of personal [AutoHotkey v2](https://www.autohotk
 
 ### kardenwort-window/kardenwort-window.ahk
 - **Description:** Spawns a resizable AutoHotkey GUI window containing a browser view of analyzed vocabulary and phrases from selected text. It interfaces with the `kardenwort-desk` python utility to render inflections, lemmas, translations, and frequency ordering, supporting inline editing and Favorites selection.
-- **Hotkey:** `Ctrl + Alt + Shift + F1`
+- **Hotkey:** `Ctrl + Alt + Shift + F2` (English) / `Ctrl + Alt + Shift + F3` (German)
 - **Dependencies:** Requires `Lib/ClipboardUtil.ahk` and `Lib/B64Util.ahk` in the `Lib` folder.
 
 [Back to Top](#table-of-contents)

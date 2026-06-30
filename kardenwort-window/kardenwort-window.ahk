@@ -781,9 +781,21 @@ HandleSmartAction() {
     LaunchKardenwortWindow(G_CapturedText, textMode)
 }
 
-; Register global hotkey Ctrl+Alt+Shift+F1
-^+!F1::
+; Register global hotkey Ctrl+Alt+Shift+F2 (English)
+^+!F2::
 {
+    SetLanguage("en")
+    TriggerSmartAction()
+}
+
+; Register global hotkey Ctrl+Alt+Shift+F3 (German)
+^+!F3::
+{
+    SetLanguage("de")
+    TriggerSmartAction()
+}
+
+TriggerSmartAction() {
     global G_PressCount, G_CapturedText, G_MultiTapTimeout
     G_PressCount += 1
     if (G_PressCount == 1) {
