@@ -384,13 +384,13 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     MyGui.OnEvent("Escape", GuiEscape)
 
     ; ActiveX Explorer
-    wvc := MyGui.Add("ActiveX", "x10 y10 w800 h600 +Hidden", "Shell.Explorer")
+    wvc := MyGui.Add("ActiveX", "x10 y10 w800 h600 +Hidden -E0x200", "Shell.Explorer")
     wb := wvc.Value
 
     ; Native Footer Buttons
     SaveBtn := MyGui.Add("Text", "x15 y615 w110 h30 Center +Border +0x200 c0xE3E6EB Disabled", "Save (Ctrl+S)")
     SendBtn := MyGui.Add("Text", "x135 y615 w120 h30 Center +Border +0x200 c0xE3E6EB", "Send to Anki")
-    StatusTxt := MyGui.Add("Text", "x255 y620 w540 h25 +BackgroundTrans", "Ready")
+    StatusTxt := MyGui.Add("Text", "x255 y615 w540 h30 +BackgroundTrans Right +0x200", "Ready")
     StatusTxt.SetFont("c0xE3E6EB")
 
     ; Store references on GUI object
@@ -806,7 +806,7 @@ GuiSize(thisGui, MinMax, Width, Height) {
     btnY := Height - 40
     thisGui.SaveBtn.Move(15, btnY)
     thisGui.SendBtn.Move(135, btnY)
-    thisGui.StatusTxt.Move(255, btnY + 5, Width - 270)
+    thisGui.StatusTxt.Move(255, btnY, Width - 270)
     try {
         if (MinMax == 1) {
             thisGui.wb.document.body.classList.add("maximized")
