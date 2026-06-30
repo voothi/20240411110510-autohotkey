@@ -1,5 +1,5 @@
 #Requires AutoHotkey v2.0
-#SingleInstance Off
+#SingleInstance Force
 
 #Include ..\Lib\ClipboardUtil.ahk
 #Include ..\Lib\B64Util.ahk
@@ -843,13 +843,10 @@ $Enter::
     try {
         g := GuiFromHwnd(activeHwnd)
         if (g && g.HasProp("wb")) {
-            focusedClass := ControlGetClassNN(ControlGetFocus("A"))
-            if (focusedClass == "Internet Explorer_Server1") {
-                el := g.wb.document.activeElement
-                if (el && el.className == "edit-input") {
-                    el.blur()
-                    return
-                }
+            el := g.wb.document.activeElement
+            if (el && el.tagName == "INPUT" && InStr(el.className, "edit-input")) {
+                el.blur()
+                return
             }
         }
     } catch {
@@ -863,13 +860,10 @@ $Esc::
     try {
         g := GuiFromHwnd(activeHwnd)
         if (g && g.HasProp("wb")) {
-            focusedClass := ControlGetClassNN(ControlGetFocus("A"))
-            if (focusedClass == "Internet Explorer_Server1") {
-                el := g.wb.document.activeElement
-                if (el && el.className == "edit-input") {
-                    g.wb.document.parentWindow.cancelActiveEdit()
-                    return
-                }
+            el := g.wb.document.activeElement
+            if (el && el.tagName == "INPUT" && InStr(el.className, "edit-input")) {
+                g.wb.document.parentWindow.cancelActiveEdit()
+                return
             }
         }
     } catch {
