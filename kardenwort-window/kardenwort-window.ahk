@@ -399,7 +399,8 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     ; Native Footer Buttons
     SaveBtn := MyGui.Add("Text", "x15 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor " Disabled", "Save (Ctrl+S)")
     SendBtn := MyGui.Add("Text", "x135 y615 w120 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
-    StatusTxt := MyGui.Add("Text", "x265 y615 w540 h30 +BackgroundTrans +0x200", "Ready")
+    DeleteBtn := MyGui.Add("Text", "x265 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor, "Delete (Del)")
+    StatusTxt := MyGui.Add("Text", "x385 y615 w420 h30 +BackgroundTrans +0x200", "Ready")
     StatusTxt.SetFont(G_GuiTextColor)
 
     ; Store references on GUI object
@@ -407,6 +408,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     MyGui.wvc := wvc
     MyGui.SaveBtn := SaveBtn
     MyGui.SendBtn := SendBtn
+    MyGui.DeleteBtn := DeleteBtn
     MyGui.StatusTxt := StatusTxt
     MyGui.ZID := ZID
     MyGui.Lang := lang
@@ -417,6 +419,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
 
     SaveBtn.OnEvent("Click", OnSaveClick.Bind(MyGui))
     SendBtn.OnEvent("Click", OnSendToAnkiClick.Bind(MyGui))
+    DeleteBtn.OnEvent("Click", OnDeleteClick.Bind(MyGui))
 
     configPath := A_ScriptDir "\config.ini"
     initX := Trim(StrSplit(IniRead(configPath, "Window", "X", ""), ";")[1])
@@ -636,6 +639,13 @@ OnSendToAnkiClick(guiObj, *) {
     }
 }
 
+OnDeleteClick(guiObj, *) {
+    try {
+        guiObj.wb.document.parentWindow.deleteSelectedRows()
+    } catch {
+    }
+}
+
 
 
 
@@ -814,7 +824,8 @@ GuiSize(thisGui, MinMax, Width, Height) {
     btnY := Height - 40
     thisGui.SaveBtn.Move(15, btnY)
     thisGui.SendBtn.Move(135, btnY)
-    thisGui.StatusTxt.Move(265, btnY, Width - 280)
+    thisGui.DeleteBtn.Move(265, btnY)
+    thisGui.StatusTxt.Move(385, btnY, Width - 400)
     try {
         if (MinMax == 1) {
             thisGui.wb.document.body.classList.add("maximized")
