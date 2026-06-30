@@ -379,6 +379,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     ; Create GUI
     MyGui := Gui("+Resize +MinSize400x300", guiTitle)
     MyGui.BackColor := "0D0F12"
+    DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", MyGui.Hwnd, "UInt", 20, "Ptr*", 1, "UInt", 4)
     MyGui.OnEvent("Close", GuiClose)
     MyGui.OnEvent("Size", GuiSize)
     MyGui.OnEvent("Escape", GuiEscape)
