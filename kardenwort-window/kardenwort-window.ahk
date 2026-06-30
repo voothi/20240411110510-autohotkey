@@ -928,11 +928,8 @@ $^c::
     try {
         g := GuiFromHwnd(activeHwnd)
         if (g && g.HasProp("wb")) {
-            el := g.wb.document.activeElement
-            if (el && el.tagName == "INPUT" && InStr(el.className, "edit-input")) {
-                g.wb.document.parentWindow.copyFromActiveEdit()
-                return
-            }
+            g.wb.document.parentWindow.copySelection()
+            return
         }
     } catch {
     }
