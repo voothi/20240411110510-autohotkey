@@ -22,6 +22,8 @@ global G_DefaultZoom := "100"
 global G_PressCount := 0
 global G_CapturedText := ""
 global G_WindowCount := 0
+global G_BaseX := ""
+global G_BaseY := ""
 global G_CurrentHIcon := 0
 global langCodes := []
 global langNames := Map()
@@ -351,9 +353,8 @@ RunSilent(cmd, &stdout := "", &stderr := "") {
 
 GetCascadeCoords(&x, &y) {
     global G_WindowCount
-    x := 50 + G_WindowCount * 30
-    y := 50 + G_WindowCount * 30
-    G_WindowCount := Mod(G_WindowCount + 1, 15)
+    x := 50 + Mod(G_WindowCount, 15) * 30
+    y := 50 + Mod(G_WindowCount, 15) * 30
 }
 
 ApplyZoom(wb) {
@@ -373,7 +374,6 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     lang := G_CurrentLang
 
     guiTitle := "Kardenwort - " lang " (" textMode ")"
-    GetCascadeCoords(&x, &y)
 
     ; Create GUI
     MyGui := Gui("+Resize +MinSize400x300", guiTitle)
@@ -412,14 +412,36 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     initW := IniRead(configPath, "Window", "Width", "1143")
     initH := IniRead(configPath, "Window", "Height", "957")
 
-    if (initX == "" || initY == "") {
-        GetCascadeCoords(&x, &y)
-        showStr := "x" x " y" y " w" initW " h" initH
+    global G_WindowCount, G_BaseX, G_BaseY
+    if (G_WindowCount == 0) {
+        if (initX == "" || initY == "") {
+            GetCascadeCoords(&x, &y)
+            showStr := "x" x " y" y " w" initW " h" initH
+        } else {
+            showStr := "x" initX " y" initY " w" initW " h" initH
+        }
     } else {
-        showStr := "x" initX " y" initY " w" initW " h" initH
+        if (G_BaseX !== "" && G_BaseY !== "") {
+            cascadeOffset := Mod(G_WindowCount, 15) * 30
+            x := G_BaseX + cascadeOffset
+            y := G_BaseY - cascadeOffset
+            if (y < 0) {
+                y := 0
+            }
+            showStr := "x" x " y" y " w" initW " h" initH
+        } else {
+            GetCascadeCoords(&x, &y)
+            showStr := "x" x " y" y " w" initW " h" initH
+        }
     }
 
     MyGui.Show(showStr)
+    if (G_WindowCount == 0) {
+        MyGui.GetPos(&outX, &outY)
+        G_BaseX := outX
+        G_BaseY := outY
+    }
+    G_WindowCount += 1
 
     ; Fetch HTML from Python core
     StatusTxt.Text := "Invoking backend analysis..."
