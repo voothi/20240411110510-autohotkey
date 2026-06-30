@@ -390,7 +390,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     ; Native Footer Buttons
     SaveBtn := MyGui.Add("Text", "x15 y615 w110 h30 Center +Border +0x200 c0xE3E6EB Disabled", "Save (Ctrl+S)")
     SendBtn := MyGui.Add("Text", "x135 y615 w120 h30 Center +Border +0x200 c0xE3E6EB", "Send to Anki")
-    StatusTxt := MyGui.Add("Text", "x255 y615 w540 h30 +BackgroundTrans Right +0x200", "Ready")
+    StatusTxt := MyGui.Add("Text", "x255 y615 w540 h30 +BackgroundTrans +0x200", "Ready")
     StatusTxt.SetFont("c0xE3E6EB")
 
     ; Store references on GUI object
