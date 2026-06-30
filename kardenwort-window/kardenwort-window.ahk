@@ -836,3 +836,44 @@ GuiEscape(thisGui) {
     } catch {
     }
 }
+#HotIf WinActive("Kardenwort - ")
+$Enter::
+{
+    activeHwnd := WinActive("A")
+    try {
+        g := GuiFromHwnd(activeHwnd)
+        if (g && g.HasProp("wb")) {
+            focusedClass := ControlGetClassNN(ControlGetFocus("A"))
+            if (focusedClass == "Internet Explorer_Server1") {
+                el := g.wb.document.activeElement
+                if (el && el.className == "edit-input") {
+                    el.blur()
+                    return
+                }
+            }
+        }
+    } catch {
+    }
+    Send("{Enter}")
+}
+
+$Esc::
+{
+    activeHwnd := WinActive("A")
+    try {
+        g := GuiFromHwnd(activeHwnd)
+        if (g && g.HasProp("wb")) {
+            focusedClass := ControlGetClassNN(ControlGetFocus("A"))
+            if (focusedClass == "Internet Explorer_Server1") {
+                el := g.wb.document.activeElement
+                if (el && el.className == "edit-input") {
+                    g.wb.document.parentWindow.cancelActiveEdit()
+                    return
+                }
+            }
+        }
+    } catch {
+    }
+    Send("{Esc}")
+}
+#HotIf
