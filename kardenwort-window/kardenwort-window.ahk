@@ -886,4 +886,56 @@ $Esc::
     }
     Send("{Esc}")
 }
+
+$F2::
+{
+    activeHwnd := WinActive("A")
+    try {
+        g := GuiFromHwnd(activeHwnd)
+        if (g && g.HasProp("wb")) {
+            el := g.wb.document.activeElement
+            if (el && el.tagName == "INPUT" && InStr(el.className, "edit-input")) {
+                return
+            }
+            g.wb.document.parentWindow.editFocusedCell()
+            return
+        }
+    } catch {
+    }
+    Send("{F2}")
+}
+
+$^a::
+{
+    activeHwnd := WinActive("A")
+    try {
+        g := GuiFromHwnd(activeHwnd)
+        if (g && g.HasProp("wb")) {
+            el := g.wb.document.activeElement
+            if (el && el.tagName == "INPUT" && InStr(el.className, "edit-input")) {
+                g.wb.document.parentWindow.selectAllInActiveEdit()
+                return
+            }
+        }
+    } catch {
+    }
+    Send("^a")
+}
+
+$^c::
+{
+    activeHwnd := WinActive("A")
+    try {
+        g := GuiFromHwnd(activeHwnd)
+        if (g && g.HasProp("wb")) {
+            el := g.wb.document.activeElement
+            if (el && el.tagName == "INPUT" && InStr(el.className, "edit-input")) {
+                g.wb.document.parentWindow.copyFromActiveEdit()
+                return
+            }
+        }
+    } catch {
+    }
+    Send("^c")
+}
 #HotIf
