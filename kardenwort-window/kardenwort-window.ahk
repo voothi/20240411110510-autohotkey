@@ -832,6 +832,11 @@ GetElementText(el) {
 
 GuiEscape(thisGui) {
     try {
+        el := thisGui.wb.document.activeElement
+        if (el && el.tagName == "INPUT" && InStr(el.className, "edit-input")) {
+            thisGui.wb.document.parentWindow.cancelActiveEdit()
+            return
+        }
         thisGui.wb.document.parentWindow.clearAllSelectionsAndNotify()
     } catch {
     }
