@@ -52,10 +52,10 @@ LoadConfig() {
     global G_OrdinaryColor := IniRead(configPath, "Highlight", "OrdinaryColor", "#ffd700")
     global G_PairedColor := IniRead(configPath, "Highlight", "PairedColor", "#9370db")
     global G_DefaultZoom := IniRead(configPath, "Settings", "DefaultZoom", "100")
-    global G_Theme := IniRead(configPath, "Settings", "Theme", "dark")
-    global G_GuiBgColor := (G_Theme == "light") ? "F6F8FA" : "0D0F12"
-    global G_GuiTextColor := (G_Theme == "light") ? "c0x24292F" : "c0xE3E6EB"
-    global G_DwmDark := (G_Theme == "light") ? 0 : 1
+    global G_Theme := StrLower(IniRead(configPath, "Settings", "Theme", "dark"))
+    global G_GuiBgColor := (G_Theme == "light" || G_Theme == "white") ? "F6F8FA" : "0D0F12"
+    global G_GuiTextColor := (G_Theme == "light" || G_Theme == "white") ? "c0x24292F" : "c0xE3E6EB"
+    global G_DwmDark := (G_Theme == "light" || G_Theme == "white") ? 0 : 1
 
     if (G_DeskPythonPath == "" || !FileExist(G_DeskPythonPath)) {
         MsgBox("Python interpreter not found: " G_DeskPythonPath, "Kardenwort Error", 16)
