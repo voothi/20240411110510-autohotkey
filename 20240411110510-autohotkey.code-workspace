@@ -9,5 +9,13 @@
 			"path": "U:\\voothi.vault"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"AHK++.v2.file": {
+			"compileBaseFile": "",
+			"helpPath": "C:/Program Files/AutoHotkey/v2/AutoHotkey.chm",
+			"interpreterPath": "c:\\AHK\\AutoHotkey_2.0.18\\AutoHotkey64.exe",
+			"maxScanDepth": 2,
+			"templateSnippetName": "AhkTemplateV2"
+		}
+	}
 }

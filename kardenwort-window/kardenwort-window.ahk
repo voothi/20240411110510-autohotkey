@@ -30,7 +30,7 @@ LoadConfig() {
         MsgBox("Configuration file not found: " configPath, "Kardenwort Error", 16)
         ExitApp()
     }
-    
+
     global G_DeskPythonPath := IniRead(configPath, "Paths", "DeskPythonPath", "")
     global G_DeskScriptPath := IniRead(configPath, "Paths", "DeskScriptPath", "")
     global G_DefaultLanguage := IniRead(configPath, "Settings", "DefaultLanguage", "en")
@@ -41,7 +41,7 @@ LoadConfig() {
     global G_TapDoubleMode := IniRead(configPath, "Hotkey", "TapDoubleMode", "multi")
     global G_OrdinaryColor := IniRead(configPath, "Highlight", "OrdinaryColor", "#ffd700")
     global G_PairedColor := IniRead(configPath, "Highlight", "PairedColor", "#9370db")
-    
+
     if (G_DeskPythonPath == "" || !FileExist(G_DeskPythonPath)) {
         MsgBox("Python interpreter not found: " G_DeskPythonPath, "Kardenwort Error", 16)
         ExitApp()
@@ -55,7 +55,7 @@ LoadConfig() {
 InitializeTrayMenu() {
     global langCodes, langNames
     configPath := A_ScriptDir "\config.ini"
-    
+
     try {
         langSection := IniRead(configPath, "Languages")
         for line in StrSplit(langSection, "`n") {
@@ -64,14 +64,14 @@ InitializeTrayMenu() {
             parts := StrSplit(line, "=")
             code := Trim(parts[1])
             name := Trim(parts[2])
-            
+
             langCodes.Push(code)
             langNames[code] := name
         }
     } catch Any as e {
         MsgBox("Error parsing [Languages] section in config.ini:`n" e.Message, "Config Error", "Icon!")
     }
-    
+
     UpdateTrayMenu()
 }
 
@@ -118,7 +118,7 @@ LaunchRestore(filePath) {
         MsgBox("Restore target file not found: " filePath, "Kardenwort Error", 16)
         ExitApp()
     }
-    
+
     SplitPath(filePath, &fileName, &fileDir)
     RegExMatch(fileName, "^(\d{14})", &mZid)
     if (!mZid) {
@@ -126,10 +126,10 @@ LaunchRestore(filePath) {
         ExitApp()
     }
     ZID := mZid[1]
-    
+
     siblingTxt := ""
     txtPattern := fileDir "\" ZID "-*.txt"
-    Loop Files, txtPattern {
+    loop files, txtPattern {
         siblingTxt := A_LoopFilePath
         break
     }
@@ -143,23 +143,23 @@ LaunchRestore(filePath) {
             }
         }
     }
-    
+
     sourceText := ""
     if (siblingTxt != "" && FileExist(siblingTxt)) {
         sourceText := FileRead(siblingTxt, "UTF-8")
     } else {
         MsgBox("Warning: Sibling source text file not found.", "Kardenwort Warning", 48)
     }
-    
+
     lang := G_DefaultLanguage
     RegExMatch(fileName, "\.([a-z]{2})\.tsv$", &mLang)
     if (mLang) {
         lang := mLang[1]
     }
-    
+
     global G_CurrentLang := lang
     UpdateTrayMenu()
-    
+
     LaunchKardenwortWindow(sourceText, "multi", ZID)
 }
 
@@ -168,19 +168,19 @@ LaunchDesk(filePath, textMode) {
         MsgBox("File not found: " filePath, "Kardenwort Error", 16)
         ExitApp()
     }
-    
+
     sourceText := FileRead(filePath, "UTF-8")
-    
+
     SplitPath(filePath, &fileName)
     lang := G_DefaultLanguage
     RegExMatch(fileName, "\.([a-z]{2})\.(txt|srt)$", &mLang)
     if (mLang) {
         lang := mLang[1]
     }
-    
+
     global G_CurrentLang := lang
     UpdateTrayMenu()
-    
+
     LaunchKardenwortWindow(sourceText, textMode)
 }
 
@@ -193,26 +193,26 @@ if (A_Args.Length > 0) {
     mode := ""
     filePath := ""
     textMode := "multi"
-    
+
     i := 1
     while (i <= A_Args.Length) {
         arg := A_Args[i]
         if (arg == "--restore") {
             mode := "restore"
-            filePath := A_Args[i+1]
+            filePath := A_Args[i + 1]
             i += 2
         } else if (arg == "--desk") {
             mode := "desk"
-            filePath := A_Args[i+1]
+            filePath := A_Args[i + 1]
             i += 2
         } else if (arg == "--text-mode") {
-            textMode := A_Args[i+1]
+            textMode := A_Args[i + 1]
             i += 2
         } else {
             i += 1
         }
     }
-    
+
     if (mode == "restore") {
         LaunchRestore(filePath)
     } else if (mode == "desk") {
@@ -226,12 +226,12 @@ if (A_Args.Length > 0) {
 RunSilent(cmd, &stdout := "", &stderr := "") {
     tmpOut := A_Temp "\karden_out_" A_Now "_" A_TickCount ".txt"
     tmpErr := A_Temp "\karden_err_" A_Now "_" A_TickCount ".txt"
-    
+
     fullCmd := 'cmd.exe /c "' cmd ' > "' tmpOut '" 2> "' tmpErr '"'
-    
+
     shell := ComObject("WScript.Shell")
     exitCode := shell.Run(fullCmd, 0, true)
-    
+
     if FileExist(tmpOut) {
         try {
             stdout := FileRead(tmpOut, "UTF-8")
@@ -270,24 +270,24 @@ GetCascadeCoords(&x, &y) {
 LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     ZID := presetZID != "" ? presetZID : A_Now "_" A_TickCount
     lang := G_CurrentLang
-    
+
     guiTitle := "Kardenwort - " lang " (" textMode ")"
     GetCascadeCoords(&x, &y)
-    
+
     ; Create GUI
     MyGui := Gui("+Resize +MinSize400x300", guiTitle)
     MyGui.OnEvent("Close", GuiClose)
     MyGui.OnEvent("Size", GuiSize)
-    
+
     ; ActiveX Explorer
     wvc := MyGui.Add("ActiveX", "x10 y10 w800 h600", "Shell.Explorer")
     wb := wvc.Value
-    
+
     ; Native Footer Buttons
     SaveBtn := MyGui.Add("Button", "x15 y615 w100 h30 Disabled", "Save (Ctrl+S)")
     SendBtn := MyGui.Add("Button", "x125 y615 w120 h30", "Send to Anki")
     StatusTxt := MyGui.Add("Text", "x255 y620 w540 h25", "Ready")
-    
+
     ; Store references on GUI object
     MyGui.wb := wb
     MyGui.wvc := wvc
@@ -300,15 +300,15 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     MyGui.SourceText := sourceText
     MyGui.TsvPath := ""
     MyGui.LastMTime := ""
-    
+
     SaveBtn.OnEvent("Click", OnSaveClick.Bind(MyGui))
     SendBtn.OnEvent("Click", OnSendToAnkiClick.Bind(MyGui))
-    
+
     MyGui.Show("x" x " y" y " w830 h660")
-    
+
     ; Fetch HTML from Python core
     StatusTxt.Text := "Invoking backend analysis..."
-    
+
     tmpTextFile := A_Temp "\karden_input_" ZID ".txt"
     try {
         FileAppend(sourceText, tmpTextFile, "UTF-8")
@@ -317,33 +317,33 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
         MsgBox("Failed to write temporary text input:`n" e.Message, "Kardenwort Error", 16)
         return
     }
-    
+
     cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' lang ' --zid ' ZID ' --text-mode ' textMode ' < "' tmpTextFile '"'
     exitCode := RunSilent(cmd, &outB64, &errJSON)
     try {
         FileDelete(tmpTextFile)
     } catch {
     }
-    
+
     if (exitCode != 0) {
         StatusTxt.Text := "Analysis failed"
         MsgBox("Kardenwort Analysis failed:`n" errJSON, "Kardenwort Error", 16)
         MyGui.Destroy()
         return
     }
-    
+
     StatusTxt.Text := "Rendering..."
     htmlContent := B64Decode(outB64)
-    
+
     wb.Navigate("about:blank")
     while wb.ReadyState != 4
         Sleep(10)
     wb.document.write(htmlContent)
     wb.document.close()
-    
+
     ; Bind callback for bidirectional updates and dirty flag
     wb.document.parentWindow.ahkCall := OnAhkCall.Bind(MyGui)
-    
+
     ; Retrieve metadata from HTML DOM
     try {
         tsvPath := wb.document.getElementById("tsv-path").innerText
@@ -351,7 +351,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
         if FileExist(tsvPath) {
             MyGui.LastMTime := FileGetTime(tsvPath)
         }
-        
+
         ; Start polling file watcher
         if (G_FileWatcherIntervalMs > 0) {
             SetTimer(WatchFile.Bind(MyGui), G_FileWatcherIntervalMs)
@@ -376,7 +376,7 @@ OnAhkCall(guiObj, action, value) {
 
 OnSaveClick(guiObj, *) {
     guiObj.StatusTxt.Text := "Saving..."
-    
+
     ; Retrieve deltas
     try {
         deltasJSON := guiObj.wb.document.parentWindow.getDeltas()
@@ -384,7 +384,7 @@ OnSaveClick(guiObj, *) {
         MsgBox("Failed to retrieve deltas from page: " e.Message, "Kardenwort Error", 16)
         return
     }
-    
+
     tmpDeltasFile := A_Temp "\karden_deltas_" guiObj.ZID ".json"
     try {
         FileAppend(deltasJSON, tmpDeltasFile, "UTF-8")
@@ -393,14 +393,15 @@ OnSaveClick(guiObj, *) {
         MsgBox("Failed to write temporary delta file: " e.Message, "Kardenwort Error", 16)
         return
     }
-    
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" edit-save --deltas "' tmpDeltasFile '" --zid ' guiObj.ZID ' --language ' guiObj.Lang
+
+    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" edit-save --deltas "' tmpDeltasFile '" --zid ' guiObj.ZID ' --language ' guiObj
+        .Lang
     exitCode := RunSilent(cmd, &outStr, &errJSON)
     try {
         FileDelete(tmpDeltasFile)
     } catch {
     }
-    
+
     if (exitCode == 0 && InStr(outStr, "SUCCESS")) {
         guiObj.wb.document.parentWindow.clearDirty()
         guiObj.SaveBtn.Enabled := false
@@ -416,13 +417,13 @@ OnSaveClick(guiObj, *) {
 
 OnSendToAnkiClick(guiObj, *) {
     guiObj.StatusTxt.Text := "Exporting favorites..."
-    
+
     try {
         selectedRowsJSON := guiObj.wb.document.parentWindow.getSelectedRows()
     } catch {
         selectedRowsJSON := "[]"
     }
-    
+
     manifest := '{"selected_row_ids": ' selectedRowsJSON ', "zid": "' guiObj.ZID '"}'
     tmpManifestFile := A_Temp "\karden_manifest_" guiObj.ZID ".json"
     try {
@@ -432,14 +433,15 @@ OnSendToAnkiClick(guiObj, *) {
         MsgBox("Failed to write temporary manifest file: " e.Message, "Kardenwort Error", 16)
         return
     }
-    
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" export --selection-manifest "' tmpManifestFile '" --language ' guiObj.Lang
+
+    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" export --selection-manifest "' tmpManifestFile '" --language ' guiObj
+        .Lang
     exitCode := RunSilent(cmd, &outStr, &errJSON)
     try {
         FileDelete(tmpManifestFile)
     } catch {
     }
-    
+
     if (exitCode == 0) {
         if (SubStr(Trim(outStr), 1, 1) == "{") {
             RegExMatch(outStr, '"import_started":\s*(\w+)', &mStarted)
@@ -447,7 +449,8 @@ OnSendToAnkiClick(guiObj, *) {
             if (mStarted && mStarted[1] == "true") {
                 guiObj.StatusTxt.Text := "Import started in background"
                 logPath := mLog ? mLog[1] : "log file next to TSV"
-                MsgBox("Favorites exported successfully!`nAnki import started in background.`n`nLog: " logPath "`n`nYou can safely close this window now.", "Kardenwort", 64)
+                MsgBox("Favorites exported successfully!`nAnki import started in background.`n`nLog: " logPath "`n`nYou can safely close this window now.",
+                    "Kardenwort", 64)
                 return
             }
         }
@@ -464,49 +467,51 @@ WatchFile(guiObj) {
         SetTimer(WatchFile.Bind(guiObj), 0)
         return
     }
-    
+
     tsvPath := guiObj.TsvPath
     if (tsvPath == "" || !FileExist(tsvPath))
         return
-        
+
     try {
         currentMTime := FileGetTime(tsvPath)
     } catch {
         return
     }
-    
+
     if (currentMTime != guiObj.LastMTime) {
         guiObj.LastMTime := currentMTime
-        
+
         isDirty := false
         try {
             isDirty := guiObj.wb.document.parentWindow.isDirty()
         } catch {
         }
-        
+
         if (isDirty) {
-            res := MsgBox("The working TSV was modified externally. Reload and discard your unsaved edits?", "Kardenwort", "YesNo Icon!")
+            res := MsgBox("The working TSV was modified externally. Reload and discard your unsaved edits?",
+                "Kardenwort", "YesNo Icon!")
             if (res == "No") {
                 return
             }
         }
-        
+
         guiObj.StatusTxt.Text := "Reloading..."
-        
+
         tmpTextFile := A_Temp "\karden_input_" guiObj.ZID ".txt"
         try {
             FileAppend(guiObj.SourceText, tmpTextFile, "UTF-8")
         } catch {
             return
         }
-        
-        cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' guiObj.Lang ' --zid ' guiObj.ZID ' --text-mode ' guiObj.TextMode ' < "' tmpTextFile '"'
+
+        cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' guiObj.Lang ' --zid ' guiObj.ZID ' --text-mode ' guiObj
+            .TextMode ' < "' tmpTextFile '"'
         exitCode := RunSilent(cmd, &outB64, &errJSON)
         try {
             FileDelete(tmpTextFile)
         } catch {
         }
-        
+
         if (exitCode == 0) {
             htmlContent := B64Decode(outB64)
             guiObj.wb.Navigate("about:blank")
@@ -528,7 +533,7 @@ GuiClose(thisGui) {
         isDirty := thisGui.wb.document.parentWindow.isDirty()
     } catch {
     }
-    
+
     if (isDirty) {
         res := MsgBox("You have unsaved edits. Save changes before closing?", "Kardenwort", "YesNoCancel Icon!")
         if (res == "Yes") {
@@ -543,11 +548,11 @@ GuiClose(thisGui) {
             return true
         }
     }
-    
+
     SetTimer(WatchFile.Bind(thisGui), 0)
     thisGui.wb := ""
     thisGui.Destroy()
-    
+
     global G_WindowCount
     G_WindowCount := Max(0, G_WindowCount - 1)
 }
@@ -555,7 +560,7 @@ GuiClose(thisGui) {
 GuiSize(thisGui, MinMax, Width, Height) {
     if (MinMax == -1)
         return
-    thisGui.wvc.Move(,, Width - 20, Height - 65)
+    thisGui.wvc.Move(, , Width - 20, Height - 65)
     btnY := Height - 40
     thisGui.SaveBtn.Move(15, btnY)
     thisGui.SendBtn.Move(125, btnY)
@@ -569,17 +574,17 @@ HandleSmartAction() {
     global G_PressCount, G_CapturedText, G_TapSingleMode, G_TapDoubleMode
     Taps := G_PressCount
     G_PressCount := 0
-    
+
     textMode := G_TapSingleMode
     if (Taps == 2) {
         textMode := G_TapDoubleMode
     }
-    
+
     ; Release Alt, Control, and Shift to avoid Modifier Bleed
     KeyWait "Alt"
     KeyWait "Control"
     KeyWait "Shift"
-    
+
     LaunchKardenwortWindow(G_CapturedText, textMode)
 }
 
