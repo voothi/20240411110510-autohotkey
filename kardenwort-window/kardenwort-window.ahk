@@ -453,11 +453,15 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     StatusTxt.Text := "Rendering..."
     htmlContent := B64Decode(outB64)
 
-    wb.Navigate("about:blank")
+    tmpHtmlFile := A_Temp "\karden_view_" ZID "_" A_TickCount ".html"
+    FileAppend(htmlContent, tmpHtmlFile, "UTF-8-RAW")
+    wb.Navigate(tmpHtmlFile)
     while wb.ReadyState != 4
         Sleep(10)
-    wb.document.write(htmlContent)
-    wb.document.close()
+    try {
+        FileDelete(tmpHtmlFile)
+    } catch {
+    }
     ApplyZoom(wb)
 
     ; Bind callback for bidirectional updates and dirty flag
@@ -666,11 +670,15 @@ WatchFile(guiObj) {
 
         if (exitCode == 0) {
             htmlContent := B64Decode(outB64)
-            guiObj.wb.Navigate("about:blank")
+            tmpHtmlFile := A_Temp "\karden_view_" guiObj.ZID "_" A_TickCount ".html"
+            FileAppend(htmlContent, tmpHtmlFile, "UTF-8-RAW")
+            guiObj.wb.Navigate(tmpHtmlFile)
             while guiObj.wb.ReadyState != 4
                 Sleep(10)
-            guiObj.wb.document.write(htmlContent)
-            guiObj.wb.document.close()
+            try {
+                FileDelete(tmpHtmlFile)
+            } catch {
+            }
             ApplyZoom(guiObj.wb)
             guiObj.wb.document.parentWindow.ahkCall := OnAhkCall.Bind(guiObj)
 
