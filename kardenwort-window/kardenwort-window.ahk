@@ -458,6 +458,8 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     }
 
     MyGui.Show(showStr)
+    MyGui.GetClientPos(,, &clientWidth, &clientHeight)
+    GuiSize(MyGui, 0, clientWidth, clientHeight)
     if (G_WindowCount == 0) {
         MyGui.GetPos(&outX, &outY)
         G_BaseX := outX
