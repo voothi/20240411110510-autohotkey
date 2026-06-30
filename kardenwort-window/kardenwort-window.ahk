@@ -384,7 +384,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     MyGui.OnEvent("Escape", GuiEscape)
 
     ; ActiveX Explorer
-    wvc := MyGui.Add("ActiveX", "x10 y10 w800 h600", "Shell.Explorer")
+    wvc := MyGui.Add("ActiveX", "x10 y10 w800 h600 +Hidden", "Shell.Explorer")
     wb := wvc.Value
 
     ; Native Footer Buttons
@@ -499,6 +499,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
 
     ; Bind callback for bidirectional updates and dirty flag
     wb.document.parentWindow.ahkCall := OnAhkCall.Bind(MyGui)
+    wvc.Visible := true
 
     ; Retrieve metadata from HTML DOM
     try {
@@ -720,6 +721,7 @@ WatchFile(guiObj) {
             FileAppend(htmlContent, tmpHtmlFile, "UTF-8-RAW")
             
             try {
+                guiObj.wvc.Visible := false
                 guiObj.wb.Navigate(tmpHtmlFile)
                 while guiObj.wb.ReadyState != 4
                     Sleep(10)
@@ -728,6 +730,7 @@ WatchFile(guiObj) {
                     FileDelete(tmpHtmlFile)
                 } catch {
                 }
+                guiObj.wvc.Visible := true
                 return
             }
             
@@ -747,6 +750,7 @@ WatchFile(guiObj) {
                 guiObj.wb.document.parentWindow.setSelectedRows(selectedRowsJSON)
             } catch {
             }
+            guiObj.wvc.Visible := true
 
             try {
                 guiObj.TsvPath := GetElementText(guiObj.wb.document.getElementById("tsv-path"))
