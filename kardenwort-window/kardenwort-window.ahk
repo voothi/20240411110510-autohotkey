@@ -369,7 +369,7 @@ ApplyZoom(wb) {
 ; GUI & Watcher Implementation
 ; ===================================================================================
 LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
-    ZID := presetZID != "" ? presetZID : A_Now "_" A_TickCount
+    ZID := presetZID != "" ? presetZID : A_Now
     lang := G_CurrentLang
 
     guiTitle := "Kardenwort - " lang " (" textMode ")"
@@ -470,7 +470,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
         } catch {
         }
         
-        if (llmFilled && FileExist(tsvPath)) {
+        if (FileExist(tsvPath)) {
             MyGui.LastMTime := FileGetTime(tsvPath)
         } else {
             MyGui.LastMTime := ""
