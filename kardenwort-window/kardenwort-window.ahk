@@ -17,6 +17,7 @@ global G_TapSingleMode := "single"
 global G_TapDoubleMode := "multi"
 global G_OrdinaryColor := "#ffd700"
 global G_PairedColor := "#9370db"
+global G_DefaultZoom := "100"
 
 global G_PressCount := 0
 global G_CapturedText := ""
@@ -43,6 +44,7 @@ LoadConfig() {
     global G_TapDoubleMode := IniRead(configPath, "Hotkey", "TapDoubleMode", "multi")
     global G_OrdinaryColor := IniRead(configPath, "Highlight", "OrdinaryColor", "#ffd700")
     global G_PairedColor := IniRead(configPath, "Highlight", "PairedColor", "#9370db")
+    global G_DefaultZoom := IniRead(configPath, "Settings", "DefaultZoom", "100")
 
     if (G_DeskPythonPath == "" || !FileExist(G_DeskPythonPath)) {
         MsgBox("Python interpreter not found: " G_DeskPythonPath, "Kardenwort Error", 16)
@@ -354,6 +356,15 @@ GetCascadeCoords(&x, &y) {
     G_WindowCount := Mod(G_WindowCount + 1, 15)
 }
 
+ApplyZoom(wb) {
+    global G_DefaultZoom
+    try {
+        if (G_DefaultZoom != "100" && G_DefaultZoom != "") {
+            wb.ExecWB(63, 2, Integer(G_DefaultZoom), 0)
+        }
+    }
+}
+
 ; ===================================================================================
 ; GUI & Watcher Implementation
 ; ===================================================================================
@@ -430,6 +441,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
         Sleep(10)
     wb.document.write(htmlContent)
     wb.document.close()
+    ApplyZoom(wb)
 
     ; Bind callback for bidirectional updates and dirty flag
     wb.document.parentWindow.ahkCall := OnAhkCall.Bind(MyGui)
@@ -609,6 +621,7 @@ WatchFile(guiObj) {
                 Sleep(10)
             guiObj.wb.document.write(htmlContent)
             guiObj.wb.document.close()
+            ApplyZoom(guiObj.wb)
             guiObj.wb.document.parentWindow.ahkCall := OnAhkCall.Bind(guiObj)
             guiObj.StatusTxt.Text := "Reloaded successfully"
         } else {
