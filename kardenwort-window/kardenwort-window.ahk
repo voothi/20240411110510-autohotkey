@@ -423,7 +423,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     ; Fetch HTML from Python core
     StatusTxt.Text := "Invoking backend analysis..."
 
-    tmpTextFile := A_Temp "\karden_input_" ZID ".txt"
+    tmpTextFile := A_Temp "\karden_input_" ZID "_" A_TickCount ".txt"
     try {
         FileDelete(tmpTextFile)
     } catch {
@@ -665,7 +665,7 @@ WatchFile(guiObj) {
 
         guiObj.StatusTxt.Text := "Reloading..."
 
-        tmpTextFile := A_Temp "\karden_input_" guiObj.ZID ".txt"
+        tmpTextFile := A_Temp "\karden_input_" guiObj.ZID "_" A_TickCount ".txt"
         try {
             FileDelete(tmpTextFile)
         } catch {
