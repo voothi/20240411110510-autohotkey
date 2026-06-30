@@ -22,6 +22,7 @@ global G_DefaultZoom := "100"
 global G_PressCount := 0
 global G_CapturedText := ""
 global G_WindowCount := 0
+global G_CascadeIndex := 0
 global G_BaseX := ""
 global G_BaseY := ""
 global G_CurrentHIcon := 0
@@ -352,9 +353,9 @@ RunSilent(cmd, &stdout := "", &stderr := "") {
 }
 
 GetCascadeCoords(&x, &y) {
-    global G_WindowCount
-    x := 50 + Mod(G_WindowCount, 15) * 30
-    y := 50 + Mod(G_WindowCount, 15) * 30
+    global G_CascadeIndex
+    x := 50 + Mod(G_CascadeIndex, 15) * 30
+    y := 50 + Mod(G_CascadeIndex, 15) * 30
 }
 
 ApplyZoom(wb) {
@@ -407,13 +408,14 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     SendBtn.OnEvent("Click", OnSendToAnkiClick.Bind(MyGui))
 
     configPath := A_ScriptDir "\config.ini"
-    initX := IniRead(configPath, "Window", "X", "")
-    initY := IniRead(configPath, "Window", "Y", "")
-    initW := IniRead(configPath, "Window", "Width", "1143")
-    initH := IniRead(configPath, "Window", "Height", "957")
+    initX := Trim(StrSplit(IniRead(configPath, "Window", "X", ""), ";")[1])
+    initY := Trim(StrSplit(IniRead(configPath, "Window", "Y", ""), ";")[1])
+    initW := Trim(StrSplit(IniRead(configPath, "Window", "Width", "1143"), ";")[1])
+    initH := Trim(StrSplit(IniRead(configPath, "Window", "Height", "957"), ";")[1])
 
-    global G_WindowCount, G_BaseX, G_BaseY
+    global G_WindowCount, G_CascadeIndex, G_BaseX, G_BaseY
     if (G_WindowCount == 0) {
+        G_CascadeIndex := 0
         if (initX == "" || initY == "") {
             GetCascadeCoords(&x, &y)
             showStr := "x" x " y" y " w" initW " h" initH
@@ -422,7 +424,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
         }
     } else {
         if (G_BaseX !== "" && G_BaseY !== "") {
-            cascadeOffset := Mod(G_WindowCount, 15) * 30
+            cascadeOffset := Mod(G_CascadeIndex, 15) * 30
             x := G_BaseX + cascadeOffset
             y := G_BaseY - cascadeOffset
             if (y < 0) {
@@ -442,6 +444,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
         G_BaseY := outY
     }
     G_WindowCount += 1
+    G_CascadeIndex += 1
 
     ; Fetch HTML from Python core
     StatusTxt.Text := "Invoking backend analysis..."
