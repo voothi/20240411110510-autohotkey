@@ -611,8 +611,6 @@ WatchFile(guiObj) {
     }
 
     if (currentMTime != guiObj.LastMTime) {
-        guiObj.LastMTime := currentMTime
-
         isDirty := false
         try {
             isDirty := guiObj.wb.document.parentWindow.isDirty()
@@ -623,6 +621,7 @@ WatchFile(guiObj) {
             res := MsgBox("The working TSV was modified externally. Reload and discard your unsaved edits?",
                 "Kardenwort", "YesNo Icon!")
             if (res == "No") {
+                guiObj.LastMTime := currentMTime
                 return
             }
         }
