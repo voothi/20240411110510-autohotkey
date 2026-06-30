@@ -426,10 +426,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
         if (G_BaseX !== "" && G_BaseY !== "") {
             cascadeOffset := Mod(G_CascadeIndex, 15) * 30
             x := G_BaseX + cascadeOffset
-            y := G_BaseY - cascadeOffset
-            if (y < 0) {
-                y := 0
-            }
+            y := G_BaseY + cascadeOffset
             showStr := "x" x " y" y " w" initW " h" initH
         } else {
             GetCascadeCoords(&x, &y)
