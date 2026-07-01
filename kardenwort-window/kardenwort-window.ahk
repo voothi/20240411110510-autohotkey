@@ -745,8 +745,10 @@ OnReprocessClick(guiObj, *) {
     } catch {
     }
     
+    ; Always pause WatchFile during reprocess
+    guiObj.IsReloading := true
+    
     if (isDirty) {
-        guiObj.IsReloading := true ; Prevent WatchFile from reloading while we reprocess
         OnSaveClick(guiObj, "")
         Sleep(100)
     }
@@ -771,16 +773,13 @@ OnReprocessClick(guiObj, *) {
 
     if (exitCode == 0) {
         UpdateStatus(guiObj, "Re-processing started")
-        PerformReload(guiObj)
     } else {
         UpdateStatus(guiObj, "Re-process failed")
         FileAppend("Reprocess failed: " errJSON "`n", A_Desktop "\karden_error.txt")
         MsgBox("Failed to start re-processing:`n" errJSON, "Kardenwort Error", 16)
     }
 
-    if (isDirty) {
-        guiObj.IsReloading := false
-    }
+    guiObj.IsReloading := false
 }
 
 WatchFile(guiObj) {
