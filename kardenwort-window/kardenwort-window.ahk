@@ -422,10 +422,10 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     SaveBtn := MyGui.Add("Text", "x15 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor " Disabled", "Save (Ctrl+S)"
     )
     UpdateBtn := MyGui.Add("Text", "x135 y615 w110 h30 Center +Border +0x200 +Hidden " G_GuiTextColor, "⟳ Update")
-    SendBtn := MyGui.Add("Text", "x245 y615 w120 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
+    ReprocBtn := MyGui.Add("Text", "x255 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor, "Re-process")
     DeleteBtn := MyGui.Add("Text", "x375 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor, "Delete")
-    ReprocBtn := MyGui.Add("Text", "x495 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor, "Re-process")
-    StatusTxt := MyGui.Add("Text", "x615 y615 w300 h30 +0x200 vStatusTxt", "Ready")
+    SendBtn := MyGui.Add("Text", "x495 y615 w120 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
+    StatusTxt := MyGui.Add("Text", "x625 y615 w300 h30 +0x200 vStatusTxt", "Ready")
     StatusTxt.SetFont(G_GuiTextColor)
 
     ; Store references on GUI object
@@ -1076,10 +1076,10 @@ GuiSize(thisGui, MinMax, Width, Height) {
     btnY := Height - 40
     thisGui.SaveBtn.Move(15, btnY)
     thisGui.UpdateBtn.Move(135, btnY)
-    thisGui.SendBtn.Move(245, btnY)
+    thisGui.ReprocBtn.Move(255, btnY)
     thisGui.DeleteBtn.Move(375, btnY)
-    thisGui.ReprocBtn.Move(495, btnY)
-    thisGui.StatusTxt.Move(615, btnY, Width - 630)
+    thisGui.SendBtn.Move(495, btnY)
+    thisGui.StatusTxt.Move(625, btnY, Width - 640)
     try {
         if (MinMax == 1) {
             thisGui.wb.document.body.classList.add("maximized")
