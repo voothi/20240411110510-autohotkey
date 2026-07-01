@@ -554,6 +554,8 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     try {
         tsvPath := GetElementText(wb.document.getElementById("tsv-path"))
         MyGui.TsvPath := tsvPath
+        SplitPath(tsvPath, &fileName)
+        MyGui.Title := "Kardenwort - " lang " (" textMode ") - " fileName
 
         llmFilled := false
         try {
