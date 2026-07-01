@@ -12,6 +12,7 @@ global G_DeskScriptPath := ""
 global G_DefaultLanguage := "en"
 global G_CurrentLang := "en"
 global G_FileWatcherIntervalMs := 1000
+global G_AutoUpdate := 0
 global G_MultiTapTimeout := 300
 global G_TapSingleMode := "single"
 global G_TapDoubleMode := "multi"
@@ -46,6 +47,7 @@ LoadConfig() {
     global G_DefaultLanguage := IniRead(configPath, "Settings", "DefaultLanguage", "en")
     global G_CurrentLang := IniRead(configPath, "Settings", "DefaultLanguage", "en")
     global G_FileWatcherIntervalMs := IniRead(configPath, "Settings", "FileWatcherIntervalMs", 1000)
+    global G_AutoUpdate := IniRead(configPath, "Settings", "AutoUpdate", 0)
     global G_MultiTapTimeout := IniRead(configPath, "Settings", "MultiTapTimeout", 300)
     global G_TapSingleMode := IniRead(configPath, "Hotkey", "TapSingleMode", "single")
     global G_TapDoubleMode := IniRead(configPath, "Hotkey", "TapDoubleMode", "multi")
@@ -424,6 +426,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     MyGui.SourceText := sourceText
     MyGui.TsvPath := ""
     MyGui.LastMTime := ""
+    MyGui.PendingUpdate := false
 
     SaveBtn.OnEvent("Click", OnSaveClick.Bind(MyGui))
     SendBtn.OnEvent("Click", OnSendToAnkiClick.Bind(MyGui))
@@ -565,6 +568,26 @@ OnAhkCall(guiObj, action, value) {
 }
 
 OnSaveClick(guiObj, *) {
+    if (guiObj.HasOwnProp("PendingUpdate") && guiObj.PendingUpdate) {
+        guiObj.PendingUpdate := false
+        guiObj.SaveBtn.Text := "Save (Ctrl+S)"
+        if (guiObj.HasOwnProp("wb") && guiObj.wb) {
+            try {
+                isDirty := guiObj.wb.document.parentWindow.isDirty()
+                if (isDirty) {
+                    guiObj.SaveBtn.Enabled := true
+                } else {
+                    guiObj.SaveBtn.Enabled := false
+                }
+            } catch {
+                guiObj.SaveBtn.Enabled := false
+            }
+        }
+        guiObj.StatusTxt.Text := "Applying update..."
+        PerformReload(guiObj)
+        return
+    }
+
     guiObj.StatusTxt.Text := "Saving..."
 
     ; Retrieve deltas
@@ -750,54 +773,74 @@ WatchFile(guiObj) {
     }
 
     if (currentMTime != guiObj.LastMTime) {
-        guiObj.IsReloading := true
-        isDirty := false
-        try {
-            isDirty := guiObj.wb.document.parentWindow.isDirty()
-        } catch {
-        }
-
-        if (isDirty) {
-            res := MsgBox("The working TSV was modified externally. Reload and discard your unsaved edits?",
-                "Kardenwort", "YesNo Icon!")
-            if (res == "No") {
-                guiObj.LastMTime := currentMTime
-                guiObj.IsReloading := false
-                return
+        if (!G_AutoUpdate) {
+            if (!guiObj.HasOwnProp("PendingUpdate") || !guiObj.PendingUpdate) {
+                guiObj.PendingUpdate := true
+                guiObj.SaveBtn.Enabled := true
+                guiObj.SaveBtn.Text := "⟳ Update"
+                guiObj.StatusTxt.Text := "Data ready. Click ⟳ to update."
             }
+            return
         }
+        PerformReload(guiObj)
+    }
+}
 
-        selectedRowsJSON := "[]"
-        try {
-            selectedRowsJSON := guiObj.wb.document.parentWindow.getSelectedRows()
-        } catch {
-        }
+PerformReload(guiObj) {
+    try {
+        currentMTime := FileGetTime(guiObj.TsvPath)
+    } catch {
+        return
+    }
 
-        guiObj.StatusTxt.Text := "Reloading..."
+    guiObj.IsReloading := true
+    isDirty := false
+    try {
+        isDirty := guiObj.wb.document.parentWindow.isDirty()
+    } catch {
+    }
 
-        tmpTextFile := A_Temp "\karden_input_" guiObj.ZID "_" A_TickCount ".txt"
-        try {
-            FileDelete(tmpTextFile)
-        } catch {
-        }
-        try {
-            FileAppend(guiObj.SourceText, tmpTextFile, "UTF-8-RAW")
-        } catch as e {
+    if (isDirty) {
+        res := MsgBox("The working TSV was modified externally. Reload and discard your unsaved edits?",
+            "Kardenwort", "YesNo Icon!")
+        if (res == "No") {
+            guiObj.LastMTime := currentMTime
             guiObj.IsReloading := false
             return
         }
+    }
 
-        cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' guiObj.Lang ' --zid ' guiObj.ZID ' --text-mode ' guiObj
-            .TextMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' < "' tmpTextFile '"'
-        exitCode := RunSilent(cmd, &outB64, &errJSON)
-        try {
-            FileDelete(tmpTextFile)
-        } catch {
-        }
+    selectedRowsJSON := "[]"
+    try {
+        selectedRowsJSON := guiObj.wb.document.parentWindow.getSelectedRows()
+    } catch {
+    }
 
+    guiObj.StatusTxt.Text := "Reloading..."
+
+    tmpTextFile := A_Temp "\karden_input_" guiObj.ZID "_" A_TickCount ".txt"
+    try {
+        FileDelete(tmpTextFile)
+    } catch {
+    }
+    try {
+        FileAppend(guiObj.SourceText, tmpTextFile, "UTF-8-RAW")
+    } catch as e {
         guiObj.IsReloading := false
+        return
+    }
 
-        try {
+    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' guiObj.Lang ' --zid ' guiObj.ZID ' --text-mode ' guiObj
+        .TextMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' < "' tmpTextFile '"'
+    exitCode := RunSilent(cmd, &outB64, &errJSON)
+    try {
+        FileDelete(tmpTextFile)
+    } catch {
+    }
+
+    guiObj.IsReloading := false
+
+    try {
             hwnd := guiObj.Hwnd
         } catch {
             hwnd := 0
