@@ -685,6 +685,10 @@ OnSaveClick(guiObj, *) {
             guiObj.PendingUpdate := false
             PerformReload(guiObj)
         } else {
+            try {
+                guiObj.LastMTime := FileGetTime(guiObj.TsvPath)
+            } catch {
+            }
             UpdateStatus(guiObj, "Edits saved successfully")
             WatchFile(guiObj)
         }
