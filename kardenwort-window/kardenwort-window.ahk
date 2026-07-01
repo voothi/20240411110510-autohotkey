@@ -422,7 +422,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     SendBtn := MyGui.Add("Text", "x135 y615 w120 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
     DeleteBtn := MyGui.Add("Text", "x265 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor, "Delete")
     ReprocBtn := MyGui.Add("Text", "x385 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor, "Re-process")
-    StatusTxt := MyGui.Add("Text", "x505 y615 w300 h30 +BackgroundTrans +0x200", "Ready")
+    StatusTxt := MyGui.Add("Text", "x505 y615 w300 h30 +0x200 vStatusTxt", "Ready")
     StatusTxt.SetFont(G_GuiTextColor)
 
     ; Store references on GUI object
@@ -485,7 +485,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     G_CascadeIndex += 1
 
     ; Fetch HTML from Python core
-    StatusTxt.Text := "Invoking backend analysis..."
+    UpdateStatus(MyGui, "Invoking backend analysis...")
 
     tmpTextFile := A_Temp "\karden_input_" ZID "_" A_TickCount ".txt"
     try {
@@ -495,7 +495,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     try {
         FileAppend(sourceText, tmpTextFile, "UTF-8-RAW")
     } catch as e {
-        StatusTxt.Text := "Input write failed"
+        UpdateStatus(MyGui, "Input write failed")
         MsgBox("Failed to write temporary text input:`n" e.Message, "Kardenwort Error", 16)
         return
     }
@@ -508,13 +508,13 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     }
 
     if (exitCode != 0) {
-        StatusTxt.Text := "Analysis failed"
+        UpdateStatus(MyGui, "Analysis failed")
         MsgBox("Kardenwort Analysis failed:`n" errJSON, "Kardenwort Error", 16)
         MyGui.Destroy()
         return
     }
 
-    StatusTxt.Text := "Rendering..."
+    UpdateStatus(MyGui, "Rendering...")
     htmlContent := B64Decode(outB64)
 
     tmpHtmlFile := A_Temp "\karden_view_" ZID "_" A_TickCount ".html"
@@ -573,9 +573,9 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
             MyGui.TimerFn := WatchFile.Bind(MyGui)
             SetTimer(MyGui.TimerFn, G_FileWatcherIntervalMs)
         }
-        StatusTxt.Text := "Analysis loaded successfully"
+        UpdateStatus(MyGui, "Analysis loaded successfully")
     } catch as e {
-        StatusTxt.Text := "Metadata binding failed: " e.Message
+        UpdateStatus(MyGui, "Metadata binding failed: " e.Message)
     }
 }
 
@@ -583,10 +583,10 @@ OnAhkCall(guiObj, action, value) {
     if (action == "dirty") {
         if (value == "true") {
             guiObj.SaveBtn.Enabled := true
-            guiObj.StatusTxt.Text := "Unsaved edits"
+            UpdateStatus(guiObj, "Unsaved edits")
         } else {
             guiObj.SaveBtn.Enabled := false
-            guiObj.StatusTxt.Text := "Edits saved"
+            UpdateStatus(guiObj, "Edits saved")
         }
     }
 }
@@ -607,7 +607,7 @@ OnSaveClick(guiObj, *) {
                 guiObj.SaveBtn.Enabled := false
             }
         }
-        guiObj.StatusTxt.Text := "Applying update..."
+        UpdateStatus(guiObj, "Applying update...")
         PerformReload(guiObj)
         return
     }
@@ -616,7 +616,7 @@ OnSaveClick(guiObj, *) {
         return
     }
 
-    guiObj.StatusTxt.Text := "Saving..."
+    UpdateStatus(guiObj, "Saving...")
 
     ; Retrieve deltas
     try {
@@ -630,7 +630,7 @@ OnSaveClick(guiObj, *) {
     try {
         FileAppend(deltasJSON, tmpDeltasFile, "UTF-8-RAW")
     } catch as e {
-        guiObj.StatusTxt.Text := "Deltas write failed"
+        UpdateStatus(guiObj, "Deltas write failed")
         MsgBox("Failed to write temporary delta file: " e.Message, "Kardenwort Error", 16)
         return
     }
@@ -645,17 +645,17 @@ OnSaveClick(guiObj, *) {
     if (exitCode == 0 && InStr(outStr, "SUCCESS")) {
         guiObj.wb.document.parentWindow.clearDirty()
         guiObj.SaveBtn.Enabled := false
-        guiObj.StatusTxt.Text := "Edits saved successfully"
+        UpdateStatus(guiObj, "Edits saved successfully")
         WatchFile(guiObj)
     } else {
-        guiObj.StatusTxt.Text := "Save failed"
+        UpdateStatus(guiObj, "Save failed")
         FileAppend("Save failed: " errJSON "`n", A_Desktop "\karden_error.txt")
         MsgBox("Failed to save cell edits:`n" errJSON, "Kardenwort Error", 16)
     }
 }
 
 OnSendToAnkiClick(guiObj, *) {
-    guiObj.StatusTxt.Text := "Exporting favorites..."
+    UpdateStatus(guiObj, "Exporting favorites...")
 
     try {
         selectedRowsJSON := guiObj.wb.document.parentWindow.getSelectedRows()
@@ -669,7 +669,7 @@ OnSendToAnkiClick(guiObj, *) {
     try {
         FileAppend(manifest, tmpManifestFile, "UTF-8-RAW")
     } catch as e {
-        guiObj.StatusTxt.Text := "Manifest write failed"
+        UpdateStatus(guiObj, "Manifest write failed")
         MsgBox("Failed to write temporary manifest file: " e.Message, "Kardenwort Error", 16)
         return
     }
@@ -687,17 +687,17 @@ OnSendToAnkiClick(guiObj, *) {
             RegExMatch(outStr, '"import_started":\s*(\w+)', &mStarted)
             RegExMatch(outStr, '"log":\s*"([^"]+)"', &mLog)
             if (mStarted && mStarted[1] == "true") {
-                guiObj.StatusTxt.Text := "Import started in background"
+                UpdateStatus(guiObj, "Import started in background")
                 logPath := mLog ? mLog[1] : "log file next to TSV"
                 MsgBox("Favorites exported successfully!`nAnki import started in background.`n`nLog: " logPath "`n`nYou can safely close this window now.",
                     "Kardenwort", 64)
                 return
             }
         }
-        guiObj.StatusTxt.Text := "Exported successfully"
+        UpdateStatus(guiObj, "Exported successfully")
         MsgBox("Favorites exported successfully!`nOutput: " outStr, "Kardenwort", 64)
     } else {
-        guiObj.StatusTxt.Text := "Export failed"
+        UpdateStatus(guiObj, "Export failed")
         FileAppend("Export failed: " errJSON "`n", A_Desktop "\karden_error.txt")
         MsgBox("Failed to export favorites:`n" errJSON, "Kardenwort Error", 16)
     }
@@ -711,7 +711,7 @@ OnDeleteClick(guiObj, *) {
 }
 
 OnReprocessClick(guiObj, *) {
-    guiObj.StatusTxt.Text := "Preparing re-process..."
+    UpdateStatus(guiObj, "Preparing re-process...")
     
     ; Grab selection BEFORE any saves or reloads
     jsonStr := "[]"
@@ -719,12 +719,12 @@ OnReprocessClick(guiObj, *) {
         jsonStr := guiObj.wb.document.parentWindow.getSelectedRows()
         if (jsonStr == "[]") {
             MsgBox("Please select rows to re-process.", "Kardenwort", 48)
-            guiObj.StatusTxt.Text := "Ready"
+            UpdateStatus(guiObj, "Ready")
             return
         }
     } catch {
         MsgBox("Failed to get selected rows.", "Kardenwort Error", 16)
-        guiObj.StatusTxt.Text := "Ready"
+        UpdateStatus(guiObj, "Ready")
         return
     }
 
@@ -747,7 +747,7 @@ OnReprocessClick(guiObj, *) {
     try {
         FileAppend(manifest, tmpManifestFile, "UTF-8-RAW")
     } catch as e {
-        guiObj.StatusTxt.Text := "Manifest write failed"
+        UpdateStatus(guiObj, "Manifest write failed")
         MsgBox("Failed to write temporary manifest file: " e.Message, "Kardenwort Error", 16)
         return
     }
@@ -760,10 +760,10 @@ OnReprocessClick(guiObj, *) {
     }
 
     if (exitCode == 0) {
-        guiObj.StatusTxt.Text := "Re-processing started"
+        UpdateStatus(guiObj, "Re-processing started")
         PerformReload(guiObj)
     } else {
-        guiObj.StatusTxt.Text := "Re-process failed"
+        UpdateStatus(guiObj, "Re-process failed")
         FileAppend("Reprocess failed: " errJSON "`n", A_Desktop "\karden_error.txt")
         MsgBox("Failed to start re-processing:`n" errJSON, "Kardenwort Error", 16)
     }
@@ -808,7 +808,7 @@ WatchFile(guiObj) {
                 jsMTime := FileGetTime(updateJsPath)
                 if (Abs(DateDiff(currentMTime, jsMTime, "Seconds")) <= 10) {
                     guiObj.LastMTime := currentMTime
-                    guiObj.StatusTxt.Text := "Data injected automatically."
+                    UpdateStatus(guiObj, "Data injected automatically.")
                     return
                 }
             }
@@ -819,7 +819,7 @@ WatchFile(guiObj) {
                 guiObj.PendingUpdate := true
                 guiObj.SaveBtn.Enabled := true
                 guiObj.SaveBtn.Text := "⟳ Update"
-                guiObj.StatusTxt.Text := "Data ready. Click ⟳ to update."
+                UpdateStatus(guiObj, "Data ready. Click ⟳ to update.")
             }
             return
         }
@@ -862,7 +862,7 @@ PerformReload(guiObj) {
     } catch {
     }
 
-    guiObj.StatusTxt.Text := "Reloading..."
+    UpdateStatus(guiObj, "Reloading...")
 
     tmpTextFile := A_Temp "\karden_input_" guiObj.ZID "_" A_TickCount ".txt"
     try {
@@ -943,12 +943,12 @@ PerformReload(guiObj) {
             try {
                 guiObj.TsvPath := GetElementText(guiObj.wb.document.getElementById("tsv-path"))
                 guiObj.LastMTime := FileGetTime(guiObj.TsvPath)
-                guiObj.StatusTxt.Text := "Analysis loaded successfully (Reloaded)"
+                UpdateStatus(guiObj, "Analysis loaded successfully (Reloaded)")
             } catch as e {
-                guiObj.StatusTxt.Text := "Metadata binding failed (Reloaded): " e.Message
+                UpdateStatus(guiObj, "Metadata binding failed (Reloaded): " e.Message)
             }
         } else {
-            guiObj.StatusTxt.Text := "Reload failed: render error"
+            UpdateStatus(guiObj, "Reload failed: render error")
         }
 }
 
@@ -1250,3 +1250,42 @@ $^y::
     Send("^y")
 }
 #HotIf
+
+UpdateStatus(guiObj, text) {
+    if (!guiObj.HasOwnProp("StatusLog")) {
+        guiObj.StatusLog := []
+    }
+    timeStr := FormatTime(A_Now, "HH:mm:ss")
+    guiObj.StatusLog.InsertAt(1, "[" timeStr "] " text)
+    if (guiObj.StatusLog.Length > 15) {
+        guiObj.StatusLog.Pop()
+    }
+    guiObj.StatusTxt.Text := text
+    guiObj.StatusTxt.Redraw()
+    
+    if (!guiObj.HasOwnProp("StatusHoverInit")) {
+        guiObj.StatusHoverInit := true
+        OnMessage(0x0200, HandleMouseMove)
+    }
+}
+
+HandleMouseMove(wParam, lParam, msg, hwnd) {
+    try {
+        ctrl := GuiCtrlFromHwnd(hwnd)
+        if (ctrl && ctrl.Name == "StatusTxt" && ctrl.Gui.HasOwnProp("StatusLog")) {
+            logStr := ""
+            for item in ctrl.Gui.StatusLog {
+                logStr .= item ""
+            }
+            ToolTip(Trim(logStr, ""))
+            SetTimer(HideStatusToolTip, -3000)
+            return
+        }
+    } catch {
+    }
+    ToolTip()
+}
+
+HideStatusToolTip() {
+    ToolTip()
+}
