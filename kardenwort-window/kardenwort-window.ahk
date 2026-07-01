@@ -340,7 +340,7 @@ ActionSaveStartIO(guiObj, payload) {
         return
     }
 
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" edit-save --deltas "' tmpTextFile '" --zid ' guiObj.ZID ' --language ' guiObj.Lang
+    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" edit-save --deltas "' tmpTextFile '" --zid ' guiObj.ZID ' --language ' guiObj.Lang ' --tsv "' guiObj.TsvPath '"'
     try {
         exitCode := RunSilent(cmd, &outB64, &errJSON)
     } catch {
