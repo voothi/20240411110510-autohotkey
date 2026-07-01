@@ -931,6 +931,7 @@ HandleSmartAction() {
     LaunchKardenwortWindow(G_CapturedText, textMode)
 }
 
+#MaxThreadsPerHotkey 2
 ; Register global hotkey Ctrl+Alt+Shift+F2 (English)
 ^+!F2::
 {
@@ -944,6 +945,7 @@ HandleSmartAction() {
     SetLanguage("de")
     TriggerSmartAction()
 }
+#MaxThreadsPerHotkey 1
 
 TriggerSmartAction() {
     global G_PressCount, G_CapturedText, G_MultiTapTimeout
