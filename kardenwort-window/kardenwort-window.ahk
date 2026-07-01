@@ -1036,9 +1036,10 @@ TriggerSmartAction() {
     }
 }
 
-; Register GUI hotkey Ctrl+S for saving in active Kardenwort windows
+; Register GUI hotkeys Ctrl+S and F5 for saving/updating in active Kardenwort windows
 #HotIf WinActive("Kardenwort - ")
-^s:: {
+^s::
+F5:: {
     activeHwnd := WinActive("A")
     if (activeHwnd) {
         guiObj := GuiFromHwnd(activeHwnd)
