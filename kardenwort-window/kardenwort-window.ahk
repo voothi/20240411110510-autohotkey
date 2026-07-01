@@ -812,8 +812,13 @@ PerformReload(guiObj) {
     }
 
     selectedRowsJSON := "[]"
+    scrollY := 0
     try {
         selectedRowsJSON := guiObj.wb.document.parentWindow.getSelectedRows()
+        scrollY := guiObj.wb.document.documentElement.scrollTop
+        if (!scrollY) {
+            scrollY := guiObj.wb.document.body.scrollTop
+        }
     } catch {
     }
 
@@ -883,6 +888,9 @@ PerformReload(guiObj) {
                 }
                 guiObj.wb.document.parentWindow.ahkCall := OnAhkCall.Bind(guiObj)
                 guiObj.wb.document.parentWindow.setSelectedRows(selectedRowsJSON)
+                if (scrollY) {
+                    guiObj.wb.document.parentWindow.scrollTo(0, scrollY)
+                }
             } catch {
             }
             guiObj.wvc.Visible := true
