@@ -263,7 +263,10 @@ ActionSaveStartIO(guiObj, payload) {
     }
 
     tmpTextFile := A_Temp "\karden_deltas_" guiObj.ZID "_" A_TickCount ".json"
-    try { FileDelete(tmpTextFile) } catch {}
+    try {
+        FileDelete(tmpTextFile)
+    } catch {
+    }
     try {
         FileAppend(deltasJSON, tmpTextFile, "UTF-8-RAW")
     } catch as e {
@@ -280,7 +283,10 @@ ActionSaveStartIO(guiObj, payload) {
         errJSON := "RunSilent failed"
     }
     
-    try { FileDelete(tmpTextFile) } catch {}
+    try {
+        FileDelete(tmpTextFile)
+    } catch {
+    }
 
     if (exitCode == 0) {
         FsmDispatch(guiObj, EV_SAVE_SUCCESS)
@@ -290,7 +296,10 @@ ActionSaveStartIO(guiObj, payload) {
 }
 
 ActionSaveSuccessApply(guiObj, payload) {
-    try { guiObj.wb.document.parentWindow.clearDirty() } catch {}
+    try {
+        guiObj.wb.document.parentWindow.clearDirty()
+    } catch {
+    }
     guiObj.FsmMemory["IsDirty"] := false
     try {
         if (FileExist(guiObj.TsvPath)) {
@@ -404,8 +413,14 @@ ActionReloadDoneApply(guiObj, payload) {
     return FSM_IDLE
 }
 ActionReloadDoneIO(guiObj, payload) {
-    try { hwnd := guiObj.Hwnd } catch { hwnd := 0 }
-    if (hwnd == 0 || !WinExist("ahk_id " hwnd) || !guiObj.HasProp("wb") || !IsObject(guiObj.wb)) { return }
+    try {
+        hwnd := guiObj.Hwnd
+    } catch {
+        hwnd := 0
+    }
+    if (hwnd == 0 || !WinExist("ahk_id " hwnd) || !guiObj.HasProp("wb") || !IsObject(guiObj.wb)) { 
+        return 
+    }
 
     htmlContent := B64Decode(payload.outB64)
     tmpHtmlFile := A_Temp "\karden_view_" guiObj.ZID "_" A_TickCount ".html"
@@ -417,11 +432,17 @@ ActionReloadDoneIO(guiObj, payload) {
         while guiObj.wb.ReadyState != 4
             Sleep(10)
     } catch {
-        try { FileDelete(tmpHtmlFile) } catch {}
+        try {
+        FileDelete(tmpHtmlFile)
+    } catch {
+    }
         guiObj.wvc.Visible := true
         return
     }
-    try { FileDelete(tmpHtmlFile) } catch {}
+    try {
+        FileDelete(tmpHtmlFile)
+    } catch {
+    }
 
     try {
         ApplyZoom(guiObj.wb)
@@ -522,7 +543,10 @@ ActionReprocessStartIO(guiObj, payload) {
         exitCode := 1
         errJSON := "RunSilent failed"
     }
-    try { FileDelete(tmpManifestFile) } catch {}
+    try {
+        FileDelete(tmpManifestFile)
+    } catch {
+    }
 
     if (exitCode == 0) {
         FsmDispatch(guiObj, EV_REPROCESS_DONE, "")
@@ -545,7 +569,10 @@ ActionReprocessFailedApply(guiObj, payload) {
 ActionReprocessFailedIO(guiObj, payload) {
     UpdateStatus(guiObj, "Re-process failed")
     if (payload != "") {
-        try { FileAppend("Reprocess failed: " payload "`n", A_Desktop "\karden_error.txt") } catch {}
+        try {
+        FileAppend("Reprocess failed: " payload "`n", A_Desktop "\karden_error.txt")
+    } catch {
+    }
         MsgBox("Failed to start re-processing:`n" payload, "Kardenwort Error", 16)
     }
     UpdateButtonState(guiObj)
@@ -588,7 +615,10 @@ ActionExportStartIO(guiObj, payload) {
         exitCode := 1
         errJSON := "RunSilent failed"
     }
-    try { FileDelete(tmpManifestFile) } catch {}
+    try {
+        FileDelete(tmpManifestFile)
+    } catch {
+    }
 
     if (exitCode == 0) {
         logPath := ""
@@ -625,7 +655,10 @@ ActionExportFailedApply(guiObj, payload) {
 ActionExportFailedIO(guiObj, payload) {
     UpdateStatus(guiObj, "Export failed")
     if (payload != "") {
-        try { FileAppend("Export failed: " payload "`n", A_Desktop "\karden_error.txt") } catch {}
+        try {
+        FileAppend("Export failed: " payload "`n", A_Desktop "\karden_error.txt")
+    } catch {
+    }
         MsgBox("Failed to export favorites:`n" payload, "Kardenwort Error", 16)
     }
     UpdateButtonState(guiObj)
