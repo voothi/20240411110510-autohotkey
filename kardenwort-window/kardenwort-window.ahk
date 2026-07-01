@@ -685,6 +685,7 @@ OnSaveClick(guiObj, *) {
         if (guiObj.StateMemory["PendingUpdate"]) {
             UpdateStatus(guiObj, "Edits saved, applying update...")
             guiObj.StateMemory["PendingUpdate"] := false
+            guiObj.StateMemory["IsReloading"] := false
             PerformReload(guiObj)
         } else {
             try {
@@ -870,7 +871,7 @@ WatchFile(guiObj) {
     }
 
     if (currentMTime != guiObj.StateMemory["LastMTime"]) {
-        isAutoInjecting := (guiObj.HasOwnProp("IsProgressive") && guiObj.StateMemory["IsProgressive"]) || (guiObj.HasOwnProp("IsLazy") && guiObj.StateMemory["IsLazy"])
+        isAutoInjecting := guiObj.StateMemory["IsProgressive"] || guiObj.StateMemory["IsLazy"]
         if (isAutoInjecting) {
             updateJsPath := RegExReplace(tsvPath, "(?i)\.tsv$", ".update.js")
             if (FileExist(updateJsPath)) {
@@ -1014,7 +1015,11 @@ PerformReload(guiObj) {
 
             try {
                 guiObj.TsvPath := GetElementText(guiObj.wb.document.getElementById("tsv-path"))
-                guiObj.StateMemory["LastMTime"] := FileGetTime(guiObj.TsvPath)
+                if (FileExist(guiObj.TsvPath)) {
+                    guiObj.StateMemory["LastMTime"] := FileGetTime(guiObj.TsvPath)
+                } else {
+                    guiObj.StateMemory["LastMTime"] := ""
+                }
                 if (guiObj.StateMemory["IsLazy"]) {
                     UpdateStatus(guiObj, "Lazy mode active. Select and Re-process. (Reloaded)")
                 } else {
