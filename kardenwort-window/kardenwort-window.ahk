@@ -607,27 +607,18 @@ OnAhkCall(guiObj, action, value) {
 }
 
 OnSaveClick(guiObj, *) {
+    needsReload := false
     if (guiObj.HasOwnProp("PendingUpdate") && guiObj.PendingUpdate) {
         guiObj.PendingUpdate := false
         guiObj.SaveBtn.Text := "Save (Ctrl+S)"
-        if (guiObj.HasOwnProp("wb") && guiObj.wb) {
-            try {
-                isDirty := guiObj.wb.document.parentWindow.isDirty()
-                if (isDirty) {
-                    guiObj.SaveBtn.Enabled := true
-                } else {
-                    guiObj.SaveBtn.Enabled := false
-                }
-            } catch {
-                guiObj.SaveBtn.Enabled := false
-            }
-        }
-        UpdateStatus(guiObj, "Applying update...")
-        PerformReload(guiObj)
-        return
+        needsReload := true
     }
 
     if (!guiObj.SaveBtn.Enabled) {
+        if (needsReload) {
+            UpdateStatus(guiObj, "Applying update...")
+            PerformReload(guiObj)
+        }
         return
     }
 
@@ -638,6 +629,9 @@ OnSaveClick(guiObj, *) {
         deltasJSON := guiObj.wb.document.parentWindow.getDeltas()
     } catch as e {
         MsgBox("Failed to retrieve deltas from page: " e.Message, "Kardenwort Error", 16)
+        if (needsReload) {
+            PerformReload(guiObj)
+        }
         return
     }
 
@@ -647,6 +641,9 @@ OnSaveClick(guiObj, *) {
     } catch as e {
         UpdateStatus(guiObj, "Deltas write failed")
         MsgBox("Failed to write temporary delta file: " e.Message, "Kardenwort Error", 16)
+        if (needsReload) {
+            PerformReload(guiObj)
+        }
         return
     }
 
@@ -660,12 +657,20 @@ OnSaveClick(guiObj, *) {
     if (exitCode == 0 && InStr(outStr, "SUCCESS")) {
         guiObj.wb.document.parentWindow.clearDirty()
         guiObj.SaveBtn.Enabled := false
-        UpdateStatus(guiObj, "Edits saved successfully")
-        WatchFile(guiObj)
+        if (needsReload) {
+            UpdateStatus(guiObj, "Edits saved, applying update...")
+            PerformReload(guiObj)
+        } else {
+            UpdateStatus(guiObj, "Edits saved successfully")
+            WatchFile(guiObj)
+        }
     } else {
         UpdateStatus(guiObj, "Save failed")
         FileAppend("Save failed: " errJSON "`n", A_Desktop "\karden_error.txt")
         MsgBox("Failed to save cell edits:`n" errJSON, "Kardenwort Error", 16)
+        if (needsReload) {
+            PerformReload(guiObj)
+        }
     }
 }
 
@@ -1009,6 +1014,17 @@ GuiClose(thisGui) {
     if (thisGui.HasOwnProp("TimerFn")) {
         SetTimer(thisGui.TimerFn, 0)
     }
+
+    if (thisGui.HasOwnProp("TsvPath") && thisGui.TsvPath !== "") {
+        updateJsPath := StrReplace(thisGui.TsvPath, ".tsv", ".update.js")
+        try {
+            if FileExist(updateJsPath) {
+                FileDelete(updateJsPath)
+            }
+        } catch {
+        }
+    }
+    
     ; Window position saving disabled to maintain fixed size from config
 
     thisGui.wb := ""
