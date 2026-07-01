@@ -24,6 +24,7 @@ global G_Theme := "dark"
 global G_GuiBgColor := "0D0F12"
 global G_GuiTextColor := "c0xE3E6EB"
 global G_DwmDark := 1
+global G_ShowInfoWindows := 1
 
 global G_PressCount := 0
 global G_CapturedText := ""
@@ -50,6 +51,7 @@ LoadConfig() {
     global G_FileWatcherIntervalMs := IniRead(configPath, "Settings", "FileWatcherIntervalMs", 1000)
     global G_AutoUpdate := IniRead(configPath, "Settings", "AutoUpdate", 0)
     global G_AutoSave := IniRead(configPath, "Settings", "auto_save_on_edit", 0)
+    global G_ShowInfoWindows := IniRead(configPath, "Settings", "ShowInfoWindows", 1)
     global G_MultiTapTimeout := IniRead(configPath, "Settings", "MultiTapTimeout", 300)
     global G_TapSingleMode := IniRead(configPath, "Hotkey", "TapSingleMode", "single")
     global G_TapDoubleMode := IniRead(configPath, "Hotkey", "TapDoubleMode", "multi")
@@ -737,14 +739,16 @@ OnSendToAnkiClick(guiObj, *) {
             RegExMatch(outStr, '"log":\s*"([^"]+)"', &mLog)
             if (mStarted && mStarted[1] == "true") {
                 UpdateStatus(guiObj, "Import started in background")
-                logPath := mLog ? mLog[1] : "log file next to TSV"
-                MsgBox("Favorites exported successfully!`nAnki import started in background.`n`nLog: " logPath "`n`nYou can safely close this window now.",
-                    "Kardenwort", 64)
+                if (G_ShowInfoWindows) {
+                    MsgBox("Exported and Anki import started.", "Kardenwort", "Iconi")
+                }
                 return
             }
         }
         UpdateStatus(guiObj, "Exported successfully")
-        MsgBox("Favorites exported successfully!`nOutput: " outStr, "Kardenwort", 64)
+        if (G_ShowInfoWindows) {
+            MsgBox("Favorites exported.", "Kardenwort", "Iconi")
+        }
     } else {
         UpdateStatus(guiObj, "Export failed")
         FileAppend("Export failed: " errJSON "`n", A_Desktop "\karden_error.txt")
