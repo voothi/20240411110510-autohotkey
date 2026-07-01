@@ -255,9 +255,22 @@ LaunchRestore(filePath) {
     }
 
     lang := G_DefaultLanguage
-    RegExMatch(fileName, "\.([a-z]{2})\.tsv$", &mLang)
-    if (mLang) {
-        lang := mLang[1]
+    foundTsv := ""
+    tsvPattern := fileDir "\" ZID "-*.tsv"
+    loop files, tsvPattern {
+        foundTsv := A_LoopFileName
+        break
+    }
+    if (foundTsv != "") {
+        RegExMatch(foundTsv, "\.([a-z]{2})\.tsv$", &mLang)
+        if (mLang) {
+            lang := mLang[1]
+        }
+    } else {
+        RegExMatch(fileName, "\.([a-z]{2})\.(tsv|txt|srt)$", &mLang)
+        if (mLang) {
+            lang := mLang[1]
+        }
     }
 
     global G_CurrentLang := lang
