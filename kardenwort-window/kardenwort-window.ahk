@@ -650,12 +650,14 @@ OnSaveClick(guiObj, *) {
     }
 
     UpdateStatus(guiObj, "Saving...")
+    guiObj.StateMemory["IsReloading"] := true
 
     ; Retrieve deltas
     try {
         deltasJSON := guiObj.wb.document.parentWindow.getDeltas()
     } catch as e {
         MsgBox("Failed to retrieve deltas from page: " e.Message, "Kardenwort Error", 16)
+        guiObj.StateMemory["IsReloading"] := false
         UpdateButtonState(guiObj)
         return
     }
@@ -665,6 +667,7 @@ OnSaveClick(guiObj, *) {
         FileAppend(deltasJSON, tmpDeltasFile, "UTF-8-RAW")
     } catch as e {
         UpdateStatus(guiObj, "Deltas write failed")
+        guiObj.StateMemory["IsReloading"] := false
         MsgBox("Failed to write temporary delta file: " e.Message, "Kardenwort Error", 16)
         UpdateButtonState(guiObj)
         return
@@ -679,7 +682,7 @@ OnSaveClick(guiObj, *) {
 
     if (exitCode == 0 && InStr(outStr, "SUCCESS")) {
         guiObj.wb.document.parentWindow.clearDirty()
-                if (guiObj.StateMemory["PendingUpdate"]) {
+        if (guiObj.StateMemory["PendingUpdate"]) {
             UpdateStatus(guiObj, "Edits saved, applying update...")
             guiObj.StateMemory["PendingUpdate"] := false
             PerformReload(guiObj)
@@ -689,11 +692,13 @@ OnSaveClick(guiObj, *) {
             } catch {
             }
             UpdateStatus(guiObj, "Edits saved successfully")
+            guiObj.StateMemory["IsReloading"] := false
             WatchFile(guiObj)
         }
         UpdateButtonState(guiObj)
     } else {
         UpdateStatus(guiObj, "Save failed")
+        guiObj.StateMemory["IsReloading"] := false
         FileAppend("Save failed: " errJSON "`n", A_Desktop "\karden_error.txt")
         MsgBox("Failed to save cell edits:`n" errJSON, "Kardenwort Error", 16)
         UpdateButtonState(guiObj)
@@ -702,6 +707,7 @@ OnSaveClick(guiObj, *) {
 
 OnSendToAnkiClick(guiObj, *) {
     UpdateStatus(guiObj, "Exporting favorites...")
+    guiObj.StateMemory["IsReloading"] := true
 
     try {
         selectedRowsJSON := guiObj.wb.document.parentWindow.getSelectedRows()
@@ -757,6 +763,8 @@ OnSendToAnkiClick(guiObj, *) {
         FileAppend("Export failed: " errJSON "`n", A_Desktop "\karden_error.txt")
         MsgBox("Failed to export favorites:`n" errJSON, "Kardenwort Error", 16)
     }
+    guiObj.StateMemory["IsReloading"] := false
+    UpdateButtonState(guiObj)
 }
 
 OnDeleteClick(guiObj, *) {
@@ -795,6 +803,12 @@ OnReprocessClick(guiObj, *) {
     if (isDirty) {
         OnSaveClick(guiObj, "")
         Sleep(100)
+        if (guiObj.StateMemory["IsDirty"]) {
+            guiObj.StateMemory["IsReloading"] := false
+            UpdateButtonState(guiObj)
+            return
+        }
+        guiObj.StateMemory["IsReloading"] := true
     }
 
     tsvPathStr := StrReplace(guiObj.TsvPath, "\", "\\")
