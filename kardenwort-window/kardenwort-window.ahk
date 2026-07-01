@@ -37,9 +37,11 @@ global EV_EXPORT_CLICK := "EV_EXPORT_CLICK"
 global EV_EXPORT_DONE := "EV_EXPORT_DONE"
 global EV_EXPORT_FAILED := "EV_EXPORT_FAILED"
 global EV_CLOSE := "EV_CLOSE"
+global EV_CLOSE_CANCEL := "EV_CLOSE_CANCEL"
 
 global FSM_AUTO_INJECT_MAX_RETRIES := 6
 global G_FsmDispatching := false
+global G_FsmTestMode := false
 
 global G_FileWatcherIntervalMs := 0
 global G_AutoSave := 0
@@ -74,8 +76,8 @@ FsmDispatch(guiObj, event, payload := "") {
         if (!guiObj.HasOwnProp("StatusLog")) {
             guiObj.StatusLog := []
         }
-        timeStr := FormatTime(A_Now, "HH:mm:ss")
-        guiObj.StatusLog.InsertAt(1, "[" timeStr "] FSM: dropped re-entrant event " event " in state " guiObj.FsmState)
+        timeStr := FormatTime(A_Now, "yyyy-MM-dd HH:mm:ss")
+        guiObj.StatusLog.InsertAt(1, "[" timeStr "] FSM: dropped re-entrant event " event " in state " guiObj.FsmState " @" guiObj.ZID)
         if (guiObj.StatusLog.Length > 15) {
             guiObj.StatusLog.Pop()
         }
@@ -110,20 +112,22 @@ FsmDispatch(guiObj, event, payload := "") {
     guiObj.FsmState := nextState
     FsmLog(guiObj, currentState, nextState, event)
 
+    ; Clear the dispatch lock before running IO side effects
+    ; so that any nested dispatches in IO functions (like completion events or compound flows) are allowed.
+    G_FsmDispatching := false
+
     ; IO side-effects (if exists)
     if (transition.HasOwnProp("io") && transition.io != "") {
         ioFn := transition.io
         %ioFn%(guiObj, payload)
     }
-
-    G_FsmDispatching := false
 }
 
 FsmLog(guiObj, fromState, toState, event) {
     if (!guiObj.HasOwnProp("StatusLog")) {
         guiObj.StatusLog := []
     }
-    timeStr := FormatTime(A_Now, "HH:mm:ss")
+    timeStr := FormatTime(A_Now, "yyyy-MM-dd HH:mm:ss")
     msg := "[" timeStr "] FSM: " fromState " -> " toState " (" event ") @" guiObj.ZID
     guiObj.StatusLog.InsertAt(1, msg)
     if (guiObj.StatusLog.Length > 15) {
@@ -138,7 +142,7 @@ FsmSelfCheck() {
     validEvents := Map(EV_RENDER_DONE, 1, EV_RENDER_FAILED, 1, EV_DIRTY, 1, EV_CLEAN, 1, EV_SAVE_CLICK, 1,
         EV_SAVE_SUCCESS, 1, EV_SAVE_FAILED, 1, EV_FILE_CHANGED, 1, EV_UPDATE_CLICK, 1, EV_RELOAD_DONE, 1,
         EV_RELOAD_FAILED, 1, EV_REPROCESS_CLICK, 1, EV_REPROCESS_DONE, 1, EV_REPROCESS_FAILED, 1, EV_EXPORT_CLICK, 1,
-        EV_EXPORT_DONE, 1, EV_EXPORT_FAILED, 1, EV_CLOSE, 1)
+        EV_EXPORT_DONE, 1, EV_EXPORT_FAILED, 1, EV_CLOSE, 1, EV_CLOSE_CANCEL, 1)
 
     for state, events in G_FSM_TRANSITIONS {
         if (!validStates.Has(state)) {
@@ -166,6 +170,9 @@ ActionRenderDoneApply(guiObj, payload) {
     return FSM_IDLE
 }
 ActionRenderDoneIO(guiObj, payload) {
+    if (G_FsmTestMode) {
+        return
+    }
     isMax := false
     try {
         isMax := (WinGetMinMax(guiObj.Hwnd) == 1)
@@ -234,6 +241,9 @@ ActionRenderFailedApply(guiObj, payload) {
     return FSM_ERROR
 }
 ActionRenderFailedIO(guiObj, payload) {
+    if (G_FsmTestMode) {
+        return
+    }
     UpdateStatus(guiObj, "Analysis failed")
     MsgBox("Kardenwort Analysis failed:`n" payload, "Kardenwort Error", 16)
     global G_WindowCount
@@ -271,6 +281,9 @@ ActionSaveStartApply(guiObj, payload) {
     return FSM_SAVING
 }
 ActionSaveStartIO(guiObj, payload) {
+    if (G_FsmTestMode) {
+        return
+    }
     UpdateStatus(guiObj, "Saving...")
     try {
         deltasJSON := guiObj.wb.document.parentWindow.getDeltas()
@@ -446,6 +459,9 @@ ActionReloadDoneApply(guiObj, payload) {
     return FSM_IDLE
 }
 ActionReloadDoneIO(guiObj, payload) {
+    if (G_FsmTestMode) {
+        return
+    }
     try {
         hwnd := guiObj.Hwnd
     } catch {
@@ -536,27 +552,18 @@ ActionReloadFailedApply(guiObj, payload) {
     return FSM_IDLE
 }
 ActionReloadFailedIO(guiObj, payload) {
+    if (G_FsmTestMode) {
+        return
+    }
     UpdateStatus(guiObj, "Reload failed: render error")
     UpdateButtonState(guiObj)
 }
 
 ActionReprocessStartGuard(guiObj, payload) {
-    try {
-        jsonStr := guiObj.wb.document.parentWindow.getSelectedRows()
-        if (jsonStr == "[]" || jsonStr == "") {
-            MsgBox("Please select rows to re-process.", "Kardenwort", 48)
-            UpdateStatus(guiObj, "Ready")
-            return false
-        }
-        guiObj.FsmMemory["ReprocessSelection"] := jsonStr
-        return true
-    } catch {
-        MsgBox("Failed to get selected rows.", "Kardenwort Error", 16)
-        UpdateStatus(guiObj, "Ready")
-        return false
-    }
+    return true
 }
 ActionReprocessStartApply(guiObj, payload) {
+    guiObj.FsmMemory["ReprocessSelection"] := payload
     if (guiObj.FsmMemory["IsDirty"]) {
         guiObj.FsmMemory["PendingReprocess"] := true
         return FSM_IDLE
@@ -566,6 +573,9 @@ ActionReprocessStartApply(guiObj, payload) {
 ActionReprocessStartIO(guiObj, payload) {
     if (guiObj.FsmMemory["PendingReprocess"]) {
         FsmDispatch(guiObj, EV_SAVE_CLICK)
+        return
+    }
+    if (G_FsmTestMode) {
         return
     }
 
@@ -609,6 +619,9 @@ ActionReprocessDoneApply(guiObj, payload) {
     return FSM_IDLE
 }
 ActionReprocessDoneIO(guiObj, payload) {
+    if (G_FsmTestMode) {
+        return
+    }
     UpdateStatus(guiObj, "Re-processing started")
     UpdateButtonState(guiObj)
 }
@@ -617,6 +630,9 @@ ActionReprocessFailedApply(guiObj, payload) {
     return FSM_IDLE
 }
 ActionReprocessFailedIO(guiObj, payload) {
+    if (G_FsmTestMode) {
+        return
+    }
     UpdateStatus(guiObj, "Re-process failed")
     if (payload != "") {
         try {
@@ -629,23 +645,16 @@ ActionReprocessFailedIO(guiObj, payload) {
 }
 
 ActionExportStartGuard(guiObj, payload) {
-    try {
-        jsonStr := guiObj.wb.document.parentWindow.getSelectedRows()
-        if (jsonStr == "[]" || jsonStr == "") {
-            FsmDispatch(guiObj, EV_EXPORT_FAILED, "No rows selected")
-            return false
-        }
-        guiObj.FsmMemory["ExportSelection"] := jsonStr
-        return true
-    } catch {
-        FsmDispatch(guiObj, EV_EXPORT_FAILED, "Failed to get selected rows")
-        return false
-    }
+    return true
 }
 ActionExportStartApply(guiObj, payload) {
+    guiObj.FsmMemory["ExportSelection"] := payload
     return FSM_EXPORTING
 }
 ActionExportStartIO(guiObj, payload) {
+    if (G_FsmTestMode) {
+        return
+    }
     UpdateStatus(guiObj, "Exporting favorites...")
     jsonStr := guiObj.FsmMemory["ExportSelection"]
     guiObj.FsmMemory.Delete("ExportSelection")
@@ -689,6 +698,9 @@ ActionExportDoneApply(guiObj, payload) {
     return FSM_IDLE
 }
 ActionExportDoneIO(guiObj, payload) {
+    if (G_FsmTestMode) {
+        return
+    }
     if (payload.isAsync) {
         if (G_ShowInfoWindows) {
             MsgBox("Anki import started in the background.`nMonitor log: " payload.logPath, "Kardenwort", "Iconi")
@@ -706,6 +718,9 @@ ActionExportFailedApply(guiObj, payload) {
     return FSM_IDLE
 }
 ActionExportFailedIO(guiObj, payload) {
+    if (G_FsmTestMode) {
+        return
+    }
     UpdateStatus(guiObj, "Export failed")
     if (payload != "") {
         try {
@@ -718,20 +733,31 @@ ActionExportFailedIO(guiObj, payload) {
 }
 
 ActionCloseApply(guiObj, payload) {
-    if (guiObj.FsmMemory["IsDirty"]) {
-        res := MsgBox("You have unsaved edits. Save changes before closing?", "Kardenwort", "YesNoCancel Icon!")
-        if (res == "Cancel") {
-            return FSM_IDLE
-        } else if (res == "Yes") {
-            guiObj.FsmMemory["PendingClose"] := true
-            return FSM_CLOSING
-        }
-    }
     return FSM_CLOSING
+}
+ActionCloseCancelApply(guiObj, payload) {
+    return FSM_IDLE
 }
 ActionCloseIO(guiObj, payload) {
     if (guiObj.FsmMemory["PendingClose"]) {
         FsmDispatch(guiObj, EV_SAVE_CLICK)
+        return
+    }
+    if (guiObj.FsmMemory["IsDirty"]) {
+        if (G_FsmTestMode) {
+            return
+        }
+        res := MsgBox("You have unsaved edits. Save changes before closing?", "Kardenwort", "YesNoCancel Icon!")
+        if (res == "Cancel") {
+            FsmDispatch(guiObj, EV_CLOSE_CANCEL)
+            return
+        } else if (res == "Yes") {
+            guiObj.FsmMemory["PendingClose"] := true
+            FsmDispatch(guiObj, EV_SAVE_CLICK)
+            return
+        }
+    }
+    if (G_FsmTestMode) {
         return
     }
 
@@ -791,9 +817,12 @@ global G_FSM_TRANSITIONS := Map(
         EV_EXPORT_FAILED, { nextState: FSM_IDLE, apply: "ActionExportFailedApply", io: "ActionExportFailedIO" }
     ),
     FSM_CLOSING, Map(
-        EV_SAVE_CLICK, { nextState: FSM_SAVING, guard: "ActionSaveStartGuard", apply: "ActionSaveStartApply", io: "ActionSaveStartIO" }
+        EV_SAVE_CLICK, { nextState: FSM_SAVING, guard: "ActionSaveStartGuard", apply: "ActionSaveStartApply", io: "ActionSaveStartIO" },
+        EV_CLOSE_CANCEL, { nextState: FSM_IDLE, apply: "ActionCloseCancelApply" }
     ),
-    FSM_ERROR, Map()
+    FSM_ERROR, Map(
+        EV_CLOSE, { nextState: FSM_ERROR, io: "ActionCloseIO" }
+    )
 )
 
 FsmSelfCheck()
@@ -1104,39 +1133,41 @@ LaunchDesk(filePath, textMode) {
     LaunchKardenwortWindow(sourceText, textMode)
 }
 
-; Initialize configuration and tray menu
-LoadConfig()
-InitializeTrayMenu()
+if (A_ScriptFullPath = A_LineFile) {
+    ; Initialize configuration and tray menu
+    LoadConfig()
+    InitializeTrayMenu()
 
-; Check startup arguments
-if (A_Args.Length > 0) {
-    mode := ""
-    filePath := ""
-    textMode := "multi"
+    ; Check startup arguments
+    if (A_Args.Length > 0) {
+        mode := ""
+        filePath := ""
+        textMode := "multi"
 
-    i := 1
-    while (i <= A_Args.Length) {
-        arg := A_Args[i]
-        if (arg == "--restore") {
-            mode := "restore"
-            filePath := A_Args[i + 1]
-            i += 2
-        } else if (arg == "--desk") {
-            mode := "desk"
-            filePath := A_Args[i + 1]
-            i += 2
-        } else if (arg == "--text-mode") {
-            textMode := A_Args[i + 1]
-            i += 2
-        } else {
-            i += 1
+        i := 1
+        while (i <= A_Args.Length) {
+            arg := A_Args[i]
+            if (arg == "--restore") {
+                mode := "restore"
+                filePath := A_Args[i + 1]
+                i += 2
+            } else if (arg == "--desk") {
+                mode := "desk"
+                filePath := A_Args[i + 1]
+                i += 2
+            } else if (arg == "--text-mode") {
+                textMode := A_Args[i + 1]
+                i += 2
+            } else {
+                i += 1
+            }
         }
-    }
 
-    if (mode == "restore") {
-        LaunchRestore(filePath)
-    } else if (mode == "desk") {
-        LaunchDesk(filePath, textMode)
+        if (mode == "restore") {
+            LaunchRestore(filePath)
+        } else if (mode == "desk") {
+            LaunchDesk(filePath, textMode)
+        }
     }
 }
 
@@ -1300,7 +1331,12 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     }
 
     cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' lang ' --zid ' ZID ' --text-mode ' textMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' < "' tmpTextFile '"'
-    exitCode := RunSilent(cmd, &outB64, &errJSON)
+    exitCode := 1
+    try {
+        exitCode := RunSilent(cmd, &outB64, &errJSON)
+    } catch as e {
+        errJSON := "RunSilent threw an exception: " e.Message
+    }
     try {
         FileDelete(tmpTextFile)
     } catch {
@@ -1348,14 +1384,8 @@ UpdateButtonState(guiObj) {
         return
     }
 
-    isDirty := false
-    if (guiObj.FsmMemory.Has("IsDirty")) {
-        isDirty := guiObj.FsmMemory["IsDirty"]
-    }
-    pending := false
-    if (guiObj.FsmMemory.Has("PendingUpdate")) {
-        pending := guiObj.FsmMemory["PendingUpdate"]
-    }
+    isDirty := guiObj.FsmMemory["IsDirty"]
+    pending := guiObj.FsmMemory["PendingUpdate"]
 
     guiObj.SaveBtn.Enabled := isDirty
     guiObj.SendBtn.Enabled := true
@@ -1387,7 +1417,17 @@ OnSaveClick(guiObj, *) {
 }
 
 OnSendToAnkiClick(guiObj, *) {
-    FsmDispatch(guiObj, EV_EXPORT_CLICK)
+    try {
+        jsonStr := guiObj.wb.document.parentWindow.getSelectedRows()
+    } catch {
+        jsonStr := ""
+    }
+    if (jsonStr == "" || jsonStr == "[]") {
+        MsgBox("Please select rows to export.", "Kardenwort", 48)
+        UpdateStatus(guiObj, "Ready")
+        return
+    }
+    FsmDispatch(guiObj, EV_EXPORT_CLICK, jsonStr)
 }
 
 OnDeleteClick(guiObj, *) {
@@ -1399,7 +1439,17 @@ OnDeleteClick(guiObj, *) {
 }
 
 OnReprocessClick(guiObj, *) {
-    FsmDispatch(guiObj, EV_REPROCESS_CLICK)
+    try {
+        jsonStr := guiObj.wb.document.parentWindow.getSelectedRows()
+    } catch {
+        jsonStr := ""
+    }
+    if (jsonStr == "" || jsonStr == "[]") {
+        MsgBox("Please select rows to re-process.", "Kardenwort", 48)
+        UpdateStatus(guiObj, "Ready")
+        return
+    }
+    FsmDispatch(guiObj, EV_REPROCESS_CLICK, jsonStr)
 }
 
 PerformReload(guiObj, &outB64, &errJSON) {
@@ -1458,9 +1508,7 @@ WatchFile(guiObj) {
 
 GuiClose(thisGui) {
     FsmDispatch(thisGui, EV_CLOSE)
-    if (thisGui.HasProp("FsmState") && thisGui.FsmState == FSM_IDLE) {
-        return 1
-    }
+    return 1
 }
 
 GuiSize(thisGui, MinMax, Width, Height) {
@@ -1759,8 +1807,14 @@ UpdateStatus(guiObj, text) {
         guiObj.StatusLog.Pop()
     }
     guiObj.StatusTxt.Text := text
-    guiObj.StatusTxt.Redraw()
+    try {
+        guiObj.StatusTxt.Redraw()
+    } catch {
+    }
 
+    if (G_FsmTestMode) {
+        return
+    }
     if (!guiObj.HasOwnProp("StatusHoverInit")) {
         guiObj.StatusHoverInit := true
         OnMessage(0x0200, HandleMouseMove)

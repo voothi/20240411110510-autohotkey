@@ -1,60 +1,223 @@
 #Requires AutoHotkey v2.0
+
+; ===================================================================================
+; Test Modes and Includes
+; ===================================================================================
+global G_FsmTestMode := true
+
 #Include "..\Lib\B64Util.ahk"
+#Include "..\kardenwort-window\kardenwort-window.ahk"
 
-; Minimal Mock setup for kardenwort-window behaviors
-global G_WindowCount := 0
+; ===================================================================================
+; Mock Setup for FSM tests
+; ===================================================================================
 
-GetCascadeCoords(&x, &y) {
-    global G_WindowCount
-    x := 50 + G_WindowCount * 30
-    y := 50 + G_WindowCount * 30
-    G_WindowCount := Mod(G_WindowCount + 1, 15)
+class MockControl {
+    Enabled := false
+    Visible := false
+    Text := ""
+    Move(x?, y?, w?, h?) => 0
+    Redraw() => 0
 }
+
+class MockGui {
+    FsmState := ""
+    FsmMemory := Map()
+    ZID := "20260701120000"
+    Lang := "en"
+    TsvPath := "dummy.tsv"
+    SourceText := "mock source text"
+    TextMode := "single"
+    StatusLog := []
+    
+    SaveBtn := MockControl()
+    UpdateBtn := MockControl()
+    SendBtn := MockControl()
+    DeleteBtn := MockControl()
+    ReprocBtn := MockControl()
+    StatusTxt := MockControl()
+    
+    Destroy() => 0
+}
+
+MakeMockGui() {
+    g := MockGui()
+    FsmInit(g)
+    return g
+}
+
+; Success/Failure counter
+global totalTests := 0
+global failedTests := 0
+
+Assert(condition, message) {
+    global totalTests, failedTests
+    totalTests += 1
+    if (condition) {
+        FileAppend("SUCCESS: " message "`n", "test_results.txt")
+    } else {
+        failedTests += 1
+        FileAppend("FAILURE: " message "`n", "test_results.txt")
+    }
+}
+
+; Clear/Init results file
+try {
+    FileDelete("test_results.txt")
+} catch {
+}
+
+; ===================================================================================
+; Part 1: Legacy Window and Utility Tests
+; ===================================================================================
 
 ; Test 1: Base64 Encoding & Decoding compatibility
 text := "Hello World! This is Kardenwort GUI testing. 🇩🇪"
 encoded := B64Encode(text)
 decoded := B64Decode(encoded)
-
-if (decoded == text) {
-    FileAppend("SUCCESS: Base64 encoding/decoding matched original text.`n", "test_results.txt")
-} else {
-    FileAppend("FAILURE: Base64 mismatch!`nExpected: " text "`nGot: " decoded "`n", "test_results.txt")
-}
+Assert(decoded == text, "Base64 encoding/decoding matched original text.")
 
 ; Test 2: Cascade layout coords offset calculation
-G_WindowCount := 0
+G_CascadeIndex := 0
 GetCascadeCoords(&x1, &y1)
+G_CascadeIndex := 1
 GetCascadeCoords(&x2, &y2)
+G_CascadeIndex := 2
 GetCascadeCoords(&x3, &y3)
-
-if (x1 == 50 && y1 == 50 && x2 == 80 && y2 == 80 && x3 == 110 && y3 == 110) {
-    FileAppend("SUCCESS: Cascading coordinates incremented correctly.`n", "test_results.txt")
-} else {
-    FileAppend("FAILURE: Cascading coordinates calculation error.`nGot (x1,y1): (" x1 "," y1 ") (x2,y2): (" x2 "," y2 ")`n", "test_results.txt")
-}
+Assert(x1 == 50 && y1 == 50 && x2 == 80 && y2 == 80 && x3 == 110 && y3 == 110, "Cascading coordinates incremented correctly.")
 
 ; Test 3: Cascade wrap-around behavior
-G_WindowCount := 14
+G_CascadeIndex := 14
 GetCascadeCoords(&x14, &y14)
+G_CascadeIndex := 15
 GetCascadeCoords(&x15, &y15) ; should wrap to 0 (50, 50)
-
-if (x14 == 470 && x15 == 50) {
-    FileAppend("SUCCESS: Coordinate wrap-around reset after 15 windows.`n", "test_results.txt")
-} else {
-    FileAppend("FAILURE: Coordinate wrap-around failed. x14=" x14 " x15=" x15 "`n", "test_results.txt")
-}
+Assert(x14 == 470 && x15 == 50, "Coordinate wrap-around reset after 15 windows.")
 
 ; Test 4: Verify config file existence and format
 configPath := "..\kardenwort-window\config.ini"
 if FileExist(configPath) {
     pythonPath := IniRead(configPath, "Paths", "DeskPythonPath", "")
     scriptPath := IniRead(configPath, "Paths", "DeskScriptPath", "")
-    if (pythonPath != "" && scriptPath != "") {
-        FileAppend("SUCCESS: Config paths read correctly.`n", "test_results.txt")
-    } else {
-        FileAppend("FAILURE: Config paths are empty.`n", "test_results.txt")
-    }
+    Assert(pythonPath != "" && scriptPath != "", "Config paths read correctly.")
 } else {
-    FileAppend("FAILURE: Config file not found at " configPath "`n", "test_results.txt")
+    Assert(false, "Config file not found at " configPath)
 }
+
+; ===================================================================================
+; Part 2: FSM Engine and Transitions Tests
+; ===================================================================================
+
+; Test 5: FsmInit Key Completeness
+g := MakeMockGui()
+Assert(g.FsmState == "LOADING", "Initial state is LOADING")
+Assert(g.FsmMemory.Has("LastMTime"), "FsmMemory has LastMTime")
+Assert(g.FsmMemory.Has("PendingUpdate"), "FsmMemory has PendingUpdate")
+Assert(g.FsmMemory.Has("AutoInjectRetries"), "FsmMemory has AutoInjectRetries")
+Assert(g.FsmMemory.Has("IsProgressive"), "FsmMemory has IsProgressive")
+Assert(g.FsmMemory.Has("IsLazy"), "FsmMemory has IsLazy")
+Assert(g.FsmMemory.Has("IsDirty"), "FsmMemory has IsDirty")
+Assert(g.FsmMemory.Has("AutoSavePending"), "FsmMemory has AutoSavePending")
+Assert(g.FsmMemory.Has("PendingReprocess"), "FsmMemory has PendingReprocess")
+Assert(g.FsmMemory.Has("PendingClose"), "FsmMemory has PendingClose")
+
+; Test 6: Transition Table Completeness
+tableOk := true
+for s in G_FSM_TRANSITIONS {
+    for ev, trans in G_FSM_TRANSITIONS[s] {
+        if (!trans.HasOwnProp("nextState")) {
+            tableOk := false
+        }
+    }
+}
+Assert(tableOk, "Transition table structure is valid")
+
+; Test 7: IDLE + EV_SAVE_CLICK ignored when not dirty
+g := MakeMockGui()
+g.FsmState := FSM_IDLE
+g.FsmMemory["IsDirty"] := false
+FsmDispatch(g, EV_SAVE_CLICK)
+Assert(g.FsmState == FSM_IDLE, "Save click ignored in IDLE when not dirty")
+
+; Test 8: SAVING + EV_FILE_CHANGED ignored
+g := MakeMockGui()
+g.FsmState := FSM_SAVING
+FsmDispatch(g, EV_FILE_CHANGED, "20260701123000")
+Assert(g.FsmState == FSM_SAVING, "File changed event ignored in SAVING state")
+
+; Test 9: Atomic LastMTime Invariant on EV_SAVE_SUCCESS
+g := MakeMockGui()
+g.FsmState := FSM_SAVING
+g.FsmMemory["PendingUpdate"] := false
+g.FsmMemory["IsDirty"] := true
+g.TsvPath := "dummy.tsv"
+FsmDispatch(g, EV_SAVE_SUCCESS)
+Assert(g.FsmState == FSM_IDLE, "Transitions to IDLE on save success")
+Assert(g.FsmMemory["IsDirty"] == false, "IsDirty is cleared")
+
+; Test 10: EXPORTING + EV_FILE_CHANGED ignored
+g := MakeMockGui()
+g.FsmState := FSM_EXPORTING
+FsmDispatch(g, EV_FILE_CHANGED, "20260701124000")
+Assert(g.FsmState == FSM_EXPORTING, "File changed event ignored in EXPORTING state")
+
+; Test 11: IDLE + EV_DIRTY sets IsDirty
+g := MakeMockGui()
+g.FsmState := FSM_IDLE
+g.FsmMemory["IsDirty"] := false
+FsmDispatch(g, EV_DIRTY)
+Assert(g.FsmState == FSM_IDLE, "Remains IDLE after EV_DIRTY")
+Assert(g.FsmMemory["IsDirty"] == true, "IsDirty set to true after EV_DIRTY")
+
+; Test 8: CLOSING ignores file changed, dirty, clean events
+g := MakeMockGui()
+g.FsmState := FSM_CLOSING
+FsmDispatch(g, EV_FILE_CHANGED, "20260701125000")
+Assert(g.FsmState == FSM_CLOSING, "CLOSING state ignores EV_FILE_CHANGED")
+FsmDispatch(g, EV_DIRTY)
+Assert(g.FsmState == FSM_CLOSING, "CLOSING state ignores EV_DIRTY")
+FsmDispatch(g, EV_CLEAN)
+Assert(g.FsmState == FSM_CLOSING, "CLOSING state ignores EV_CLEAN")
+
+; Test 13: Re-entrancy protection (nested dispatch from within guard/apply)
+g := MakeMockGui()
+g.FsmState := FSM_IDLE
+g.FsmMemory["IsDirty"] := true
+global G_FsmDispatching := true
+FsmDispatch(g, EV_DIRTY)
+global G_FsmDispatching := false
+Assert(g.FsmMemory["IsDirty"] == false, "Dispatch dropped when G_FsmDispatching is true")
+
+; Test 14: Compound flow - Reprocess with prior save
+g := MakeMockGui()
+g.FsmState := FSM_IDLE
+g.FsmMemory["IsDirty"] := true
+selectionPayload := '[{"id": 1}]'
+FsmDispatch(g, EV_REPROCESS_CLICK, selectionPayload)
+Assert(g.FsmState == FSM_SAVING, "Transitions to SAVING when reprocess clicked while dirty")
+Assert(g.FsmMemory["PendingReprocess"] == true, "PendingReprocess is set to true")
+Assert(g.FsmMemory["ReprocessSelection"] == selectionPayload, "ReprocessSelection payload stored")
+
+; Now simulate save success
+FsmDispatch(g, EV_SAVE_SUCCESS)
+Assert(g.FsmState == FSM_REPROCESSING, "Transitions to REPROCESSING after save success")
+Assert(g.FsmMemory["PendingReprocess"] == false, "PendingReprocess is cleared")
+
+; Now simulate reprocess done
+FsmDispatch(g, EV_REPROCESS_DONE)
+Assert(g.FsmState == FSM_IDLE, "Transitions to IDLE after reprocess done")
+
+; Test 15: Compound flow - Close with prior save
+g := MakeMockGui()
+g.FsmState := FSM_IDLE
+g.FsmMemory["IsDirty"] := true
+FsmDispatch(g, EV_CLOSE)
+Assert(g.FsmState == FSM_CLOSING, "Transitions to CLOSING state on close event")
+g.FsmMemory["PendingClose"] := true
+FsmDispatch(g, EV_SAVE_CLICK)
+Assert(g.FsmState == FSM_SAVING, "Transitions from CLOSING to SAVING")
+FsmDispatch(g, EV_SAVE_SUCCESS)
+Assert(g.FsmState == FSM_CLOSING, "Transitions from SAVING back to CLOSING")
+Assert(g.FsmMemory["PendingClose"] == false, "PendingClose is cleared")
+
+; Write summary
+FileAppend("`nSummary: " (totalTests - failedTests) "/" totalTests " tests passed.`n", "test_results.txt")
