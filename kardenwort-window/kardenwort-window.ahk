@@ -41,7 +41,10 @@ global EV_CLOSE_CANCEL := "EV_CLOSE_CANCEL"
 
 global FSM_AUTO_INJECT_MAX_RETRIES := 6
 global G_FsmDispatching := false
-global G_FsmTestMode := false
+global G_FsmTestMode
+if !IsSet(G_FsmTestMode) {
+    G_FsmTestMode := false
+}
 
 global G_FileWatcherIntervalMs := 0
 global G_AutoSave := 0
@@ -271,6 +274,9 @@ ActionCleanApply(guiObj, payload) {
 }
 
 ActionSaveStartGuard(guiObj, payload) {
+    if (G_FsmTestMode) {
+        return guiObj.FsmMemory["IsDirty"]
+    }
     try {
         return guiObj.wb.document.parentWindow.isDirty()
     } catch {
@@ -744,10 +750,14 @@ ActionCloseIO(guiObj, payload) {
         return
     }
     if (guiObj.FsmMemory["IsDirty"]) {
+        res := "Cancel"
         if (G_FsmTestMode) {
-            return
+            if (payload != "") {
+                res := payload
+            }
+        } else {
+            res := MsgBox("You have unsaved edits. Save changes before closing?", "Kardenwort", "YesNoCancel Icon!")
         }
-        res := MsgBox("You have unsaved edits. Save changes before closing?", "Kardenwort", "YesNoCancel Icon!")
         if (res == "Cancel") {
             FsmDispatch(guiObj, EV_CLOSE_CANCEL)
             return

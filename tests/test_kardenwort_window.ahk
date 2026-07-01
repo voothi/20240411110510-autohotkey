@@ -168,7 +168,7 @@ FsmDispatch(g, EV_DIRTY)
 Assert(g.FsmState == FSM_IDLE, "Remains IDLE after EV_DIRTY")
 Assert(g.FsmMemory["IsDirty"] == true, "IsDirty set to true after EV_DIRTY")
 
-; Test 8: CLOSING ignores file changed, dirty, clean events
+; Test 12: CLOSING ignores file changed, dirty, clean events
 g := MakeMockGui()
 g.FsmState := FSM_CLOSING
 FsmDispatch(g, EV_FILE_CHANGED, "20260701125000")
@@ -181,7 +181,7 @@ Assert(g.FsmState == FSM_CLOSING, "CLOSING state ignores EV_CLEAN")
 ; Test 13: Re-entrancy protection (nested dispatch from within guard/apply)
 g := MakeMockGui()
 g.FsmState := FSM_IDLE
-g.FsmMemory["IsDirty"] := true
+g.FsmMemory["IsDirty"] := false
 global G_FsmDispatching := true
 FsmDispatch(g, EV_DIRTY)
 global G_FsmDispatching := false
@@ -210,13 +210,12 @@ Assert(g.FsmState == FSM_IDLE, "Transitions to IDLE after reprocess done")
 g := MakeMockGui()
 g.FsmState := FSM_IDLE
 g.FsmMemory["IsDirty"] := true
-FsmDispatch(g, EV_CLOSE)
-Assert(g.FsmState == FSM_CLOSING, "Transitions to CLOSING state on close event")
-g.FsmMemory["PendingClose"] := true
-FsmDispatch(g, EV_SAVE_CLICK)
-Assert(g.FsmState == FSM_SAVING, "Transitions from CLOSING to SAVING")
+FsmDispatch(g, EV_CLOSE, "Yes")
+Assert(g.FsmState == FSM_SAVING, "Transitions to SAVING when close requested with dirty edits")
+Assert(g.FsmMemory["PendingClose"] == true, "PendingClose is set to true")
+
 FsmDispatch(g, EV_SAVE_SUCCESS)
-Assert(g.FsmState == FSM_CLOSING, "Transitions from SAVING back to CLOSING")
+Assert(g.FsmState == FSM_CLOSING, "Transitions to CLOSING state after successful save-on-close")
 Assert(g.FsmMemory["PendingClose"] == false, "PendingClose is cleared")
 
 ; Write summary
