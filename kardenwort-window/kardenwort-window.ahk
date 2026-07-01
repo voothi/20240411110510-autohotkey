@@ -896,7 +896,6 @@ PerformReload(guiObj) {
         } else {
             guiObj.StatusTxt.Text := "Reload failed: render error"
         }
-    }
 }
 
 GuiClose(thisGui) {
