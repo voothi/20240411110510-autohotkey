@@ -561,6 +561,12 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
         } catch {
             MyGui.IsProgressive := false
         }
+        
+        try {
+            MyGui.IsLazy := GetElementText(wb.document.getElementById("lazy-processing")) == "true"
+        } catch {
+            MyGui.IsLazy := false
+        }
 
         if (FileExist(tsvPath)) {
             MyGui.LastMTime := FileGetTime(tsvPath)
@@ -573,7 +579,11 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
             MyGui.TimerFn := WatchFile.Bind(MyGui)
             SetTimer(MyGui.TimerFn, G_FileWatcherIntervalMs)
         }
-        UpdateStatus(MyGui, "Analysis loaded successfully")
+        if (MyGui.IsLazy) {
+            UpdateStatus(MyGui, "Lazy mode active. Select and Re-process.")
+        } else {
+            UpdateStatus(MyGui, "Analysis loaded successfully")
+        }
     } catch as e {
         UpdateStatus(MyGui, "Metadata binding failed: " e.Message)
     }
@@ -802,7 +812,8 @@ WatchFile(guiObj) {
     }
 
     if (currentMTime != guiObj.LastMTime) {
-        if (guiObj.HasOwnProp("IsProgressive") && guiObj.IsProgressive) {
+        isAutoInjecting := (guiObj.HasOwnProp("IsProgressive") && guiObj.IsProgressive) || (guiObj.HasOwnProp("IsLazy") && guiObj.IsLazy)
+        if (isAutoInjecting) {
             updateJsPath := RegExReplace(tsvPath, "(?i)\.tsv$", ".update.js")
             if (FileExist(updateJsPath)) {
                 jsMTime := FileGetTime(updateJsPath)
@@ -943,7 +954,11 @@ PerformReload(guiObj) {
             try {
                 guiObj.TsvPath := GetElementText(guiObj.wb.document.getElementById("tsv-path"))
                 guiObj.LastMTime := FileGetTime(guiObj.TsvPath)
-                UpdateStatus(guiObj, "Analysis loaded successfully (Reloaded)")
+                if (guiObj.IsLazy) {
+                    UpdateStatus(guiObj, "Lazy mode active. Select and Re-process. (Reloaded)")
+                } else {
+                    UpdateStatus(guiObj, "Analysis loaded successfully (Reloaded)")
+                }
             } catch as e {
                 UpdateStatus(guiObj, "Metadata binding failed (Reloaded): " e.Message)
             }
