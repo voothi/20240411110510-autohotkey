@@ -390,23 +390,7 @@ ActionUpdateClickIO(guiObj, payload) {
         }
     } catch {}
 
-    tmpTextFile := A_Temp "\karden_input_" guiObj.ZID "_" A_TickCount ".txt"
-    try { FileDelete(tmpTextFile) } catch {}
-    try {
-        FileAppend(guiObj.SourceText, tmpTextFile, "UTF-8-RAW")
-    } catch as e {
-        FsmDispatch(guiObj, EV_RELOAD_FAILED, "FileAppend failed")
-        return
-    }
-
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' guiObj.Lang ' --zid ' guiObj.ZID ' --text-mode ' guiObj.TextMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' < "' tmpTextFile '"'
-    try {
-        exitCode := RunSilent(cmd, &outB64, &errJSON)
-    } catch {
-        exitCode := 1
-        errJSON := "RunSilent failed"
-    }
-    try { FileDelete(tmpTextFile) } catch {}
+    exitCode := PerformReload(guiObj, &outB64, &errJSON)
 
     if (exitCode == 0) {
         payloadObj := {outB64: outB64, selectedRowsJSON: selectedRowsJSON, scrollY: scrollY}

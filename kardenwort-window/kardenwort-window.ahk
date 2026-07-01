@@ -444,7 +444,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     MyGui.TextMode := textMode
     MyGui.SourceText := sourceText
     MyGui.TsvPath := ""
-    MyGui.StateMemory := Map("PendingUpdate", false, "IsReloading", false, "IsDirty", false, "LastMTime", "", "IsProgressive", false, "IsLazy", false, "AutoInjectRetries", 0)
+    FsmInit(MyGui)
 
     SaveBtn.OnEvent("Click", OnSaveClick.Bind(MyGui))
     UpdateBtn.OnEvent("Click", OnUpdateClick.Bind(MyGui))
@@ -514,112 +514,61 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     }
 
     if (exitCode != 0) {
-        UpdateStatus(MyGui, "Analysis failed")
-        MsgBox("Kardenwort Analysis failed:`n" errJSON, "Kardenwort Error", 16)
-        global G_WindowCount
-        G_WindowCount := Max(0, G_WindowCount - 1)
-        MyGui.Destroy()
-        return
-    }
-
-    UpdateStatus(MyGui, "Rendering...")
-    htmlContent := B64Decode(outB64)
-
-    tmpHtmlFile := A_Temp "\karden_view_" ZID "_" A_TickCount ".html"
-    FileAppend(htmlContent, tmpHtmlFile, "UTF-8-RAW")
-    wb.Navigate(tmpHtmlFile)
-    while wb.ReadyState != 4
-        Sleep(10)
-    try {
-        FileDelete(tmpHtmlFile)
-    } catch {
-    }
-    ApplyZoom(wb)
-    try {
-        if (WinGetMinMax(MyGui.Hwnd) == 1) {
-            wb.document.body.classList.add("maximized")
-        } else {
-            wb.document.body.classList.remove("maximized")
-        }
-    } catch {
-    }
-
-    ; Bind callback for bidirectional updates and dirty flag
-    wb.document.parentWindow.ahkCall := OnAhkCall.Bind(MyGui)
-    wvc.Visible := true
-    try {
-        WinRedraw(wvc.Hwnd)
-        WinRedraw(MyGui.Hwnd)
-    } catch {
-    }
-
-    ; Retrieve metadata from HTML DOM
-    try {
-        tsvPath := GetElementText(wb.document.getElementById("tsv-path"))
-        MyGui.TsvPath := tsvPath
-        SplitPath(tsvPath, &fileName)
-        MyGui.Title := "Kardenwort - " lang " (" textMode ") - " fileName
-
-        llmFilled := false
-        try {
-            llmFilled := GetElementText(wb.document.getElementById("llm-filled")) == "true"
-        } catch {
-        }
-        
-        try {
-            MyGui.StateMemory["IsProgressive"] := GetElementText(wb.document.getElementById("progressive-loading")) == "true"
-        } catch {
-            MyGui.StateMemory["IsProgressive"] := false
-        }
-        
-        try {
-            MyGui.StateMemory["IsLazy"] := GetElementText(wb.document.getElementById("lazy-processing")) == "true"
-        } catch {
-            MyGui.StateMemory["IsLazy"] := false
-        }
-
-        if (FileExist(tsvPath)) {
-            MyGui.StateMemory["LastMTime"] := FileGetTime(tsvPath)
-        } else {
-            MyGui.StateMemory["LastMTime"] := ""
-        }
-
-        ; Start polling file watcher
-        if (G_FileWatcherIntervalMs > 0) {
-            MyGui.TimerFn := WatchFile.Bind(MyGui)
-            SetTimer(MyGui.TimerFn, G_FileWatcherIntervalMs)
-        }
-        if (MyGui.StateMemory["IsLazy"]) {
-            UpdateStatus(MyGui, "Lazy mode active. Select and Re-process.")
-        } else {
-            UpdateStatus(MyGui, "Analysis loaded successfully")
-        }
-    } catch as e {
-        UpdateStatus(MyGui, "Metadata binding failed: " e.Message)
+        FsmDispatch(MyGui, EV_RENDER_FAILED, errJSON)
+    } else {
+        FsmDispatch(MyGui, EV_RENDER_DONE, {outB64: outB64})
     }
 }
 
 OnAhkCall(guiObj, action, value) {
     if (action == "dirty") {
-        guiObj.StateMemory["IsDirty"] := (value == "true")
-        UpdateButtonState(guiObj)
-        if (value == "true" && G_AutoSave) {
-            OnSaveClick(guiObj, "")
+        if (value == "true") {
+            FsmDispatch(guiObj, EV_DIRTY)
+        } else {
+            FsmDispatch(guiObj, EV_CLEAN)
         }
     }
 }
+}
 
 UpdateButtonState(guiObj) {
-    if (guiObj.StateMemory["IsReloading"]) {
+    if (!guiObj.HasProp("FsmState") || !guiObj.HasProp("FsmMemory")) {
         return
     }
 
-    isDirty := guiObj.StateMemory["IsDirty"]
-    
-    pending := guiObj.StateMemory["PendingUpdate"]
+    if (guiObj.FsmState == FSM_RELOADING || guiObj.FsmState == FSM_REPROCESSING || guiObj.FsmState == FSM_LOADING || guiObj.FsmState == FSM_SAVING || guiObj.FsmState == FSM_CLOSING) {
+        guiObj.UpdateBtn.Visible := false
+        guiObj.SaveBtn.Enabled := false
+        guiObj.SendBtn.Enabled := false
+        guiObj.DeleteBtn.Enabled := false
+        guiObj.ReprocBtn.Enabled := false
+        return
+    }
+
+    if (guiObj.FsmState == FSM_EXPORTING) {
+        guiObj.UpdateBtn.Visible := false
+        guiObj.SaveBtn.Enabled := false
+        guiObj.SendBtn.Enabled := false
+        guiObj.DeleteBtn.Enabled := false
+        guiObj.ReprocBtn.Enabled := false
+        UpdateStatus(guiObj, "Exporting favorites...")
+        return
+    }
+
+    isDirty := false
+    if (guiObj.FsmMemory.Has("IsDirty")) {
+        isDirty := guiObj.FsmMemory["IsDirty"]
+    }
+    pending := false
+    if (guiObj.FsmMemory.Has("PendingUpdate")) {
+        pending := guiObj.FsmMemory["PendingUpdate"]
+    }
 
     guiObj.SaveBtn.Enabled := isDirty
-    
+    guiObj.SendBtn.Enabled := true
+    guiObj.DeleteBtn.Enabled := true
+    guiObj.ReprocBtn.Enabled := true
+
     if (pending) {
         guiObj.UpdateBtn.Visible := true
         guiObj.UpdateBtn.Enabled := true
@@ -633,217 +582,55 @@ UpdateButtonState(guiObj) {
         UpdateStatus(guiObj, "Unsaved edits")
     } else if (!isDirty && pending) {
         UpdateStatus(guiObj, "Data ready. Click ⟳ to update.")
-    } else {
-        ; Keep current text unchanged
     }
+}
 }
 
 OnUpdateClick(guiObj, *) {
-    guiObj.StateMemory["PendingUpdate"] := false
-        PerformReload(guiObj)
-    UpdateButtonState(guiObj)
+    FsmDispatch(guiObj, EV_UPDATE_CLICK)
 }
 
 OnSaveClick(guiObj, *) {
-    if (!guiObj.StateMemory["IsDirty"]) {
-        return
-    }
-
-    UpdateStatus(guiObj, "Saving...")
-    guiObj.StateMemory["IsReloading"] := true
-
-    ; Retrieve deltas
-    try {
-        deltasJSON := guiObj.wb.document.parentWindow.getDeltas()
-    } catch as e {
-        MsgBox("Failed to retrieve deltas from page: " e.Message, "Kardenwort Error", 16)
-        guiObj.StateMemory["IsReloading"] := false
-        UpdateButtonState(guiObj)
-        return
-    }
-
-    tmpDeltasFile := A_Temp "\karden_deltas_" guiObj.ZID ".json"
-    try {
-        FileAppend(deltasJSON, tmpDeltasFile, "UTF-8-RAW")
-    } catch as e {
-        UpdateStatus(guiObj, "Deltas write failed")
-        guiObj.StateMemory["IsReloading"] := false
-        MsgBox("Failed to write temporary delta file: " e.Message, "Kardenwort Error", 16)
-        UpdateButtonState(guiObj)
-        return
-    }
-
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" edit-save --deltas "' tmpDeltasFile '" --zid ' guiObj.ZID ' --language ' guiObj.Lang ' --tsv "' StrReplace(guiObj.TsvPath, "\", "\\") '"'
-    exitCode := RunSilent(cmd, &outStr, &errJSON)
-    try {
-        FileDelete(tmpDeltasFile)
-    } catch {
-    }
-
-    if (exitCode == 0 && InStr(outStr, "SUCCESS")) {
-        guiObj.wb.document.parentWindow.clearDirty()
-        if (guiObj.StateMemory["PendingUpdate"]) {
-            UpdateStatus(guiObj, "Edits saved, applying update...")
-            guiObj.StateMemory["PendingUpdate"] := false
-            guiObj.StateMemory["IsReloading"] := false
-            PerformReload(guiObj)
-        } else {
-            try {
-                guiObj.StateMemory["LastMTime"] := FileGetTime(guiObj.TsvPath)
-            } catch {
-            }
-            UpdateStatus(guiObj, "Edits saved successfully")
-            guiObj.StateMemory["IsReloading"] := false
-            WatchFile(guiObj)
-        }
-        UpdateButtonState(guiObj)
-    } else {
-        UpdateStatus(guiObj, "Save failed")
-        guiObj.StateMemory["IsReloading"] := false
-        FileAppend("Save failed: " errJSON "`n", A_Desktop "\karden_error.txt")
-        MsgBox("Failed to save cell edits:`n" errJSON, "Kardenwort Error", 16)
-        UpdateButtonState(guiObj)
-    }
+    FsmDispatch(guiObj, EV_SAVE_CLICK)
 }
 
 OnSendToAnkiClick(guiObj, *) {
-    UpdateStatus(guiObj, "Exporting favorites...")
-    guiObj.StateMemory["IsReloading"] := true
-
-    try {
-        selectedRowsJSON := guiObj.wb.document.parentWindow.getSelectedRows()
-        if (selectedRowsJSON == "[]" || selectedRowsJSON == "") {
-            MsgBox("Please select rows to export.", "Kardenwort", 48)
-            UpdateStatus(guiObj, "Ready")
-            return
-        }
-    } catch {
-        selectedRowsJSON := "[]"
-        MsgBox("Please select rows to export.", "Kardenwort", 48)
-        UpdateStatus(guiObj, "Ready")
-        return
-    }
-
-    tsvPathStr := StrReplace(guiObj.TsvPath, "\", "\\")
-    manifest := '{"selected_row_ids": ' selectedRowsJSON ', "zid": "' guiObj.ZID '", "tsv_path": "' tsvPathStr '"}'
-    tmpManifestFile := A_Temp "\karden_manifest_" guiObj.ZID ".json"
-    try {
-        FileAppend(manifest, tmpManifestFile, "UTF-8-RAW")
-    } catch as e {
-        UpdateStatus(guiObj, "Manifest write failed")
-        MsgBox("Failed to write temporary manifest file: " e.Message, "Kardenwort Error", 16)
-        return
-    }
-
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" export --selection-manifest "' tmpManifestFile '" --language ' guiObj
-        .Lang
-    exitCode := RunSilent(cmd, &outStr, &errJSON)
-    try {
-        FileDelete(tmpManifestFile)
-    } catch {
-    }
-
-    if (exitCode == 0) {
-        if (SubStr(Trim(outStr), 1, 1) == "{") {
-            RegExMatch(outStr, '"import_started":\s*(\w+)', &mStarted)
-            RegExMatch(outStr, '"log":\s*"([^"]+)"', &mLog)
-            if (mStarted && mStarted[1] == "true") {
-                UpdateStatus(guiObj, "Import started in background")
-                if (G_ShowInfoWindows) {
-                    MsgBox("Exported and Anki import started.", "Kardenwort", "Iconi")
-                }
-                return
-            }
-        }
-        UpdateStatus(guiObj, "Exported successfully")
-        if (G_ShowInfoWindows) {
-            MsgBox("Favorites exported.", "Kardenwort", "Iconi")
-        }
-    } else {
-        UpdateStatus(guiObj, "Export failed")
-        FileAppend("Export failed: " errJSON "`n", A_Desktop "\karden_error.txt")
-        MsgBox("Failed to export favorites:`n" errJSON, "Kardenwort Error", 16)
-    }
-    guiObj.StateMemory["IsReloading"] := false
-    UpdateButtonState(guiObj)
+    FsmDispatch(guiObj, EV_EXPORT_CLICK)
 }
 
 OnDeleteClick(guiObj, *) {
     try {
         guiObj.wb.document.parentWindow.deleteSelectedRows()
-        guiObj.StateMemory["IsDirty"] := true
-        UpdateButtonState(guiObj)
+        FsmDispatch(guiObj, EV_DIRTY)
     } catch {
     }
 }
 
 OnReprocessClick(guiObj, *) {
-    UpdateStatus(guiObj, "Preparing re-process...")
-    
-    ; Grab selection BEFORE any saves or reloads
-    jsonStr := "[]"
-    try {
-        jsonStr := guiObj.wb.document.parentWindow.getSelectedRows()
-        if (jsonStr == "[]") {
-            MsgBox("Please select rows to re-process.", "Kardenwort", 48)
-            UpdateStatus(guiObj, "Ready")
-            return
-        }
-    } catch {
-        MsgBox("Failed to get selected rows.", "Kardenwort Error", 16)
-        UpdateStatus(guiObj, "Ready")
-        return
-    }
+    FsmDispatch(guiObj, EV_REPROCESS_CLICK)
+}
 
-    ; Check if dirty and save first
-    isDirty := guiObj.StateMemory["IsDirty"]
-    
-    ; Always pause WatchFile during reprocess
-    guiObj.StateMemory["IsReloading"] := true
-    
-    if (isDirty) {
-        OnSaveClick(guiObj, "")
-        Sleep(100)
-        if (guiObj.StateMemory["IsDirty"]) {
-            guiObj.StateMemory["IsReloading"] := false
-            UpdateButtonState(guiObj)
-            return
-        }
-        guiObj.StateMemory["IsReloading"] := true
-    }
-
-    tsvPathStr := StrReplace(guiObj.TsvPath, "\", "\\")
-    manifest := '{"selected_row_ids": ' jsonStr ', "zid": "' guiObj.ZID '", "tsv_path": "' tsvPathStr '"}'
-    tmpManifestFile := A_Temp "\karden_manifest_" guiObj.ZID "_reproc.json"
+PerformReload(guiObj, &outB64, &errJSON) {
+    tmpTextFile := A_Temp "\karden_input_" guiObj.ZID "_" A_TickCount ".txt"
+    try { FileDelete(tmpTextFile) } catch {}
     try {
-        FileAppend(manifest, tmpManifestFile, "UTF-8-RAW")
+        FileAppend(guiObj.SourceText, tmpTextFile, "UTF-8-RAW")
     } catch as e {
-        UpdateStatus(guiObj, "Manifest write failed")
-        MsgBox("Failed to write temporary manifest file: " e.Message, "Kardenwort Error", 16)
-        return
+        return 1
     }
-
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" reprocess --selection-manifest "' tmpManifestFile '" --language ' guiObj.Lang
-    exitCode := RunSilent(cmd, &outStr, &errJSON)
+    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' guiObj.Lang ' --zid ' guiObj.ZID ' --text-mode ' guiObj.TextMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' < "' tmpTextFile '"'
     try {
-        FileDelete(tmpManifestFile)
+        exitCode := RunSilent(cmd, &outB64, &errJSON)
     } catch {
+        exitCode := 1
     }
-
-    if (exitCode == 0) {
-        UpdateStatus(guiObj, "Re-processing started")
-    } else {
-        UpdateStatus(guiObj, "Re-process failed")
-        FileAppend("Reprocess failed: " errJSON "`n", A_Desktop "\karden_error.txt")
-        MsgBox("Failed to start re-processing:`n" errJSON, "Kardenwort Error", 16)
-    }
-
-    guiObj.StateMemory["IsReloading"] := false
-    UpdateButtonState(guiObj)
+    try { FileDelete(tmpTextFile) } catch {}
+    return exitCode
+}
 }
 
 WatchFile(guiObj) {
-    if (guiObj.StateMemory["IsReloading"]) {
+    if (guiObj.FsmState != FSM_IDLE) {
         return
     }
 
@@ -852,229 +639,31 @@ WatchFile(guiObj) {
     } catch {
         hwnd := 0
     }
-    if (hwnd == 0 || !WinExist("ahk_id " hwnd)) {
-        if (guiObj.HasOwnProp("TimerFn")) {
+    if (hwnd == 0 || !WinExist("ahk_id " hwnd) || !guiObj.HasProp("wb") || !IsObject(guiObj.wb)) {
+        if (guiObj.HasProp("TimerFn")) {
             SetTimer(guiObj.TimerFn, 0)
         }
         return
     }
 
-    tsvPath := guiObj.TsvPath
-    if (tsvPath == "" || !FileExist(tsvPath)) {
-        return
-    }
-
     try {
-        currentMTime := FileGetTime(tsvPath)
-    } catch as e {
-        return
-    }
-
-    if (currentMTime != guiObj.StateMemory["LastMTime"]) {
-        isAutoInjecting := guiObj.StateMemory["IsProgressive"] || guiObj.StateMemory["IsLazy"]
-        if (isAutoInjecting) {
-            updateJsPath := RegExReplace(tsvPath, "(?i)\.tsv$", ".update.js")
-            if (FileExist(updateJsPath)) {
-                jsMTime := FileGetTime(updateJsPath)
-                if (Abs(DateDiff(currentMTime, jsMTime, "Seconds")) <= 10) {
-                    guiObj.StateMemory["LastMTime"] := currentMTime
-                    guiObj.StateMemory["AutoInjectRetries"] := 0
-                    UpdateStatus(guiObj, "Data injected automatically.")
-                    return
-                }
-            }
-            
-            ; Wait up to 3 seconds (6 ticks of 500ms) for Python to write update.js after saving TSV
-            
-            guiObj.StateMemory["AutoInjectRetries"] += 1
-            if (guiObj.StateMemory["AutoInjectRetries"] < 6) {
-                return ; Try again next tick
-            }
-            guiObj.StateMemory["AutoInjectRetries"] := 0
-        }
-
-        if (!G_AutoUpdate) {
-            if (!guiObj.StateMemory["PendingUpdate"]) {
-                guiObj.StateMemory["PendingUpdate"] := true
-            }
-            UpdateButtonState(guiObj)
+        if (!FileExist(guiObj.TsvPath)) {
             return
         }
-        PerformReload(guiObj)
-    }
-}
-
-PerformReload(guiObj) {
-    try {
         currentMTime := FileGetTime(guiObj.TsvPath)
     } catch {
         return
     }
 
-    guiObj.StateMemory["IsReloading"] := true
-    isDirty := guiObj.StateMemory["IsDirty"]
-
-    if (isDirty) {
-        res := MsgBox("The working TSV was modified externally. Reload and discard your unsaved edits?",
-            "Kardenwort", "YesNo Icon!")
-        if (res == "No") {
-            guiObj.StateMemory["LastMTime"] := currentMTime
-            guiObj.StateMemory["IsReloading"] := false
-            return
-        }
-    }
-
-    selectedRowsJSON := "[]"
-    scrollY := 0
-    try {
-        selectedRowsJSON := guiObj.wb.document.parentWindow.getSelectedRows()
-        scrollY := guiObj.wb.document.documentElement.scrollTop
-        if (!scrollY) {
-            scrollY := guiObj.wb.document.body.scrollTop
-        }
-    } catch {
-    }
-
-    UpdateStatus(guiObj, "Reloading...")
-
-    tmpTextFile := A_Temp "\karden_input_" guiObj.ZID "_" A_TickCount ".txt"
-    try {
-        FileDelete(tmpTextFile)
-    } catch {
-    }
-    try {
-        FileAppend(guiObj.SourceText, tmpTextFile, "UTF-8-RAW")
-    } catch as e {
-        guiObj.StateMemory["IsReloading"] := false
-        return
-    }
-
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' guiObj.Lang ' --zid ' guiObj.ZID ' --text-mode ' guiObj
-        .TextMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' < "' tmpTextFile '"'
-    exitCode := RunSilent(cmd, &outB64, &errJSON)
-    try {
-        FileDelete(tmpTextFile)
-    } catch {
-    }
-
-    guiObj.StateMemory["IsReloading"] := false
-
-    try {
-            hwnd := guiObj.Hwnd
-        } catch {
-            hwnd := 0
-        }
-        if (hwnd == 0 || !WinExist("ahk_id " hwnd) || !guiObj.HasProp("wb") || !IsObject(guiObj.wb)) {
-            return
-        }
-
-        if (exitCode == 0) {
-            htmlContent := B64Decode(outB64)
-            tmpHtmlFile := A_Temp "\karden_view_" guiObj.ZID "_" A_TickCount ".html"
-            FileAppend(htmlContent, tmpHtmlFile, "UTF-8-RAW")
-
-            try {
-                guiObj.wvc.Visible := false
-                guiObj.wb.Navigate(tmpHtmlFile)
-                while guiObj.wb.ReadyState != 4
-                    Sleep(10)
-            } catch {
-                try {
-                    FileDelete(tmpHtmlFile)
-                } catch {
-                }
-                guiObj.wvc.Visible := true
-                return
-            }
-
-            try {
-                FileDelete(tmpHtmlFile)
-            } catch {
-            }
-
-            try {
-                ApplyZoom(guiObj.wb)
-                if (WinGetMinMax(guiObj.Hwnd) == 1) {
-                    guiObj.wb.document.body.classList.add("maximized")
-                } else {
-                    guiObj.wb.document.body.classList.remove("maximized")
-                }
-                guiObj.wb.document.parentWindow.ahkCall := OnAhkCall.Bind(guiObj)
-                guiObj.wb.document.parentWindow.setSelectedRows(selectedRowsJSON)
-                if (scrollY) {
-                    guiObj.wb.document.parentWindow.scrollTo(0, scrollY)
-                }
-            } catch {
-            }
-            guiObj.wvc.Visible := true
-            try {
-                WinRedraw(guiObj.wvc.Hwnd)
-                WinRedraw(guiObj.Hwnd)
-            } catch {
-            }
-
-            try {
-                guiObj.TsvPath := GetElementText(guiObj.wb.document.getElementById("tsv-path"))
-                if (FileExist(guiObj.TsvPath)) {
-                    guiObj.StateMemory["LastMTime"] := FileGetTime(guiObj.TsvPath)
-                } else {
-                    guiObj.StateMemory["LastMTime"] := ""
-                }
-                if (guiObj.StateMemory["IsLazy"]) {
-                    UpdateStatus(guiObj, "Lazy mode active. Select and Re-process. (Reloaded)")
-                } else {
-                    UpdateStatus(guiObj, "Analysis loaded successfully (Reloaded)")
-                }
-            } catch as e {
-                UpdateStatus(guiObj, "Metadata binding failed (Reloaded): " e.Message)
-            }
-            guiObj.StateMemory["PendingUpdate"] := false
-                        UpdateButtonState(guiObj)
-        } else {
-            UpdateStatus(guiObj, "Reload failed: render error")
-        }
+    FsmDispatch(guiObj, EV_FILE_CHANGED, currentMTime)
+}
 }
 
 GuiClose(thisGui) {
-    isDirty := thisGui.StateMemory["IsDirty"]
-    
-    pendingUpdate := thisGui.StateMemory["PendingUpdate"]
-
-    if (isDirty) {
-        res := MsgBox("You have unsaved edits. Save changes before closing?", "Kardenwort", "YesNoCancel Icon!")
-        if (res == "Yes") {
-            OnSaveClick(thisGui)
-            if (thisGui.StateMemory["IsDirty"]) {
-                return true
-            }
-        } else if (res == "Cancel") {
-            return true
-        }
-    } else if (pendingUpdate) {
-        ; closing with only pending update - no prompt needed
+    FsmDispatch(thisGui, EV_CLOSE)
+    if (thisGui.HasProp("FsmState") && thisGui.FsmState == FSM_IDLE) {
+        return 1
     }
-
-    if (thisGui.HasOwnProp("TimerFn")) {
-        SetTimer(thisGui.TimerFn, 0)
-    }
-
-    if (thisGui.HasOwnProp("TsvPath") && thisGui.TsvPath !== "") {
-        updateJsPath := StrReplace(thisGui.TsvPath, ".tsv", ".update.js")
-        try {
-            if FileExist(updateJsPath) {
-                FileDelete(updateJsPath)
-            }
-        } catch {
-        }
-    }
-    
-    ; Window position saving disabled to maintain fixed size from config
-
-    thisGui.wb := ""
-    thisGui.Destroy()
-
-    global G_WindowCount
-    G_WindowCount := Max(0, G_WindowCount - 1)
 }
 
 GuiSize(thisGui, MinMax, Width, Height) {
@@ -1158,7 +747,7 @@ F5:: {
     if (activeHwnd) {
         guiObj := GuiFromHwnd(activeHwnd)
         if (guiObj) {
-            if (!guiObj.StateMemory["IsDirty"] && guiObj.StateMemory["PendingUpdate"]) {
+            if (!guiObj.FsmMemory["IsDirty"] && guiObj.FsmMemory["PendingUpdate"]) {
                 OnUpdateClick(guiObj)
             } else {
                 OnSaveClick(guiObj)
@@ -1321,8 +910,11 @@ $^z::
             }
             g.wb.document.parentWindow.undo()
             try {
-                g.StateMemory["IsDirty"] := g.wb.document.parentWindow.isDirty()
-                UpdateButtonState(g)
+                if (g.wb.document.parentWindow.isDirty()) {
+                    FsmDispatch(g, EV_DIRTY)
+                } else {
+                    FsmDispatch(g, EV_CLEAN)
+                }
             } catch {
             }
             return
@@ -1345,8 +937,11 @@ $^y::
             }
             g.wb.document.parentWindow.redo()
             try {
-                g.StateMemory["IsDirty"] := g.wb.document.parentWindow.isDirty()
-                UpdateButtonState(g)
+                if (g.wb.document.parentWindow.isDirty()) {
+                    FsmDispatch(g, EV_DIRTY)
+                } else {
+                    FsmDispatch(g, EV_CLEAN)
+                }
             } catch {
             }
             return
