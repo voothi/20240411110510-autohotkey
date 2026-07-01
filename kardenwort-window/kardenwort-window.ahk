@@ -624,7 +624,8 @@ UpdateButtonState(guiObj) {
         guiObj.UpdateBtn.Visible := true
         guiObj.UpdateBtn.Enabled := true
     } else {
-            }
+        guiObj.UpdateBtn.Visible := false
+    }
 
     if (isDirty && pending) {
         UpdateStatus(guiObj, "Unsaved edits + update ready")
@@ -1024,11 +1025,8 @@ GuiClose(thisGui) {
         res := MsgBox("You have unsaved edits. Save changes before closing?", "Kardenwort", "YesNoCancel Icon!")
         if (res == "Yes") {
             OnSaveClick(thisGui)
-            try {
-                if (thisGui.wb.document.parentWindow.isDirty()) {
-                    return true
-                }
-            } catch {
+            if (thisGui.StateMemory["IsDirty"]) {
+                return true
             }
         } else if (res == "Cancel") {
             return true
