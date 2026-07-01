@@ -421,16 +421,18 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     ; Native Footer Buttons
     SaveBtn := MyGui.Add("Text", "x15 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor " Disabled", "Save (Ctrl+S)"
     )
-    SendBtn := MyGui.Add("Text", "x135 y615 w120 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
-    DeleteBtn := MyGui.Add("Text", "x265 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor, "Delete")
-    ReprocBtn := MyGui.Add("Text", "x385 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor, "Re-process")
-    StatusTxt := MyGui.Add("Text", "x505 y615 w300 h30 +0x200 vStatusTxt", "Ready")
+    UpdateBtn := MyGui.Add("Text", "x135 y615 w110 h30 Center +Border +0x200 +Hidden " G_GuiTextColor, "⟳ Update")
+    SendBtn := MyGui.Add("Text", "x245 y615 w120 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
+    DeleteBtn := MyGui.Add("Text", "x375 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor, "Delete")
+    ReprocBtn := MyGui.Add("Text", "x495 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor, "Re-process")
+    StatusTxt := MyGui.Add("Text", "x615 y615 w300 h30 +0x200 vStatusTxt", "Ready")
     StatusTxt.SetFont(G_GuiTextColor)
 
     ; Store references on GUI object
     MyGui.wb := wb
     MyGui.wvc := wvc
     MyGui.SaveBtn := SaveBtn
+    MyGui.UpdateBtn := UpdateBtn
     MyGui.SendBtn := SendBtn
     MyGui.DeleteBtn := DeleteBtn
     MyGui.ReprocBtn := ReprocBtn
@@ -444,6 +446,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     MyGui.PendingUpdate := false
 
     SaveBtn.OnEvent("Click", OnSaveClick.Bind(MyGui))
+    UpdateBtn.OnEvent("Click", OnUpdateClick.Bind(MyGui))
     SendBtn.OnEvent("Click", OnSendToAnkiClick.Bind(MyGui))
     DeleteBtn.OnEvent("Click", OnDeleteClick.Bind(MyGui))
     ReprocBtn.OnEvent("Click", OnReprocessClick.Bind(MyGui))
@@ -593,32 +596,56 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
 
 OnAhkCall(guiObj, action, value) {
     if (action == "dirty") {
-        if (value == "true") {
-            guiObj.SaveBtn.Enabled := true
-            UpdateStatus(guiObj, "Unsaved edits")
-            if (G_AutoSave) {
-                OnSaveClick(guiObj, "")
-            }
-        } else {
-            guiObj.SaveBtn.Enabled := false
-            UpdateStatus(guiObj, "Edits saved")
+        guiObj.SaveBtn.Enabled := (value == "true")
+        UpdateButtonState(guiObj)
+        if (value == "true" && G_AutoSave) {
+            OnSaveClick(guiObj, "")
         }
     }
 }
 
-OnSaveClick(guiObj, *) {
-    needsReload := false
-    if (guiObj.HasOwnProp("PendingUpdate") && guiObj.PendingUpdate) {
-        guiObj.PendingUpdate := false
-        guiObj.SaveBtn.Text := "Save (Ctrl+S)"
-        needsReload := true
+UpdateButtonState(guiObj) {
+    if (guiObj.HasOwnProp("IsReloading") && guiObj.IsReloading) {
+        return
     }
 
+    isDirty := false
+    try {
+        isDirty := guiObj.wb.document.parentWindow.isDirty()
+    } catch {
+    }
+    
+    pending := guiObj.HasOwnProp("PendingUpdate") && guiObj.PendingUpdate
+
+    guiObj.SaveBtn.Enabled := isDirty
+    
+    if (pending) {
+        guiObj.UpdateBtn.Visible := true
+        guiObj.UpdateBtn.Enabled := true
+    } else {
+        guiObj.UpdateBtn.Visible := false
+    }
+
+    if (isDirty && pending) {
+        UpdateStatus(guiObj, "Unsaved edits + update ready")
+    } else if (isDirty && !pending) {
+        UpdateStatus(guiObj, "Unsaved edits")
+    } else if (!isDirty && pending) {
+        UpdateStatus(guiObj, "Data ready. Click ⟳ to update.")
+    } else {
+        ; Keep current text unchanged
+    }
+}
+
+OnUpdateClick(guiObj, *) {
+    guiObj.PendingUpdate := false
+    guiObj.UpdateBtn.Visible := false
+    PerformReload(guiObj)
+    UpdateButtonState(guiObj)
+}
+
+OnSaveClick(guiObj, *) {
     if (!guiObj.SaveBtn.Enabled) {
-        if (needsReload) {
-            UpdateStatus(guiObj, "Applying update...")
-            PerformReload(guiObj)
-        }
         return
     }
 
@@ -657,20 +684,20 @@ OnSaveClick(guiObj, *) {
     if (exitCode == 0 && InStr(outStr, "SUCCESS")) {
         guiObj.wb.document.parentWindow.clearDirty()
         guiObj.SaveBtn.Enabled := false
-        if (needsReload) {
+        if (guiObj.HasOwnProp("PendingUpdate") && guiObj.PendingUpdate) {
             UpdateStatus(guiObj, "Edits saved, applying update...")
+            guiObj.PendingUpdate := false
             PerformReload(guiObj)
         } else {
             UpdateStatus(guiObj, "Edits saved successfully")
             WatchFile(guiObj)
         }
+        UpdateButtonState(guiObj)
     } else {
         UpdateStatus(guiObj, "Save failed")
         FileAppend("Save failed: " errJSON "`n", A_Desktop "\karden_error.txt")
         MsgBox("Failed to save cell edits:`n" errJSON, "Kardenwort Error", 16)
-        if (needsReload) {
-            PerformReload(guiObj)
-        }
+        UpdateButtonState(guiObj)
     }
 }
 
@@ -751,7 +778,7 @@ OnReprocessClick(guiObj, *) {
     ; Check if dirty and save first
     isDirty := false
     try {
-        isDirty := guiObj.wb.document.getElementById("save-btn").className.indexOf("dirty") !== -1
+        isDirty := guiObj.wb.document.parentWindow.isDirty()
     } catch {
     }
     
@@ -790,6 +817,7 @@ OnReprocessClick(guiObj, *) {
     }
 
     guiObj.IsReloading := false
+    UpdateButtonState(guiObj)
 }
 
 WatchFile(guiObj) {
@@ -850,10 +878,8 @@ WatchFile(guiObj) {
         if (!G_AutoUpdate) {
             if (!guiObj.HasOwnProp("PendingUpdate") || !guiObj.PendingUpdate) {
                 guiObj.PendingUpdate := true
-                guiObj.SaveBtn.Enabled := true
-                guiObj.SaveBtn.Text := "⟳ Update"
-                UpdateStatus(guiObj, "Data ready. Click ⟳ to update.")
             }
+            UpdateButtonState(guiObj)
             return
         }
         PerformReload(guiObj)
@@ -984,6 +1010,9 @@ PerformReload(guiObj) {
             } catch as e {
                 UpdateStatus(guiObj, "Metadata binding failed (Reloaded): " e.Message)
             }
+            guiObj.PendingUpdate := false
+            guiObj.UpdateBtn.Visible := false
+            UpdateButtonState(guiObj)
         } else {
             UpdateStatus(guiObj, "Reload failed: render error")
         }
@@ -995,6 +1024,8 @@ GuiClose(thisGui) {
         isDirty := thisGui.wb.document.parentWindow.isDirty()
     } catch {
     }
+    
+    pendingUpdate := thisGui.HasOwnProp("PendingUpdate") && thisGui.PendingUpdate
 
     if (isDirty) {
         res := MsgBox("You have unsaved edits. Save changes before closing?", "Kardenwort", "YesNoCancel Icon!")
@@ -1009,6 +1040,8 @@ GuiClose(thisGui) {
         } else if (res == "Cancel") {
             return true
         }
+    } else if (pendingUpdate) {
+        ; closing with only pending update - no prompt needed
     }
 
     if (thisGui.HasOwnProp("TimerFn")) {
@@ -1040,10 +1073,11 @@ GuiSize(thisGui, MinMax, Width, Height) {
     thisGui.wvc.Move(, , Width - 20, Height - 65)
     btnY := Height - 40
     thisGui.SaveBtn.Move(15, btnY)
-    thisGui.SendBtn.Move(135, btnY)
-    thisGui.DeleteBtn.Move(265, btnY)
-    thisGui.ReprocBtn.Move(385, btnY)
-    thisGui.StatusTxt.Move(505, btnY, Width - 520)
+    thisGui.UpdateBtn.Move(135, btnY)
+    thisGui.SendBtn.Move(245, btnY)
+    thisGui.DeleteBtn.Move(375, btnY)
+    thisGui.ReprocBtn.Move(495, btnY)
+    thisGui.StatusTxt.Move(615, btnY, Width - 630)
     try {
         if (MinMax == 1) {
             thisGui.wb.document.body.classList.add("maximized")
@@ -1114,7 +1148,11 @@ F5:: {
     if (activeHwnd) {
         guiObj := GuiFromHwnd(activeHwnd)
         if (guiObj) {
-            OnSaveClick(guiObj)
+            if (!guiObj.SaveBtn.Enabled && guiObj.HasOwnProp("PendingUpdate") && guiObj.PendingUpdate) {
+                OnUpdateClick(guiObj)
+            } else {
+                OnSaveClick(guiObj)
+            }
         }
     }
 }
