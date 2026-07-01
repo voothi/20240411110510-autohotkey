@@ -176,6 +176,29 @@ ActionRenderDoneIO(guiObj, payload) {
     if (G_FsmTestMode) {
         return
     }
+
+    htmlContent := B64Decode(payload.outB64)
+    tmpHtmlFile := A_Temp "\karden_view_" guiObj.ZID "_" A_TickCount ".html"
+    FileAppend(htmlContent, tmpHtmlFile, "UTF-8-RAW")
+
+    try {
+        guiObj.wvc.Visible := false
+        guiObj.wb.Navigate(tmpHtmlFile)
+        while guiObj.wb.ReadyState != 4
+            Sleep(10)
+    } catch {
+        try {
+            FileDelete(tmpHtmlFile)
+        } catch {
+        }
+        guiObj.wvc.Visible := true
+        return
+    }
+    try {
+        FileDelete(tmpHtmlFile)
+    } catch {
+    }
+
     isMax := false
     try {
         isMax := (WinGetMinMax(guiObj.Hwnd) == 1)
