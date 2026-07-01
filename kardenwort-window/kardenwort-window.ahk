@@ -1250,7 +1250,7 @@ $Delete::
                 Send("{Delete}")
                 return
             }
-            g.wb.document.parentWindow.deleteSelectedRows()
+            OnDeleteClick(g)
             return
         }
     } catch {
@@ -1301,6 +1301,11 @@ $^z::
                 return
             }
             g.wb.document.parentWindow.undo()
+            try {
+                g.StateMemory["IsDirty"] := g.wb.document.parentWindow.isDirty()
+                UpdateButtonState(g)
+            } catch {
+            }
             return
         }
     } catch {
@@ -1320,6 +1325,11 @@ $^y::
                 return
             }
             g.wb.document.parentWindow.redo()
+            try {
+                g.StateMemory["IsDirty"] := g.wb.document.parentWindow.isDirty()
+                UpdateButtonState(g)
+            } catch {
+            }
             return
         }
     } catch {
