@@ -818,10 +818,23 @@ WatchFile(guiObj) {
                 jsMTime := FileGetTime(updateJsPath)
                 if (Abs(DateDiff(currentMTime, jsMTime, "Seconds")) <= 10) {
                     guiObj.LastMTime := currentMTime
+                    if (guiObj.HasOwnProp("AutoInjectRetries")) {
+                        guiObj.AutoInjectRetries := 0
+                    }
                     UpdateStatus(guiObj, "Data injected automatically.")
                     return
                 }
             }
+            
+            ; Wait up to 3 seconds (6 ticks of 500ms) for Python to write update.js after saving TSV
+            if (!guiObj.HasOwnProp("AutoInjectRetries")) {
+                guiObj.AutoInjectRetries := 0
+            }
+            guiObj.AutoInjectRetries += 1
+            if (guiObj.AutoInjectRetries < 6) {
+                return ; Try again next tick
+            }
+            guiObj.AutoInjectRetries := 0
         }
 
         if (!G_AutoUpdate) {
