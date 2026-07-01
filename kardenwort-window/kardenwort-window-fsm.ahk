@@ -36,6 +36,9 @@ global EV_CLOSE := "EV_CLOSE"
 global FSM_AUTO_INJECT_MAX_RETRIES := 6
 global G_FsmDispatching := false
 
+; Global variables defined in kardenwort-window.ahk
+global G_FileWatcherIntervalMs, G_AutoSave, G_DeskPythonPath, G_DeskScriptPath, G_AutoUpdate, G_ShowInfoWindows
+
 ; ===================================================================================
 ; FSM Engine
 ; ===================================================================================
