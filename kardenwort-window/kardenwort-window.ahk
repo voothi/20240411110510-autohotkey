@@ -656,9 +656,7 @@ OnSaveClick(guiObj, *) {
         deltasJSON := guiObj.wb.document.parentWindow.getDeltas()
     } catch as e {
         MsgBox("Failed to retrieve deltas from page: " e.Message, "Kardenwort Error", 16)
-        if (needsReload) {
-            PerformReload(guiObj)
-        }
+        UpdateButtonState(guiObj)
         return
     }
 
@@ -668,9 +666,7 @@ OnSaveClick(guiObj, *) {
     } catch as e {
         UpdateStatus(guiObj, "Deltas write failed")
         MsgBox("Failed to write temporary delta file: " e.Message, "Kardenwort Error", 16)
-        if (needsReload) {
-            PerformReload(guiObj)
-        }
+        UpdateButtonState(guiObj)
         return
     }
 
