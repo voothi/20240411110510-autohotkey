@@ -606,6 +606,10 @@ OnSaveClick(guiObj, *) {
         return
     }
 
+    if (!guiObj.SaveBtn.Enabled) {
+        return
+    }
+
     guiObj.StatusTxt.Text := "Saving..."
 
     ; Retrieve deltas
