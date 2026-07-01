@@ -697,8 +697,7 @@ ActionExportStartIO(guiObj, payload) {
         return
     }
 
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" export-anki --selection-manifest "' tmpManifestFile '" --language ' guiObj
-        .Lang
+    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" export --selection-manifest "' tmpManifestFile '" --language ' guiObj.Lang
     try {
         exitCode := RunSilent(cmd, &outStr, &errJSON)
     } catch {
