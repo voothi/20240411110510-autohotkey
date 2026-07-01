@@ -529,7 +529,6 @@ OnAhkCall(guiObj, action, value) {
         }
     }
 }
-}
 
 UpdateButtonState(guiObj) {
     if (!guiObj.HasProp("FsmState") || !guiObj.HasProp("FsmMemory")) {
@@ -584,7 +583,6 @@ UpdateButtonState(guiObj) {
         UpdateStatus(guiObj, "Data ready. Click ⟳ to update.")
     }
 }
-}
 
 OnUpdateClick(guiObj, *) {
     FsmDispatch(guiObj, EV_UPDATE_CLICK)
@@ -612,7 +610,10 @@ OnReprocessClick(guiObj, *) {
 
 PerformReload(guiObj, &outB64, &errJSON) {
     tmpTextFile := A_Temp "\karden_input_" guiObj.ZID "_" A_TickCount ".txt"
-    try { FileDelete(tmpTextFile) } catch {}
+    try {
+        FileDelete(tmpTextFile)
+    } catch {
+    }
     try {
         FileAppend(guiObj.SourceText, tmpTextFile, "UTF-8-RAW")
     } catch as e {
@@ -624,9 +625,11 @@ PerformReload(guiObj, &outB64, &errJSON) {
     } catch {
         exitCode := 1
     }
-    try { FileDelete(tmpTextFile) } catch {}
+    try {
+        FileDelete(tmpTextFile)
+    } catch {
+    }
     return exitCode
-}
 }
 
 WatchFile(guiObj) {
@@ -648,15 +651,14 @@ WatchFile(guiObj) {
 
     try {
         if (!FileExist(guiObj.TsvPath)) {
-            return
-        }
+        return
+    }
         currentMTime := FileGetTime(guiObj.TsvPath)
     } catch {
         return
     }
 
     FsmDispatch(guiObj, EV_FILE_CHANGED, currentMTime)
-}
 }
 
 GuiClose(thisGui) {
@@ -837,8 +839,8 @@ $F2::
         if (g && g.HasProp("wb")) {
             el := g.wb.document.activeElement
             if (el && el.tagName == "INPUT" && InStr(el.className, "edit-input")) {
-                return
-            }
+        return
+    }
             g.wb.document.parentWindow.editFocusedCell()
             return
         }

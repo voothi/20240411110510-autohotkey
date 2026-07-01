@@ -150,8 +150,13 @@ ActionRenderDoneApply(guiObj, payload) {
     return FSM_IDLE
 }
 ActionRenderDoneIO(guiObj, payload) {
+    isMax := false
     try {
-        if (WinGetMinMax(guiObj.Hwnd) == 1) {
+        isMax := (WinGetMinMax(guiObj.Hwnd) == 1)
+    } catch {
+    }
+    try {
+        if (isMax) {
             guiObj.wb.document.body.classList.add("maximized")
         } else {
             guiObj.wb.document.body.classList.remove("maximized")
@@ -301,11 +306,12 @@ ActionSaveSuccessApply(guiObj, payload) {
     } catch {
     }
     guiObj.FsmMemory["IsDirty"] := false
-    try {
-        if (FileExist(guiObj.TsvPath)) {
+    if (FileExist(guiObj.TsvPath)) {
+        try {
             guiObj.FsmMemory["LastMTime"] := FileGetTime(guiObj.TsvPath)
+        } catch {
         }
-    } catch {}
+    }
 
     if (guiObj.FsmMemory["PendingClose"]) {
         guiObj.FsmMemory["PendingClose"] := false
@@ -345,9 +351,13 @@ ActionSaveFailedIO(guiObj, payload) {
 }
 
 ActionFileChangedGuard(guiObj, payload) {
-    if (payload == "") { return false }
+    if (payload == "") {
+        return false
+    }
     currentMTime := payload
-    if (currentMTime == guiObj.FsmMemory["LastMTime"]) { return false }
+    if (currentMTime == guiObj.FsmMemory["LastMTime"]) {
+        return false
+    }
 
     isAutoInjecting := guiObj.FsmMemory["IsProgressive"] || guiObj.FsmMemory["IsLazy"]
     if (isAutoInjecting) {
@@ -394,10 +404,14 @@ ActionUpdateClickIO(guiObj, payload) {
     try {
         selectedRowsJSON := guiObj.wb.document.parentWindow.getSelectedRows()
         scrollY := guiObj.wb.document.documentElement.scrollTop
-        if (!scrollY) {
+    } catch {
+    }
+    if (!scrollY) {
+        try {
             scrollY := guiObj.wb.document.body.scrollTop
+        } catch {
         }
-    } catch {}
+    }
 
     exitCode := PerformReload(guiObj, &outB64, &errJSON)
 
@@ -446,23 +460,39 @@ ActionReloadDoneIO(guiObj, payload) {
 
     try {
         ApplyZoom(guiObj.wb)
-        if (WinGetMinMax(guiObj.Hwnd) == 1) {
+    } catch {
+    }
+    isMax := false
+    try {
+        isMax := (WinGetMinMax(guiObj.Hwnd) == 1)
+    } catch {
+    }
+    try {
+        if (isMax) {
             guiObj.wb.document.body.classList.add("maximized")
         } else {
             guiObj.wb.document.body.classList.remove("maximized")
         }
+    } catch {
+    }
+    try {
         guiObj.wb.document.parentWindow.ahkCall := OnAhkCall.Bind(guiObj)
         guiObj.wb.document.parentWindow.setSelectedRows(payload.selectedRowsJSON)
-        if (payload.scrollY) {
+    } catch {
+    }
+    if (payload.scrollY) {
+        try {
             guiObj.wb.document.parentWindow.scrollTo(0, payload.scrollY)
+        } catch {
         }
-    } catch {}
+    }
     
     guiObj.wvc.Visible := true
     try {
         WinRedraw(guiObj.wvc.Hwnd)
         WinRedraw(guiObj.Hwnd)
-    } catch {}
+    } catch {
+    }
 
     try {
         guiObj.TsvPath := GetElementText(guiObj.wb.document.getElementById("tsv-path"))
@@ -603,7 +633,9 @@ ActionExportStartIO(guiObj, payload) {
     tsvPathStr := StrReplace(guiObj.TsvPath, "\", "\\")
     manifest := '{"selected_row_ids": ' jsonStr ', "zid": "' guiObj.ZID '", "tsv_path": "' tsvPathStr '"}'
     tmpManifestFile := A_Temp "\karden_manifest_" guiObj.ZID "_send.json"
-    try { FileAppend(manifest, tmpManifestFile, "UTF-8-RAW") } catch as e {
+    try {
+        FileAppend(manifest, tmpManifestFile, "UTF-8-RAW")
+    } catch as e {
         FsmDispatch(guiObj, EV_EXPORT_FAILED, "Manifest write failed: " e.Message)
         return
     }
@@ -687,11 +719,12 @@ ActionCloseIO(guiObj, payload) {
     }
     if (guiObj.HasOwnProp("TsvPath") && guiObj.TsvPath != "") {
         updateJsPath := StrReplace(guiObj.TsvPath, ".tsv", ".update.js")
-        try {
-            if FileExist(updateJsPath) {
+        if FileExist(updateJsPath) {
+            try {
                 FileDelete(updateJsPath)
+            } catch {
             }
-        } catch {}
+        }
     }
     guiObj.wb := ""
     guiObj.Destroy()
