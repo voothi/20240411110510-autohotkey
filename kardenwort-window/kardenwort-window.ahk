@@ -539,6 +539,11 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     ; Bind callback for bidirectional updates and dirty flag
     wb.document.parentWindow.ahkCall := OnAhkCall.Bind(MyGui)
     wvc.Visible := true
+    try {
+        WinRedraw(wvc.Hwnd)
+        WinRedraw(MyGui.Hwnd)
+    } catch {
+    }
 
     ; Retrieve metadata from HTML DOM
     try {
@@ -907,6 +912,11 @@ PerformReload(guiObj) {
             } catch {
             }
             guiObj.wvc.Visible := true
+            try {
+                WinRedraw(guiObj.wvc.Hwnd)
+                WinRedraw(guiObj.Hwnd)
+            } catch {
+            }
 
             try {
                 guiObj.TsvPath := GetElementText(guiObj.wb.document.getElementById("tsv-path"))
