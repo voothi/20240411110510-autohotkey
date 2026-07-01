@@ -13,6 +13,7 @@ global G_DefaultLanguage := "en"
 global G_CurrentLang := "en"
 global G_FileWatcherIntervalMs := 1000
 global G_AutoUpdate := 0
+global G_AutoSave := 0
 global G_MultiTapTimeout := 300
 global G_TapSingleMode := "single"
 global G_TapDoubleMode := "multi"
@@ -48,6 +49,7 @@ LoadConfig() {
     global G_CurrentLang := IniRead(configPath, "Settings", "DefaultLanguage", "en")
     global G_FileWatcherIntervalMs := IniRead(configPath, "Settings", "FileWatcherIntervalMs", 1000)
     global G_AutoUpdate := IniRead(configPath, "Settings", "AutoUpdate", 0)
+    global G_AutoSave := IniRead(configPath, "Settings", "auto_save_on_edit", 0)
     global G_MultiTapTimeout := IniRead(configPath, "Settings", "MultiTapTimeout", 300)
     global G_TapSingleMode := IniRead(configPath, "Hotkey", "TapSingleMode", "single")
     global G_TapDoubleMode := IniRead(configPath, "Hotkey", "TapDoubleMode", "multi")
@@ -594,6 +596,9 @@ OnAhkCall(guiObj, action, value) {
         if (value == "true") {
             guiObj.SaveBtn.Enabled := true
             UpdateStatus(guiObj, "Unsaved edits")
+            if (G_AutoSave) {
+                OnSaveClick(guiObj, "")
+            }
         } else {
             guiObj.SaveBtn.Enabled := false
             UpdateStatus(guiObj, "Edits saved")
