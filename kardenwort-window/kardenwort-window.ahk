@@ -444,8 +444,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     MyGui.TextMode := textMode
     MyGui.SourceText := sourceText
     MyGui.TsvPath := ""
-    MyGui.LastMTime := ""
-    MyGui.PendingUpdate := false
+    MyGui.StateMemory := Map("PendingUpdate", false, "IsReloading", false, "IsDirty", false, "LastMTime", "", "IsProgressive", false, "IsLazy", false, "AutoInjectRetries", 0)
 
     SaveBtn.OnEvent("Click", OnSaveClick.Bind(MyGui))
     UpdateBtn.OnEvent("Click", OnUpdateClick.Bind(MyGui))
@@ -517,6 +516,8 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     if (exitCode != 0) {
         UpdateStatus(MyGui, "Analysis failed")
         MsgBox("Kardenwort Analysis failed:`n" errJSON, "Kardenwort Error", 16)
+        global G_WindowCount
+        G_WindowCount := Max(0, G_WindowCount - 1)
         MyGui.Destroy()
         return
     }
@@ -566,21 +567,21 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
         }
         
         try {
-            MyGui.IsProgressive := GetElementText(wb.document.getElementById("progressive-loading")) == "true"
+            MyGui.StateMemory["IsProgressive"] := GetElementText(wb.document.getElementById("progressive-loading")) == "true"
         } catch {
-            MyGui.IsProgressive := false
+            MyGui.StateMemory["IsProgressive"] := false
         }
         
         try {
-            MyGui.IsLazy := GetElementText(wb.document.getElementById("lazy-processing")) == "true"
+            MyGui.StateMemory["IsLazy"] := GetElementText(wb.document.getElementById("lazy-processing")) == "true"
         } catch {
-            MyGui.IsLazy := false
+            MyGui.StateMemory["IsLazy"] := false
         }
 
         if (FileExist(tsvPath)) {
-            MyGui.LastMTime := FileGetTime(tsvPath)
+            MyGui.StateMemory["LastMTime"] := FileGetTime(tsvPath)
         } else {
-            MyGui.LastMTime := ""
+            MyGui.StateMemory["LastMTime"] := ""
         }
 
         ; Start polling file watcher
@@ -588,7 +589,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
             MyGui.TimerFn := WatchFile.Bind(MyGui)
             SetTimer(MyGui.TimerFn, G_FileWatcherIntervalMs)
         }
-        if (MyGui.IsLazy) {
+        if (MyGui.StateMemory["IsLazy"]) {
             UpdateStatus(MyGui, "Lazy mode active. Select and Re-process.")
         } else {
             UpdateStatus(MyGui, "Analysis loaded successfully")
@@ -600,7 +601,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
 
 OnAhkCall(guiObj, action, value) {
     if (action == "dirty") {
-        guiObj.SaveBtn.Enabled := (value == "true")
+        guiObj.StateMemory["IsDirty"] := (value == "true")
         UpdateButtonState(guiObj)
         if (value == "true" && G_AutoSave) {
             OnSaveClick(guiObj, "")
@@ -609,17 +610,13 @@ OnAhkCall(guiObj, action, value) {
 }
 
 UpdateButtonState(guiObj) {
-    if (guiObj.HasOwnProp("IsReloading") && guiObj.IsReloading) {
+    if (guiObj.StateMemory["IsReloading"]) {
         return
     }
 
-    isDirty := false
-    try {
-        isDirty := guiObj.wb.document.parentWindow.isDirty()
-    } catch {
-    }
+    isDirty := guiObj.StateMemory["IsDirty"]
     
-    pending := guiObj.HasOwnProp("PendingUpdate") && guiObj.PendingUpdate
+    pending := guiObj.StateMemory["PendingUpdate"]
 
     guiObj.SaveBtn.Enabled := isDirty
     
@@ -627,8 +624,7 @@ UpdateButtonState(guiObj) {
         guiObj.UpdateBtn.Visible := true
         guiObj.UpdateBtn.Enabled := true
     } else {
-        guiObj.UpdateBtn.Visible := false
-    }
+            }
 
     if (isDirty && pending) {
         UpdateStatus(guiObj, "Unsaved edits + update ready")
@@ -642,14 +638,13 @@ UpdateButtonState(guiObj) {
 }
 
 OnUpdateClick(guiObj, *) {
-    guiObj.PendingUpdate := false
-    guiObj.UpdateBtn.Visible := false
-    PerformReload(guiObj)
+    guiObj.StateMemory["PendingUpdate"] := false
+        PerformReload(guiObj)
     UpdateButtonState(guiObj)
 }
 
 OnSaveClick(guiObj, *) {
-    if (!guiObj.SaveBtn.Enabled) {
+    if (!guiObj.StateMemory["IsDirty"]) {
         return
     }
 
@@ -683,14 +678,13 @@ OnSaveClick(guiObj, *) {
 
     if (exitCode == 0 && InStr(outStr, "SUCCESS")) {
         guiObj.wb.document.parentWindow.clearDirty()
-        guiObj.SaveBtn.Enabled := false
-        if (guiObj.HasOwnProp("PendingUpdate") && guiObj.PendingUpdate) {
+                if (guiObj.StateMemory["PendingUpdate"]) {
             UpdateStatus(guiObj, "Edits saved, applying update...")
-            guiObj.PendingUpdate := false
+            guiObj.StateMemory["PendingUpdate"] := false
             PerformReload(guiObj)
         } else {
             try {
-                guiObj.LastMTime := FileGetTime(guiObj.TsvPath)
+                guiObj.StateMemory["LastMTime"] := FileGetTime(guiObj.TsvPath)
             } catch {
             }
             UpdateStatus(guiObj, "Edits saved successfully")
@@ -710,8 +704,16 @@ OnSendToAnkiClick(guiObj, *) {
 
     try {
         selectedRowsJSON := guiObj.wb.document.parentWindow.getSelectedRows()
+        if (selectedRowsJSON == "[]" || selectedRowsJSON == "") {
+            MsgBox("Please select rows to export.", "Kardenwort", 48)
+            UpdateStatus(guiObj, "Ready")
+            return
+        }
     } catch {
         selectedRowsJSON := "[]"
+        MsgBox("Please select rows to export.", "Kardenwort", 48)
+        UpdateStatus(guiObj, "Ready")
+        return
     }
 
     tsvPathStr := StrReplace(guiObj.TsvPath, "\", "\\")
@@ -759,6 +761,8 @@ OnSendToAnkiClick(guiObj, *) {
 OnDeleteClick(guiObj, *) {
     try {
         guiObj.wb.document.parentWindow.deleteSelectedRows()
+        guiObj.StateMemory["IsDirty"] := true
+        UpdateButtonState(guiObj)
     } catch {
     }
 }
@@ -782,14 +786,10 @@ OnReprocessClick(guiObj, *) {
     }
 
     ; Check if dirty and save first
-    isDirty := false
-    try {
-        isDirty := guiObj.wb.document.parentWindow.isDirty()
-    } catch {
-    }
+    isDirty := guiObj.StateMemory["IsDirty"]
     
     ; Always pause WatchFile during reprocess
-    guiObj.IsReloading := true
+    guiObj.StateMemory["IsReloading"] := true
     
     if (isDirty) {
         OnSaveClick(guiObj, "")
@@ -822,12 +822,12 @@ OnReprocessClick(guiObj, *) {
         MsgBox("Failed to start re-processing:`n" errJSON, "Kardenwort Error", 16)
     }
 
-    guiObj.IsReloading := false
+    guiObj.StateMemory["IsReloading"] := false
     UpdateButtonState(guiObj)
 }
 
 WatchFile(guiObj) {
-    if (guiObj.HasOwnProp("IsReloading") && guiObj.IsReloading) {
+    if (guiObj.StateMemory["IsReloading"]) {
         return
     }
 
@@ -854,36 +854,32 @@ WatchFile(guiObj) {
         return
     }
 
-    if (currentMTime != guiObj.LastMTime) {
-        isAutoInjecting := (guiObj.HasOwnProp("IsProgressive") && guiObj.IsProgressive) || (guiObj.HasOwnProp("IsLazy") && guiObj.IsLazy)
+    if (currentMTime != guiObj.StateMemory["LastMTime"]) {
+        isAutoInjecting := (guiObj.HasOwnProp("IsProgressive") && guiObj.StateMemory["IsProgressive"]) || (guiObj.HasOwnProp("IsLazy") && guiObj.StateMemory["IsLazy"])
         if (isAutoInjecting) {
             updateJsPath := RegExReplace(tsvPath, "(?i)\.tsv$", ".update.js")
             if (FileExist(updateJsPath)) {
                 jsMTime := FileGetTime(updateJsPath)
                 if (Abs(DateDiff(currentMTime, jsMTime, "Seconds")) <= 10) {
-                    guiObj.LastMTime := currentMTime
-                    if (guiObj.HasOwnProp("AutoInjectRetries")) {
-                        guiObj.AutoInjectRetries := 0
-                    }
+                    guiObj.StateMemory["LastMTime"] := currentMTime
+                    guiObj.StateMemory["AutoInjectRetries"] := 0
                     UpdateStatus(guiObj, "Data injected automatically.")
                     return
                 }
             }
             
             ; Wait up to 3 seconds (6 ticks of 500ms) for Python to write update.js after saving TSV
-            if (!guiObj.HasOwnProp("AutoInjectRetries")) {
-                guiObj.AutoInjectRetries := 0
-            }
-            guiObj.AutoInjectRetries += 1
-            if (guiObj.AutoInjectRetries < 6) {
+            
+            guiObj.StateMemory["AutoInjectRetries"] += 1
+            if (guiObj.StateMemory["AutoInjectRetries"] < 6) {
                 return ; Try again next tick
             }
-            guiObj.AutoInjectRetries := 0
+            guiObj.StateMemory["AutoInjectRetries"] := 0
         }
 
         if (!G_AutoUpdate) {
-            if (!guiObj.HasOwnProp("PendingUpdate") || !guiObj.PendingUpdate) {
-                guiObj.PendingUpdate := true
+            if (!guiObj.StateMemory["PendingUpdate"]) {
+                guiObj.StateMemory["PendingUpdate"] := true
             }
             UpdateButtonState(guiObj)
             return
@@ -899,19 +895,15 @@ PerformReload(guiObj) {
         return
     }
 
-    guiObj.IsReloading := true
-    isDirty := false
-    try {
-        isDirty := guiObj.wb.document.parentWindow.isDirty()
-    } catch {
-    }
+    guiObj.StateMemory["IsReloading"] := true
+    isDirty := guiObj.StateMemory["IsDirty"]
 
     if (isDirty) {
         res := MsgBox("The working TSV was modified externally. Reload and discard your unsaved edits?",
             "Kardenwort", "YesNo Icon!")
         if (res == "No") {
-            guiObj.LastMTime := currentMTime
-            guiObj.IsReloading := false
+            guiObj.StateMemory["LastMTime"] := currentMTime
+            guiObj.StateMemory["IsReloading"] := false
             return
         }
     }
@@ -937,7 +929,7 @@ PerformReload(guiObj) {
     try {
         FileAppend(guiObj.SourceText, tmpTextFile, "UTF-8-RAW")
     } catch as e {
-        guiObj.IsReloading := false
+        guiObj.StateMemory["IsReloading"] := false
         return
     }
 
@@ -949,7 +941,7 @@ PerformReload(guiObj) {
     } catch {
     }
 
-    guiObj.IsReloading := false
+    guiObj.StateMemory["IsReloading"] := false
 
     try {
             hwnd := guiObj.Hwnd
@@ -1007,8 +999,8 @@ PerformReload(guiObj) {
 
             try {
                 guiObj.TsvPath := GetElementText(guiObj.wb.document.getElementById("tsv-path"))
-                guiObj.LastMTime := FileGetTime(guiObj.TsvPath)
-                if (guiObj.IsLazy) {
+                guiObj.StateMemory["LastMTime"] := FileGetTime(guiObj.TsvPath)
+                if (guiObj.StateMemory["IsLazy"]) {
                     UpdateStatus(guiObj, "Lazy mode active. Select and Re-process. (Reloaded)")
                 } else {
                     UpdateStatus(guiObj, "Analysis loaded successfully (Reloaded)")
@@ -1016,22 +1008,17 @@ PerformReload(guiObj) {
             } catch as e {
                 UpdateStatus(guiObj, "Metadata binding failed (Reloaded): " e.Message)
             }
-            guiObj.PendingUpdate := false
-            guiObj.UpdateBtn.Visible := false
-            UpdateButtonState(guiObj)
+            guiObj.StateMemory["PendingUpdate"] := false
+                        UpdateButtonState(guiObj)
         } else {
             UpdateStatus(guiObj, "Reload failed: render error")
         }
 }
 
 GuiClose(thisGui) {
-    isDirty := false
-    try {
-        isDirty := thisGui.wb.document.parentWindow.isDirty()
-    } catch {
-    }
+    isDirty := thisGui.StateMemory["IsDirty"]
     
-    pendingUpdate := thisGui.HasOwnProp("PendingUpdate") && thisGui.PendingUpdate
+    pendingUpdate := thisGui.StateMemory["PendingUpdate"]
 
     if (isDirty) {
         res := MsgBox("You have unsaved edits. Save changes before closing?", "Kardenwort", "YesNoCancel Icon!")
@@ -1154,7 +1141,7 @@ F5:: {
     if (activeHwnd) {
         guiObj := GuiFromHwnd(activeHwnd)
         if (guiObj) {
-            if (!guiObj.SaveBtn.Enabled && guiObj.HasOwnProp("PendingUpdate") && guiObj.PendingUpdate) {
+            if (!guiObj.StateMemory["IsDirty"] && guiObj.StateMemory["PendingUpdate"]) {
                 OnUpdateClick(guiObj)
             } else {
                 OnSaveClick(guiObj)
