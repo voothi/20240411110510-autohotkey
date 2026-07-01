@@ -919,7 +919,7 @@ HandleSmartAction() {
     G_PressCount := 0
 
     textMode := G_TapSingleMode
-    if (Taps == 2) {
+    if (Taps >= 2) {
         textMode := G_TapDoubleMode
     }
 
