@@ -733,6 +733,7 @@ OnReprocessClick(guiObj, *) {
 
     if (exitCode == 0) {
         guiObj.StatusTxt.Text := "Re-processing started"
+        PerformReload(guiObj)
     } else {
         guiObj.StatusTxt.Text := "Re-process failed"
         FileAppend("Reprocess failed: " errJSON "`n", A_Desktop "\karden_error.txt")
