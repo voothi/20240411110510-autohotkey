@@ -555,6 +555,12 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
             llmFilled := GetElementText(wb.document.getElementById("llm-filled")) == "true"
         } catch {
         }
+        
+        try {
+            MyGui.IsProgressive := GetElementText(wb.document.getElementById("progressive-loading")) == "true"
+        } catch {
+            MyGui.IsProgressive := false
+        }
 
         if (FileExist(tsvPath)) {
             MyGui.LastMTime := FileGetTime(tsvPath)
@@ -796,6 +802,18 @@ WatchFile(guiObj) {
     }
 
     if (currentMTime != guiObj.LastMTime) {
+        if (guiObj.HasOwnProp("IsProgressive") && guiObj.IsProgressive) {
+            updateJsPath := RegExReplace(tsvPath, "(?i)\.tsv$", ".update.js")
+            if (FileExist(updateJsPath)) {
+                jsMTime := FileGetTime(updateJsPath)
+                if (Abs(DateDiff(currentMTime, jsMTime, "Seconds")) <= 10) {
+                    guiObj.LastMTime := currentMTime
+                    guiObj.StatusTxt.Text := "Data injected automatically."
+                    return
+                }
+            }
+        }
+
         if (!G_AutoUpdate) {
             if (!guiObj.HasOwnProp("PendingUpdate") || !guiObj.PendingUpdate) {
                 guiObj.PendingUpdate := true
