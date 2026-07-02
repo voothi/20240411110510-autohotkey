@@ -992,22 +992,78 @@ RegisterPointerToggleHotkeys() {
         if (k == "")
             continue
             
-        hkPrefix := ""
-        if (k = "Alt" || k = "Ctrl" || k = "Shift" || k = "LAlt" || k = "RAlt" || k = "LCtrl" || k = "RCtrl" || k = "LShift" || k = "RShift") {
-            hkPrefix := "~"
-        }
-        
-        try {
-            Hotkey(hkPrefix k, OnToggleHotkeyPress)
-        } catch Any as e {
-            ; Ignore invalid hotkey names
-        }
+        RegisterSingleHotkey(k)
     }
 }
 
-OnToggleHotkeyPress(thisHotkey) {
-    keyName := RegExReplace(thisHotkey, "^[~*$#+^<!>]*")
-    
+RegisterSingleHotkey(hkStr) {
+    if InStr(hkStr, "+") {
+        parts := StrSplit(hkStr, "+")
+        
+        allModifiers := true
+        for p in parts {
+            p := Trim(p)
+            if !(p = "Ctrl" || p = "Alt" || p = "Shift" || p = "Win" || p = "LAlt" || p = "RAlt" || p = "LCtrl" || p = "RCtrl" || p = "LShift" || p = "RShift") {
+                allModifiers := false
+                break
+            }
+        }
+        
+        if (allModifiers) {
+            if (parts.Length == 2) {
+                p1 := parts[1]
+                p2 := parts[2]
+                RegisterAHKHotkey("~" GetModifierSymbol(p1) p2, p2)
+                RegisterAHKHotkey("~" GetModifierSymbol(p2) p1, p1)
+            } else if (parts.Length == 3) {
+                p1 := parts[1]
+                p2 := parts[2]
+                p3 := parts[3]
+                RegisterAHKHotkey("~" GetModifierSymbol(p1) GetModifierSymbol(p2) p3, p3)
+                RegisterAHKHotkey("~" GetModifierSymbol(p1) GetModifierSymbol(p3) p2, p2)
+                RegisterAHKHotkey("~" GetModifierSymbol(p2) GetModifierSymbol(p3) p1, p1)
+            }
+        } else {
+            ahkHk := ""
+            lastPart := parts[parts.Length]
+            for i, p in parts {
+                if (i < parts.Length) {
+                    ahkHk .= GetModifierSymbol(p)
+                }
+            }
+            ahkHk .= lastPart
+            RegisterAHKHotkey(ahkHk, lastPart)
+        }
+    } else {
+        hkPrefix := ""
+        if (hkStr = "Alt" || hkStr = "Ctrl" || hkStr = "Shift" || hkStr = "Win" || hkStr = "LAlt" || hkStr = "RAlt" || hkStr = "LCtrl" || hkStr = "RCtrl" || hkStr = "LShift" || hkStr = "RShift") {
+            hkPrefix := "~"
+        }
+        RegisterAHKHotkey(hkPrefix hkStr, hkStr)
+    }
+}
+
+GetModifierSymbol(modName) {
+    if (modName = "Ctrl" || modName = "LCtrl" || modName = "RCtrl")
+        return "^"
+    if (modName = "Alt" || modName = "LAlt" || modName = "RAlt")
+        return "!"
+    if (modName = "Shift" || modName = "LShift" || modName = "RShift")
+        return "+"
+    if (modName = "Win")
+        return "#"
+    return ""
+}
+
+RegisterAHKHotkey(ahkHkName, keyToWait) {
+    try {
+        Hotkey(ahkHkName, OnToggleHotkeyPress.Bind(keyToWait))
+    } catch Any as e {
+        ; Ignore invalid hotkeys
+    }
+}
+
+OnToggleHotkeyPress(keyToWait, thisHotkey) {
     activeHwnd := WinActive("A")
     if (!activeHwnd)
         return
@@ -1018,7 +1074,7 @@ OnToggleHotkeyPress(thisHotkey) {
         
     ToggleSelectableTextMode(guiObj, true)
     
-    KeyWait(keyName)
+    KeyWait(keyToWait)
     
     ToggleSelectableTextMode(guiObj, false)
 }
