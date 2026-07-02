@@ -7,12 +7,16 @@ existingHwnd := 0
 ow := A_DetectHiddenWindows
 DetectHiddenWindows True
 for win in WinGetList("ahk_class AutoHotkey") {
-    if InStr(WinGetTitle(win), A_ScriptFullPath) {
-        pid := WinGetPID(win)
-        if (pid != myPid && pid < myPid) {
-            existingHwnd := win
-            break
+    try {
+        if InStr(WinGetTitle(win), A_ScriptFullPath) {
+            pid := WinGetPID(win)
+            if (pid != myPid && pid < myPid) {
+                existingHwnd := win
+                break
+            }
         }
+    } catch Any {
+        continue
     }
 }
 DetectHiddenWindows ow
