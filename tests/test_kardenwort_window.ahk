@@ -218,5 +218,58 @@ FsmDispatch(g, EV_SAVE_SUCCESS)
 Assert(g.FsmState == FSM_CLOSING, "Transitions to CLOSING state after successful save-on-close")
 Assert(g.FsmMemory["PendingClose"] == false, "PendingClose is cleared")
 
+; Test 16: InjectHoverHighlightMvp mock execution
+class MockElement {
+    id := ""
+    type := ""
+    text := ""
+    length := 0
+    _attrs := Map()
+    setAttribute(name, val) => this._attrs[name] := val
+    getAttribute(name) => this._attrs.Has(name) ? this._attrs[name] : ""
+    appendChild(el) => 0
+}
+
+class MockCollection {
+    length := 0
+    items := Map()
+    __Item[index] {
+        get => this.items.Has(index) ? this.items[index] : ""
+        set => this.items[index] := value
+    }
+}
+
+class MockDocument {
+    _elements := Map()
+    __mvpBookmarks := 0
+    parentWindow := this
+    body := MockElement()
+    
+    createElement(tagName) {
+        el := MockElement()
+        return el
+    }
+    getElementById(id) {
+        return this._elements.Has(id) ? this._elements[id] : ""
+    }
+    getElementsByTagName(name) {
+        res := MockCollection()
+        return res
+    }
+}
+
+class MockWb {
+    document := MockDocument()
+}
+
+class MockGuiWithWb extends MockGui {
+    wb := MockWb()
+}
+
+g_mvp := MockGuiWithWb()
+InjectHoverHighlightMvp(g_mvp, 5)
+Assert(g_mvp.wb.document.parentWindow.__mvpBookmarks == 5, "InjectHoverHighlightMvp set parentWindow.__mvpBookmarks correctly.")
+
 ; Write summary
 FileAppend("`nSummary: " (totalTests - failedTests) "/" totalTests " tests passed.`n", "test_results.txt")
+
