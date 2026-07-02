@@ -1409,8 +1409,8 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     ReprocBtn := MyGui.Add("Text", "x255 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor, "Re-process")
     DeleteBtn := MyGui.Add("Text", "x375 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor, "Delete")
     SendBtn := MyGui.Add("Text", "x495 y615 w120 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
-    PointerBtn := MyGui.Add("Text", "x625 y615 w125 h30 Center +Border +0x200 " G_GuiTextColor, "Mode: Token")
-    StatusTxt := MyGui.Add("Text", "x760 y615 w165 h30 +0x200 vStatusTxt", "Ready")
+    PointerBtn := MyGui.Add("Text", "x625 y615 w30 h30 Center +Border +0x200 " G_GuiTextColor, "T")
+    StatusTxt := MyGui.Add("Text", "x665 y615 w260 h30 +0x200 vStatusTxt", "Ready")
     StatusTxt.SetFont(G_GuiTextColor)
 
     ; Store references on GUI object
@@ -1660,9 +1660,9 @@ ToggleSelectableTextMode(guiObj, state := "", isPersistent := false) {
 
 UpdateButtonText(guiObj, state) {
     if (state) {
-        guiObj.PointerBtn.Text := "Mode: Text"
+        guiObj.PointerBtn.Text := "S"
     } else {
-        guiObj.PointerBtn.Text := "Mode: Token"
+        guiObj.PointerBtn.Text := "T"
     }
 }
 
@@ -1752,7 +1752,7 @@ GuiSize(thisGui, MinMax, Width, Height) {
     thisGui.DeleteBtn.Move(375, btnY)
     thisGui.SendBtn.Move(495, btnY)
     thisGui.PointerBtn.Move(625, btnY)
-    thisGui.StatusTxt.Move(760, btnY, Width - 775)
+    thisGui.StatusTxt.Move(665, btnY, Width - 680)
     try {
         if (MinMax == 1) {
             thisGui.wb.document.body.classList.add("maximized")
