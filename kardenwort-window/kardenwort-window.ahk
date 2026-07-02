@@ -1,5 +1,6 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Off
+#NoTrayIcon
 
 #Include ..\Lib\ClipboardUtil.ahk
 #Include ..\Lib\B64Util.ahk
