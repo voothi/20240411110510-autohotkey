@@ -1941,10 +1941,9 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
             }
         }
 
-        head := doc.getElementsByTagName("head")
-        if (head && head.length > 0) {
-            head[0].appendChild(styleEl)
-        } else {
+        try {
+            doc.head.appendChild(styleEl)
+        } catch {
             doc.body.appendChild(styleEl)
         }
 
