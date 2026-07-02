@@ -1,6 +1,39 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Off
-#NoTrayIcon
+
+myPid := ProcessExist()
+existingHwnd := 0
+ow := A_DetectHiddenWindows
+DetectHiddenWindows True
+for win in WinGetList("ahk_class AutoHotkey") {
+    if InStr(WinGetTitle(win), A_ScriptFullPath) {
+        pid := WinGetPID(win)
+        if (pid != myPid && pid < myPid) {
+            existingHwnd := win
+            break
+        }
+    }
+}
+DetectHiddenWindows ow
+
+if (existingHwnd) {
+    if (A_Args.Length > 0) {
+        payload := ""
+        for arg in A_Args {
+            payload .= arg "`n"
+        }
+        CopyDataStruct := Buffer(3 * A_PtrSize)
+        strBuf := Buffer(StrPut(payload, "UTF-16"))
+        StrPut(payload, strBuf, "UTF-16")
+        NumPut("Ptr", 1, CopyDataStruct, 0)
+        NumPut("UInt", strBuf.Size, CopyDataStruct, A_PtrSize)
+        NumPut("Ptr", strBuf.Ptr, CopyDataStruct, 2 * A_PtrSize)
+        SendMessage(0x004A, 0, CopyDataStruct.Ptr,, "ahk_id " existingHwnd)
+    }
+    ExitApp()
+}
+
+OnMessage(0x004A, Receive_WM_COPYDATA)
 
 #Include ..\Lib\ClipboardUtil.ahk
 #Include ..\Lib\B64Util.ahk
@@ -53,9 +86,6 @@ global G_DeskPythonPath := ""
 global G_DeskScriptPath := ""
 global G_AutoUpdate := 0
 global G_ShowInfoWindows := 0
-
-SetTimer ManageTrayIconVisibility, 500
-ManageTrayIconVisibility()
 
 ; ===================================================================================
 ; FSM Engine
@@ -1181,35 +1211,35 @@ if (A_ScriptFullPath = A_LineFile) {
     LoadConfig()
     InitializeTrayMenu()
 
-    ; Check startup arguments
-    if (A_Args.Length > 0) {
-        mode := ""
-        filePath := ""
-        textMode := "multi"
+    ProcessArgs(A_Args)
+}
 
+Receive_WM_COPYDATA(wParam, lParam, msg, hwnd) {
+    strPtr := NumGet(lParam, 2 * A_PtrSize, "Ptr")
+    payload := StrGet(strPtr, "UTF-16")
+    args := StrSplit(Trim(payload, "`n"), "`n")
+    ProcessArgs(args)
+    return true
+}
+
+ProcessArgs(argsArray) {
+    if (argsArray.Length > 0) {
+        textMode := "multi"
         i := 1
-        while (i <= A_Args.Length) {
-            arg := A_Args[i]
+        while (i <= argsArray.Length) {
+            arg := argsArray[i]
             if (arg == "--restore") {
-                mode := "restore"
-                filePath := A_Args[i + 1]
+                LaunchRestore(argsArray[i + 1])
                 i += 2
             } else if (arg == "--desk") {
-                mode := "desk"
-                filePath := A_Args[i + 1]
+                LaunchDesk(argsArray[i + 1], textMode)
                 i += 2
             } else if (arg == "--text-mode") {
-                textMode := A_Args[i + 1]
+                textMode := argsArray[i + 1]
                 i += 2
             } else {
                 i += 1
             }
-        }
-
-        if (mode == "restore") {
-            LaunchRestore(filePath)
-        } else if (mode == "desk") {
-            LaunchDesk(filePath, textMode)
         }
     }
 }
@@ -2226,35 +2256,5 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         doc.body.appendChild(scriptEl)
     } catch Any as e {
         MsgBox("Injection failed: " e.Message "`nLine: " e.Line "`nFile: " e.File, "Kardenwort Error", 16)
-    }
-}
-
-ManageTrayIconVisibility() {
-    static isPrimary := false
-    myPid := ProcessExist()
-    leaderPid := myPid
-    
-    ow := A_DetectHiddenWindows
-    DetectHiddenWindows True
-    
-    try {
-        windows := WinGetList("ahk_class AutoHotkey")
-        for win in windows {
-            title := WinGetTitle(win)
-            if InStr(title, A_ScriptFullPath) {
-                pid := WinGetPID(win)
-                if (pid < leaderPid) {
-                    leaderPid := pid
-                }
-            }
-        }
-    }
-    
-    DetectHiddenWindows ow
-    
-    shouldBePrimary := (myPid == leaderPid)
-    if (shouldBePrimary != isPrimary) {
-        isPrimary := shouldBePrimary
-        A_IconHidden := !isPrimary
     }
 }
