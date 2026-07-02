@@ -1076,11 +1076,24 @@ OnToggleHotkeyPress(keyToWait, thisHotkey) {
     
     KeyWait(keyToWait)
     
-    ; Brief delay to allow target copy scripts (like gd-main.ahk)
-    ; that wait for modifiers to release to capture the selection first.
-    Sleep(500)
+    WaitForModifiers()
+    
+    Sleep(150)
+    
+    CopyWebviewSelection(guiObj)
+    
+    Sleep(350)
     
     ToggleSelectableTextMode(guiObj, false)
+}
+
+CopyWebviewSelection(guiObj) {
+    if (!guiObj.HasProp("wb"))
+        return
+    try {
+        guiObj.wb.ExecWB(12, 0) ; OLECMDID_COPY
+    } catch {
+    }
 }
 
 InitializeTrayMenu() {
