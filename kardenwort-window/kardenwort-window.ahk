@@ -1711,6 +1711,12 @@ $Esc::
                 g.wb.document.parentWindow.cancelActiveEdit()
                 return
             }
+            try {
+                if (g.wb.document.parentWindow.clearMVPBookmarks()) {
+                    return
+                }
+            } catch {
+            }
         }
     } catch {
     }
@@ -2170,16 +2176,24 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         js .= "      }"
         js .= "    }"
         js .= "  }"
-        js .= "  addEvent(document, 'keydown', function(e) {"
-        js .= "    e = e || window.event;"
-        js .= "    var code = e.keyCode || e.which;"
-        js .= "    if (code === 27 || e.key === 'Escape') {"
+        js .= "  window.clearMVPBookmarks = function() {"
+        js .= "    var cleared = false;"
+        js .= "    if (bookmarks && bookmarks.length > 0) {"
+        js .= "      cleared = true;"
         js .= "      for (var i = 0; i < bookmarks.length; i++) {"
         js .= "        var entry = bookmarks[i];"
         js .= "        if (entry.srcSpan) { removeClass(entry.srcSpan, 'hl-mvp-pin'); removeClass(entry.srcSpan, 'hl-mvp-hover'); }"
         js .= "        if (entry.transSpan) { removeClass(entry.transSpan, 'hl-mvp-pin'); removeClass(entry.transSpan, 'hl-mvp-hover'); }"
         js .= "      }"
         js .= "      bookmarks = [];"
+        js .= "    }"
+        js .= "    return cleared;"
+        js .= "  };"
+        js .= "  addEvent(document, 'keydown', function(e) {"
+        js .= "    e = e || window.event;"
+        js .= "    var code = e.keyCode || e.which;"
+        js .= "    if (code === 27 || e.key === 'Escape') {"
+        js .= "      window.clearMVPBookmarks();"
         js .= "    }"
         js .= "  });"
         js .= "  setTimeout(function() {"
