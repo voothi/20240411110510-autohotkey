@@ -1166,9 +1166,11 @@ LaunchRestore(filePath) {
 
     lang := G_DefaultLanguage
     foundTsv := ""
+    foundTsvPath := ""
     tsvPattern := fileDir "\" ZID "-*.tsv"
     loop files, tsvPattern {
         foundTsv := A_LoopFileName
+        foundTsvPath := A_LoopFileFullPath
         break
     }
     if (foundTsv != "") {
@@ -1192,7 +1194,7 @@ LaunchRestore(filePath) {
         inferredMode := "multi"
     }
 
-    LaunchKardenwortWindow(sourceText, inferredMode, ZID)
+    LaunchKardenwortWindow(sourceText, inferredMode, ZID, foundTsvPath)
 }
 
 LaunchDesk(filePath, textMode) {
@@ -1325,17 +1327,18 @@ ApplyZoom(wb) {
 ; ===================================================================================
 ; GUI & Watcher Implementation
 ; ===================================================================================
-LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
+LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     ZID := presetZID != "" ? presetZID : A_Now
     
     global G_ActiveWindows
-    if (G_ActiveWindows.Has(ZID)) {
-        hwnd := G_ActiveWindows[ZID]
+    sessionID := tsvPath != "" ? tsvPath : ZID
+    if (G_ActiveWindows.Has(sessionID)) {
+        hwnd := G_ActiveWindows[sessionID]
         if WinExist("ahk_id " hwnd) {
             WinActivate("ahk_id " hwnd)
             return
         } else {
-            G_ActiveWindows.Delete(ZID)
+            G_ActiveWindows.Delete(sessionID)
         }
     }
     
@@ -1378,7 +1381,8 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     MyGui.Lang := lang
     MyGui.TextMode := textMode
     MyGui.SourceText := sourceText
-    MyGui.TsvPath := ""
+    MyGui.TsvPath := tsvPath
+    MyGui.SessionID := sessionID
     FsmInit(MyGui)
 
     SaveBtn.OnEvent("Click", OnSaveClick.Bind(MyGui))
@@ -1425,7 +1429,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     G_WindowCount += 1
     G_CascadeIndex += 1
     
-    G_ActiveWindows[ZID] := MyGui.Hwnd
+    G_ActiveWindows[sessionID] := MyGui.Hwnd
 
     ; Fetch HTML from Python core
     UpdateStatus(MyGui, "Invoking backend analysis...")
@@ -1444,6 +1448,9 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     }
 
     cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' lang ' --zid ' ZID ' --text-mode ' textMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' < "' tmpTextFile '"'
+    if (tsvPath != "") {
+        cmd := cmd ' --tsv "' tsvPath '"'
+    }
     exitCode := 1
     try {
         exitCode := RunSilent(cmd, &outB64, &errJSON)
@@ -1580,8 +1587,10 @@ PerformReload(guiObj, &outB64, &errJSON) {
     } catch as e {
         return 1
     }
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' guiObj.Lang ' --zid ' guiObj.ZID ' --text-mode ' guiObj
-        .TextMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' < "' tmpTextFile '"'
+    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' guiObj.Lang ' --zid ' guiObj.ZID ' --text-mode ' guiObj.TextMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' < "' tmpTextFile '"'
+    if (guiObj.HasProp("TsvPath") && guiObj.TsvPath != "") {
+        cmd := cmd ' --tsv "' guiObj.TsvPath '"'
+    }
     try {
         exitCode := RunSilent(cmd, &outB64, &errJSON)
     } catch {
@@ -1625,8 +1634,8 @@ WatchFile(guiObj) {
 
 GuiClose(thisGui) {
     global G_ActiveWindows
-    if (thisGui.HasProp("ZID") && G_ActiveWindows.Has(thisGui.ZID)) {
-        G_ActiveWindows.Delete(thisGui.ZID)
+    if (thisGui.HasProp("SessionID") && G_ActiveWindows.Has(thisGui.SessionID)) {
+        G_ActiveWindows.Delete(thisGui.SessionID)
     }
     FsmDispatch(thisGui, EV_CLOSE)
     return 1
