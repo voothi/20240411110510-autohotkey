@@ -1,5 +1,5 @@
 #Requires AutoHotkey v2.0
-#SingleInstance Force
+#SingleInstance Off
 
 #Include ..\Lib\ClipboardUtil.ahk
 #Include ..\Lib\B64Util.ahk
