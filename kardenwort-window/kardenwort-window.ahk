@@ -96,6 +96,7 @@ global G_DeskPythonPath := ""
 global G_DeskScriptPath := ""
 global G_AutoUpdate := 0
 global G_ShowInfoWindows := 0
+global G_ActiveWindows := Map()
 
 ; ===================================================================================
 ; FSM Engine
@@ -1326,6 +1327,18 @@ ApplyZoom(wb) {
 ; ===================================================================================
 LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     ZID := presetZID != "" ? presetZID : A_Now
+    
+    global G_ActiveWindows
+    if (G_ActiveWindows.Has(ZID)) {
+        hwnd := G_ActiveWindows[ZID]
+        if WinExist("ahk_id " hwnd) {
+            WinActivate("ahk_id " hwnd)
+            return
+        } else {
+            G_ActiveWindows.Delete(ZID)
+        }
+    }
+    
     lang := G_CurrentLang
 
     guiTitle := "Kardenwort - " lang " (" textMode ")"
@@ -1411,6 +1424,8 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
     }
     G_WindowCount += 1
     G_CascadeIndex += 1
+    
+    G_ActiveWindows[ZID] := MyGui.Hwnd
 
     ; Fetch HTML from Python core
     UpdateStatus(MyGui, "Invoking backend analysis...")
@@ -1609,6 +1624,10 @@ WatchFile(guiObj) {
 }
 
 GuiClose(thisGui) {
+    global G_ActiveWindows
+    if (thisGui.HasProp("ZID") && G_ActiveWindows.Has(thisGui.ZID)) {
+        G_ActiveWindows.Delete(thisGui.ZID)
+    }
     FsmDispatch(thisGui, EV_CLOSE)
     return 1
 }
