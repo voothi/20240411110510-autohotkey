@@ -1078,22 +1078,43 @@ OnToggleHotkeyPress(keyToWait, thisHotkey) {
     
     WaitForModifiers()
     
-    Sleep(150)
+    PushWebviewSelectionToClipboard(guiObj)
     
-    CopyWebviewSelection(guiObj)
-    
-    Sleep(350)
+    Sleep(400)
     
     ToggleSelectableTextMode(guiObj, false)
 }
 
-CopyWebviewSelection(guiObj) {
+PushWebviewSelectionToClipboard(guiObj) {
     if (!guiObj.HasProp("wb"))
         return
+    
+    selText := ""
     try {
-        guiObj.wb.ExecWB(12, 0) ; OLECMDID_COPY
+        doc := guiObj.wb.document
+        if (doc && doc.parentWindow) {
+            try {
+                selText := doc.parentWindow.getSelection().toString()
+            } catch {
+                try {
+                    selText := doc.selection.createRange().text
+                } catch {
+                }
+            }
+        }
     } catch {
     }
+    
+    selText := Trim(selText)
+    if (selText == "")
+        return
+    
+    deadline := A_TickCount + 600
+    while (A_Clipboard != "" && A_TickCount < deadline) {
+        Sleep(10)
+    }
+    
+    A_Clipboard := selText
 }
 
 InitializeTrayMenu() {
