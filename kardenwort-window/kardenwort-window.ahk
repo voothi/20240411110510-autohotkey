@@ -1389,6 +1389,10 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "") {
 }
 
 OnAhkCall(guiObj, action, value) {
+    if (action == "JS_Error") {
+        MsgBox("JavaScript Error: " value, "Kardenwort JS Error", 16)
+        return
+    }
     if (action == "dirty") {
         if (value == "true") {
             FsmDispatch(guiObj, EV_DIRTY)
@@ -1954,6 +1958,7 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
 
         js := ""
         js .= "(function() {"
+        js .= "  try {"
         js .= "  function addEvent(el, type, fn) {"
         js .= "    if (el.addEventListener) el.addEventListener(type, fn, false);"
         js .= "    else if (el.attachEvent) el.attachEvent('on' + type, fn);"
@@ -2180,6 +2185,13 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         js .= "    buildLcIndex();"
         js .= "    wireEvents();"
         js .= "  }, 50);"
+        js .= "  } catch(err) {"
+        js .= "    if (window.ahkCall) {"
+        js .= "      window.ahkCall('JS_Error', err.name + ': ' + err.message + ' at ' + (err.stack || 'no stack'));"
+        js .= "    } else {"
+        js .= "      alert('JS Error: ' + err.message);"
+        js .= "    }"
+        js .= "  }"
         js .= "})();"
 
         scriptEl.text := js
