@@ -2002,7 +2002,7 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         js .= "    try {"
         js .= "      rx = new RegExp('([\\p{L}0-9\\x27]+)', 'gu');"
         js .= "    } catch(e) {"
-        js .= "      rx = new RegExp('([a-zA-Z0-9\\\\x27\\\\u0400-\\\\u04FF\\\\u00C0-\\\\u017F]+)', 'g');"
+        js .= "      rx = new RegExp('([a-zA-Z0-9\\x27\\u0400-\\u04FF\\u00C0-\\u017F]+)', 'g');"
         js .= "    }"
         js .= "    return text.split(rx);"
         js .= "  }"
