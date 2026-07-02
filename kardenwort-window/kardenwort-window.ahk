@@ -54,6 +54,9 @@ global G_DeskScriptPath := ""
 global G_AutoUpdate := 0
 global G_ShowInfoWindows := 0
 
+SetTimer ManageTrayIconVisibility, 500
+ManageTrayIconVisibility()
+
 ; ===================================================================================
 ; FSM Engine
 ; ===================================================================================
@@ -2223,5 +2226,35 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         doc.body.appendChild(scriptEl)
     } catch Any as e {
         MsgBox("Injection failed: " e.Message "`nLine: " e.Line "`nFile: " e.File, "Kardenwort Error", 16)
+    }
+}
+
+ManageTrayIconVisibility() {
+    static isPrimary := false
+    myPid := ProcessExist()
+    leaderPid := myPid
+    
+    ow := A_DetectHiddenWindows
+    DetectHiddenWindows True
+    
+    try {
+        windows := WinGetList("ahk_class AutoHotkey")
+        for win in windows {
+            title := WinGetTitle(win)
+            if InStr(title, A_ScriptFullPath) {
+                pid := WinGetPID(win)
+                if (pid < leaderPid) {
+                    leaderPid := pid
+                }
+            }
+        }
+    }
+    
+    DetectHiddenWindows ow
+    
+    shouldBePrimary := (myPid == leaderPid)
+    if (shouldBePrimary != isPrimary) {
+        isPrimary := shouldBePrimary
+        A_IconHidden := !isPrimary
     }
 }
