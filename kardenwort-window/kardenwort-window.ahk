@@ -1,5 +1,6 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Off
+#NoTrayIcon
 
 myPid := ProcessExist()
 existingHwnd := 0
@@ -36,6 +37,7 @@ if (existingHwnd) {
 }
 
 OnMessage(0x004A, Receive_WM_COPYDATA)
+A_IconHidden := 0
 
 #Include ..\Lib\ClipboardUtil.ahk
 #Include ..\Lib\B64Util.ahk
