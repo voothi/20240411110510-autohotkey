@@ -36,6 +36,9 @@ if (existingHwnd) {
     ExitApp()
 }
 
+global G_Initialized := false
+global G_BufferedArgs := []
+
 OnMessage(0x004A, Receive_WM_COPYDATA)
 A_IconHidden := 0
 
@@ -1215,14 +1218,29 @@ if (A_ScriptFullPath = A_LineFile) {
     LoadConfig()
     InitializeTrayMenu()
 
+    global G_Initialized := true
+
     ProcessArgs(A_Args)
+
+    if (G_BufferedArgs.Length > 0) {
+        ProcessArgs(G_BufferedArgs)
+        G_BufferedArgs := []
+    }
 }
 
 Receive_WM_COPYDATA(wParam, lParam, msg, hwnd) {
+    global G_Initialized, G_BufferedArgs
     strPtr := NumGet(lParam, 2 * A_PtrSize, "Ptr")
     payload := StrGet(strPtr, "UTF-16")
     args := StrSplit(Trim(payload, "`n"), "`n")
-    ProcessArgs(args)
+    
+    if (!G_Initialized) {
+        for arg in args {
+            G_BufferedArgs.Push(arg)
+        }
+    } else {
+        ProcessArgs(args)
+    }
     return true
 }
 
