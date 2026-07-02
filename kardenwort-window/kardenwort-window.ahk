@@ -1928,6 +1928,15 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         css .= "#translation-container span.word {"
         css .= "  cursor: pointer;"
         css .= "}"
+        css .= "body.theme-dark #translation-container span.word:hover {"
+        css .= "  background-color: rgba(255, 255, 255, 0.1);"
+        css .= "  border-radius: 4px;"
+        css .= "}"
+        css .= "body.theme-light #translation-container span.word:hover,"
+        css .= "body.theme-white #translation-container span.word:hover {"
+        css .= "  background-color: rgba(0, 0, 0, 0.06);"
+        css .= "  border-radius: 4px;"
+        css .= "}"
 
         try {
             styleEl.appendChild(doc.createTextNode(css))
