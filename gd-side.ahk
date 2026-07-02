@@ -22,7 +22,27 @@
 ^!+q::
 {
     ; Step 1: Copy the currently selected text to the clipboard safely.
-    if SmartCopy(3)
+    ; Wait for all modifier keys to be physically released first.
+    WaitForModifiers()
+
+    ; Save existing clipboard and clear it. This signals
+    ; kardenwort-window's PushWebviewSelectionToClipboard (which waits
+    ; for an empty clipboard) to push the selected text.
+    OldClip := A_Clipboard
+    A_Clipboard := ""
+
+    ; Allow time for PushWebviewSelectionToClipboard to finish its full
+    ; cycle: JS DOM getSelection → set A_Clipboard → Sleep(400) → mode off.
+    Sleep(600)
+
+    ; If the clipboard was populated by PushWebviewSelectionToClipboard,
+    ; use it directly. Otherwise fall back to SmartCopy (for non-kardenwort apps).
+    if (Trim(A_Clipboard) == "") {
+        A_Clipboard := OldClip
+        SmartCopy(3, false)
+    }
+
+    if (Trim(A_Clipboard) != "")
     {
         ; Clean the clipboard content in-process.
         ; This removes newlines and handles hyphenated words.
