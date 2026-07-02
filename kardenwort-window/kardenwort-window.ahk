@@ -1076,6 +1076,10 @@ OnToggleHotkeyPress(keyToWait, thisHotkey) {
     
     KeyWait(keyToWait)
     
+    ; Brief delay to allow target copy scripts (like gd-main.ahk)
+    ; that wait for modifiers to release to capture the selection first.
+    Sleep(500)
+    
     ToggleSelectableTextMode(guiObj, false)
 }
 
