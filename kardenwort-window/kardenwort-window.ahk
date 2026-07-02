@@ -2016,7 +2016,7 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         js .= "          if (!part) continue;"
         js .= "          if (k % 2 === 1) {"
         js .= "            var lc = part.toLowerCase();"
-        js .= "            html += '<span class=\"word hl-mvp\" data-lower-clean=\"' + escapeHtml(lc) + '\" data-line-idx=\"' + i + '\">' + escapeHtml(part) + '</span>';"
+        js .= "            html += '<span class=`"word hl-mvp`" data-lower-clean=`"' + escapeHtml(lc) + '`" data-line-idx=`"' + i + '`"`">' + escapeHtml(part) + '</span>';"
         js .= "          } else {"
         js .= "            html += escapeHtml(part);"
         js .= "          }"
@@ -2174,7 +2174,6 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
 
         scriptEl.text := js
         doc.body.appendChild(scriptEl)
-    } catch e {
+    } catch {
     }
 }
-
