@@ -2544,3 +2544,35 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         MsgBox("Injection failed: " e.Message "`nLine: " e.Line "`nFile: " e.File, "Kardenwort Error", 16)
     }
 }
+
+#HotIf WinActive("ahk_class AutoHotkeyGUI")
+~^c::
+{
+    activeHwnd := WinActive("A")
+    if (activeHwnd) {
+        guiObj := GuiFromHwnd(activeHwnd)
+        if (guiObj && guiObj.HasProp("wb")) {
+            try {
+                guiObj.wb.ExecWB(12, 0) ; OLECMDID_COPY
+            } catch {
+                ; ignore errors if text cannot be copied
+            }
+        }
+    }
+}
+
+~^x::
+{
+    activeHwnd := WinActive("A")
+    if (activeHwnd) {
+        guiObj := GuiFromHwnd(activeHwnd)
+        if (guiObj && guiObj.HasProp("wb")) {
+            try {
+                guiObj.wb.ExecWB(11, 0) ; OLECMDID_CUT
+            } catch {
+                ; ignore errors if text cannot be cut
+            }
+        }
+    }
+}
+#HotIf
