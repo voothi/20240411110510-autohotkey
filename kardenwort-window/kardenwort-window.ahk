@@ -1928,7 +1928,18 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         css .= "  cursor: pointer;"
         css .= "}"
 
-        styleEl.text := css
+        try {
+            styleEl.appendChild(doc.createTextNode(css))
+        } catch {
+            try {
+                styleEl.text := css
+            } catch {
+                try {
+                    styleEl.styleSheet.cssText := css
+                } catch {
+                }
+            }
+        }
 
         head := doc.getElementsByTagName("head")
         if (head && head.length > 0) {
@@ -1984,7 +1995,7 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         js .= "  function tokenizeText(text) {"
         js .= "    var rx;"
         js .= "    try {"
-        js .= "      rx = new RegExp('([\\\\p{L}0-9\\x27]+)', 'gu');"
+        js .= "      rx = new RegExp('([\\p{L}0-9\\x27]+)', 'gu');"
         js .= "    } catch(e) {"
         js .= "      rx = new RegExp('([a-zA-Z0-9\\x27]+)', 'g');"
         js .= "    }"
@@ -2174,6 +2185,7 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
 
         scriptEl.text := js
         doc.body.appendChild(scriptEl)
-    } catch {
+    } catch Any as e {
+        MsgBox("Injection failed: " e.Message "`nLine: " e.Line "`nFile: " e.File, "Kardenwort Error", 16)
     }
 }
