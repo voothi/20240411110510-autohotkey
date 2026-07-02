@@ -28,6 +28,8 @@ if (existingHwnd) {
         NumPut("Ptr", 1, CopyDataStruct, 0)
         NumPut("UInt", strBuf.Size, CopyDataStruct, A_PtrSize)
         NumPut("Ptr", strBuf.Ptr, CopyDataStruct, 2 * A_PtrSize)
+        
+        DetectHiddenWindows True
         SendMessage(0x004A, 0, CopyDataStruct.Ptr,, "ahk_id " existingHwnd)
     }
     ExitApp()
