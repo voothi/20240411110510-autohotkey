@@ -928,6 +928,7 @@ global G_DwmDark := 1
 global G_ShowInfoWindows := 1
 global G_HoverHighlightMvp := "0"
 global G_HoverHighlightMvpBookmarks := "3"
+global G_KeyTogglePointer := "Alt"
 
 global G_PressCount := 0
 global G_CapturedText := ""
@@ -967,6 +968,7 @@ LoadConfig() {
     global G_DwmDark := (G_Theme == "light" || G_Theme == "white") ? 0 : 1
     global G_HoverHighlightMvp := IniRead(configPath, "Settings", "HoverHighlightMvp", "0")
     global G_HoverHighlightMvpBookmarks := IniRead(configPath, "Settings", "HoverHighlightMvpBookmarks", "3")
+    global G_KeyTogglePointer := IniRead(configPath, "Hotkey", "key_toggle_pointer", "Alt")
 
 
     if (G_DeskPythonPath == "" || !FileExist(G_DeskPythonPath)) {
@@ -977,6 +979,48 @@ LoadConfig() {
         MsgBox("Desk script not found: " G_DeskScriptPath, "Kardenwort Error", 16)
         ExitApp()
     }
+}
+
+RegisterPointerToggleHotkeys() {
+    global G_KeyTogglePointer
+    if (G_KeyTogglePointer == "")
+        return
+        
+    keys := StrSplit(G_KeyTogglePointer, " ")
+    for k in keys {
+        k := Trim(k)
+        if (k == "")
+            continue
+            
+        hkPrefix := ""
+        if (k = "Alt" || k = "Ctrl" || k = "Shift" || k = "LAlt" || k = "RAlt" || k = "LCtrl" || k = "RCtrl" || k = "LShift" || k = "RShift") {
+            hkPrefix := "~"
+        }
+        
+        try {
+            Hotkey(hkPrefix k, OnToggleHotkeyPress)
+        } catch Any as e {
+            ; Ignore invalid hotkey names
+        }
+    }
+}
+
+OnToggleHotkeyPress(thisHotkey) {
+    keyName := RegExReplace(thisHotkey, "^[~*$#+^<!>]*")
+    
+    activeHwnd := WinActive("A")
+    if (!activeHwnd)
+        return
+        
+    guiObj := GuiFromHwnd(activeHwnd)
+    if (!guiObj || !guiObj.HasProp("wb"))
+        return
+        
+    ToggleSelectableTextMode(guiObj, true)
+    
+    KeyWait(keyName)
+    
+    ToggleSelectableTextMode(guiObj, false)
 }
 
 InitializeTrayMenu() {
@@ -1222,6 +1266,7 @@ LaunchDesk(filePath, textMode) {
 if (A_ScriptFullPath = A_LineFile) {
     ; Initialize configuration and tray menu
     LoadConfig()
+    RegisterPointerToggleHotkeys()
     InitializeTrayMenu()
 
     global G_Initialized := true
@@ -1359,13 +1404,13 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     wb := wvc.Value
 
     ; Native Footer Buttons
-    SaveBtn := MyGui.Add("Text", "x15 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor " Disabled", "Save (Ctrl+S)"
-    )
+    SaveBtn := MyGui.Add("Text", "x15 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor " Disabled", "Save (Ctrl+S)")
     UpdateBtn := MyGui.Add("Text", "x135 y615 w110 h30 Center +Border +0x200 +Hidden " G_GuiTextColor, "⟳ Update")
     ReprocBtn := MyGui.Add("Text", "x255 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor, "Re-process")
     DeleteBtn := MyGui.Add("Text", "x375 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor, "Delete")
     SendBtn := MyGui.Add("Text", "x495 y615 w120 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
-    StatusTxt := MyGui.Add("Text", "x625 y615 w300 h30 +0x200 vStatusTxt", "Ready")
+    PointerBtn := MyGui.Add("Text", "x625 y615 w125 h30 Center +Border +0x200 " G_GuiTextColor, "Mode: Token")
+    StatusTxt := MyGui.Add("Text", "x760 y615 w165 h30 +0x200 vStatusTxt", "Ready")
     StatusTxt.SetFont(G_GuiTextColor)
 
     ; Store references on GUI object
@@ -1376,6 +1421,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     MyGui.SendBtn := SendBtn
     MyGui.DeleteBtn := DeleteBtn
     MyGui.ReprocBtn := ReprocBtn
+    MyGui.PointerBtn := PointerBtn
     MyGui.StatusTxt := StatusTxt
     MyGui.ZID := ZID
     MyGui.Lang := lang
@@ -1383,6 +1429,8 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     MyGui.SourceText := sourceText
     MyGui.TsvPath := tsvPath
     MyGui.SessionID := sessionID
+    MyGui.selectableTextMode := false
+    MyGui.persistentSelectableTextMode := false
     FsmInit(MyGui)
 
     SaveBtn.OnEvent("Click", OnSaveClick.Bind(MyGui))
@@ -1390,6 +1438,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     SendBtn.OnEvent("Click", OnSendToAnkiClick.Bind(MyGui))
     DeleteBtn.OnEvent("Click", OnDeleteClick.Bind(MyGui))
     ReprocBtn.OnEvent("Click", OnReprocessClick.Bind(MyGui))
+    PointerBtn.OnEvent("Click", OnPointerToggleClick.Bind(MyGui))
 
     configPath := A_ScriptDir "\config.ini"
     initX := Trim(StrSplit(IniRead(configPath, "Window", "X", ""), ";")[1])
@@ -1576,6 +1625,57 @@ OnReprocessClick(guiObj, *) {
     FsmDispatch(guiObj, EV_REPROCESS_CLICK, jsonStr)
 }
 
+OnPointerToggleClick(guiObj, *) {
+    ToggleSelectableTextMode(guiObj, "", true)
+}
+
+ToggleSelectableTextMode(guiObj, state := "", isPersistent := false) {
+    currState := guiObj.HasProp("selectableTextMode") ? guiObj.selectableTextMode : false
+    
+    if (isPersistent) {
+        pState := (state !== "") ? state : !(guiObj.HasProp("persistentSelectableTextMode") ? guiObj.persistentSelectableTextMode : false)
+        guiObj.persistentSelectableTextMode := pState
+        newState := pState
+    } else {
+        if (state !== "") {
+            if (state) {
+                newState := true
+            } else {
+                newState := guiObj.HasProp("persistentSelectableTextMode") ? guiObj.persistentSelectableTextMode : false
+            }
+        } else {
+            newState := !currState
+        }
+    }
+    
+    if (currState == newState) {
+        UpdateButtonText(guiObj, newState)
+        return
+    }
+        
+    guiObj.selectableTextMode := newState
+    UpdateButtonText(guiObj, newState)
+    UpdateWebViewMode(guiObj, newState)
+}
+
+UpdateButtonText(guiObj, state) {
+    if (state) {
+        guiObj.PointerBtn.Text := "Mode: Text"
+    } else {
+        guiObj.PointerBtn.Text := "Mode: Token"
+    }
+}
+
+UpdateWebViewMode(guiObj, state) {
+    try {
+        if (guiObj.wb && guiObj.wb.document && guiObj.wb.document.parentWindow) {
+            guiObj.wb.document.parentWindow.setSelectableTextMode(state ? true : false)
+        }
+    } catch {
+        ; Ignore if webview is not ready yet
+    }
+}
+
 PerformReload(guiObj, &outB64, &errJSON) {
     tmpTextFile := A_Temp "\karden_input_" guiObj.ZID "_" A_TickCount ".txt"
     try {
@@ -1651,7 +1751,8 @@ GuiSize(thisGui, MinMax, Width, Height) {
     thisGui.ReprocBtn.Move(255, btnY)
     thisGui.DeleteBtn.Move(375, btnY)
     thisGui.SendBtn.Move(495, btnY)
-    thisGui.StatusTxt.Move(625, btnY, Width - 640)
+    thisGui.PointerBtn.Move(625, btnY)
+    thisGui.StatusTxt.Move(760, btnY, Width - 775)
     try {
         if (MinMax == 1) {
             thisGui.wb.document.body.classList.add("maximized")
@@ -1826,6 +1927,20 @@ $F2::
     } catch {
     }
     Send("{F2}")
+}
+
+$F4::
+{
+    activeHwnd := WinActive("A")
+    try {
+        g := GuiFromHwnd(activeHwnd)
+        if (g && g.HasProp("wb")) {
+            ToggleSelectableTextMode(g, "", true)
+            return
+        }
+    } catch {
+    }
+    Send("{F4}")
 }
 
 $Delete::
@@ -2038,6 +2153,29 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         css .= "  background-color: rgba(0, 0, 0, 0.06);"
         css .= "  border-radius: 4px;"
         css .= "}"
+        css .= "body.text-selection-mode-active .source-text,"
+        css .= "body.text-selection-mode-active .source-text *,"
+        css .= "body.text-selection-mode-active #source-container,"
+        css .= "body.text-selection-mode-active #source-container *,"
+        css .= "body.text-selection-mode-active #translation-container,"
+        css .= "body.text-selection-mode-active #translation-container * {"
+        css .= "  -webkit-user-select: text !important;"
+        css .= "  -moz-user-select: text !important;"
+        css .= "  -ms-user-select: text !important;"
+        css .= "  user-select: text !important;"
+        css .= "}"
+        css .= "body.text-selection-mode-active span.word,"
+        css .= "body.text-selection-mode-active span.token,"
+        css .= "body.text-selection-mode-active #source-container span.word,"
+        css .= "body.text-selection-mode-active #translation-container span.word,"
+        css .= "body.text-selection-mode-active #source-container span.token,"
+        css .= "body.text-selection-mode-active #translation-container span.token {"
+        css .= "  cursor: text !important;"
+        css .= "}"
+        css .= "body.text-selection-mode-active span.word:hover,"
+        css .= "body.text-selection-mode-active #translation-container span.word:hover {"
+        css .= "  background-color: transparent !important;"
+        css .= "}"
 
         try {
             styleEl.appendChild(doc.createTextNode(css))
@@ -2182,6 +2320,7 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         js .= "      if (!isIndexBuilt) buildLcIndex();"
         js .= "    };"
         js .= "    var handleMouseOver = function() {"
+        js .= "      if (window.__selectableTextMode) return;"
         js .= "      ensureIndex();"
         js .= "      var idxStr = this.getAttribute('data-mvp-idx');"
         js .= "      if (idxStr !== null && idxStr !== '') {"
@@ -2194,6 +2333,7 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         js .= "      }"
         js .= "    };"
         js .= "    var handleMouseOut = function() {"
+        js .= "      if (window.__selectableTextMode) return;"
         js .= "      ensureIndex();"
         js .= "      var idxStr = this.getAttribute('data-mvp-idx');"
         js .= "      if (idxStr !== null && idxStr !== '') {"
@@ -2210,6 +2350,7 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         js .= "      }"
         js .= "    };"
         js .= "    var handleClick = function(e) {"
+        js .= "      if (window.__selectableTextMode) return;"
         js .= "      ensureIndex();"
         js .= "      e = e || window.event;"
         js .= "      var btn = (e.button !== undefined) ? e.button : e.which;"
@@ -2239,6 +2380,7 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         js .= "      }"
         js .= "    };"
         js .= "    var handleSelectStart = function(e) {"
+        js .= "      if (window.__selectableTextMode) return true;"
         js .= "      e = e || window.event;"
         js .= "      if (e.preventDefault) e.preventDefault();"
         js .= "      if (e.returnValue !== undefined) e.returnValue = false;"
@@ -2291,6 +2433,15 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         js .= "      window.clearMVPBookmarks();"
         js .= "    }"
         js .= "  });"
+        js .= "  window.setSelectableTextMode = function(active) {"
+        js .= "    window.__selectableTextMode = !!active;"
+        js .= "    if (active) {"
+        js .= "      addClass(document.body, 'text-selection-mode-active');"
+        js .= "    } else {"
+        js .= "      removeClass(document.body, 'text-selection-mode-active');"
+        js .= "    }"
+        js .= "  };"
+        js .= "  window.setSelectableTextMode(" (guiObj.selectableTextMode ? "true" : "false") ");"
         js .= "  setTimeout(function() {"
         js .= "    tokenizeTranslation();"
         js .= "    buildLcIndex();"
