@@ -460,6 +460,9 @@ ActionSaveSuccessIO(guiObj, payload) {
 }
 
 ActionSaveFailedApply(guiObj, payload) {
+    guiObj.FsmMemory["PendingClose"] := false
+    guiObj.FsmMemory["PendingReprocess"] := false
+    guiObj.FsmMemory["PendingUpdate"] := false
     return FSM_IDLE
 }
 ActionSaveFailedIO(guiObj, payload) {
@@ -825,6 +828,9 @@ ActionCloseApply(guiObj, payload) {
 ActionCloseCancelApply(guiObj, payload) {
     return FSM_IDLE
 }
+ActionCloseCancelIO(guiObj, payload) {
+    UpdateButtonState(guiObj)
+}
 ActionCloseIO(guiObj, payload) {
     if (guiObj.FsmMemory["PendingClose"]) {
         FsmDispatch(guiObj, EV_SAVE_CLICK)
@@ -909,7 +915,7 @@ global G_FSM_TRANSITIONS := Map(
     ),
     FSM_CLOSING, Map(
         EV_SAVE_CLICK, { nextState: FSM_SAVING, guard: "ActionSaveStartGuard", apply: "ActionSaveStartApply", io: "ActionSaveStartIO" },
-        EV_CLOSE_CANCEL, { nextState: FSM_IDLE, apply: "ActionCloseCancelApply" }
+        EV_CLOSE_CANCEL, { nextState: FSM_IDLE, apply: "ActionCloseCancelApply", io: "ActionCloseCancelIO" }
     ),
     FSM_ERROR, Map(
         EV_CLOSE, { nextState: FSM_ERROR, io: "ActionCloseIO" }
