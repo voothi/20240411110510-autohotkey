@@ -345,11 +345,15 @@ ActionDirtyIO(guiObj, payload) {
         guiObj.FsmMemory["AutoSavePending"] := false
         FsmDispatch(guiObj, EV_SAVE_CLICK)
     }
+    UpdateButtonState(guiObj)
 }
 
 ActionCleanApply(guiObj, payload) {
     guiObj.FsmMemory["IsDirty"] := false
     return FSM_IDLE
+}
+ActionCleanIO(guiObj, payload) {
+    UpdateButtonState(guiObj)
 }
 
 ActionSaveStartGuard(guiObj, payload) {
@@ -877,7 +881,7 @@ global G_FSM_TRANSITIONS := Map(
     ),
     FSM_IDLE, Map(
         EV_DIRTY, { nextState: FSM_IDLE, apply: "ActionDirtyApply", io: "ActionDirtyIO" },
-        EV_CLEAN, { nextState: FSM_IDLE, apply: "ActionCleanApply" },
+        EV_CLEAN, { nextState: FSM_IDLE, apply: "ActionCleanApply", io: "ActionCleanIO" },
         EV_SAVE_CLICK, { nextState: FSM_SAVING, guard: "ActionSaveStartGuard", apply: "ActionSaveStartApply", io: "ActionSaveStartIO" },
         EV_FILE_CHANGED, { nextState: FSM_IDLE, guard: "ActionFileChangedGuard", apply: "ActionFileChangedApply", io: "ActionFileChangedIO" },
         EV_UPDATE_CLICK, { nextState: FSM_RELOADING, apply: "ActionUpdateClickApply", io: "ActionUpdateClickIO" },
@@ -1642,6 +1646,8 @@ UpdateButtonState(guiObj) {
         UpdateStatus(guiObj, "Unsaved edits")
     } else if (!isDirty && pending) {
         UpdateStatus(guiObj, "Data ready. Click ⟳ to update.")
+    } else {
+        UpdateStatus(guiObj, "Ready")
     }
 }
 
