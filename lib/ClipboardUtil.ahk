@@ -82,10 +82,15 @@ SmartCopy(timeout := 0.5, shouldWait := true) {
                     if (pDoc) {
                         doc := ComValue(9, pDoc, 1)
                         if (doc) {
+                            ; Try legacy selection mode first, then fall back to HTML5 standards mode
                             try {
                                 return doc.selection.createRange().text
                             } catch {
-                                return ""
+                                try {
+                                    return doc.parentWindow.getSelection().toString()
+                                } catch {
+                                    return ""
+                                }
                             }
                         }
                     }
@@ -105,8 +110,18 @@ SmartCopy(timeout := 0.5, shouldWait := true) {
     
     ieTextCopied := false
     try {
-        focusedHwnd := ControlGetHwnd(ControlGetFocus("A"), "A")
-        if (focusedHwnd && WinGetClass("ahk_id " focusedHwnd) == "Internet Explorer_Server") {
+        focusedHwnd := 0
+        try {
+            focusedHwnd := ControlGetFocus("A")
+        } catch {
+            ; Fallback: attempt to find the first IE control in the active window
+            try {
+                focusedHwnd := ControlGetHwnd("Internet Explorer_Server1", "A")
+            } catch {
+            }
+        }
+        
+        if (focusedHwnd && WinGetClass(focusedHwnd) == "Internet Explorer_Server") {
             ieText := GetIESelectedText(focusedHwnd)
             if (ieText != "") {
                 A_Clipboard := ieText
