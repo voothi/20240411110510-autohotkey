@@ -68,14 +68,58 @@ WaitForModifiers() {
  * Returns true if the clipboard contains content (newly copied or preserved).
  */
 SmartCopy(timeout := 0.5, shouldWait := true) {
+    ; Local helper to extract selected text from an Internet Explorer_Server control via COM
+    GetIESelectedText(hwnd) {
+        try {
+            msg := DllCall("RegisterWindowMessage", "Str", "WM_HTML_GETOBJECT")
+            lResult := 0
+            if DllCall("SendMessageTimeout", "Ptr", hwnd, "UInt", msg, "Ptr", 0, "Ptr", 0, "UInt", 2, "UInt", 1000, "Ptr*", &lResult) {
+                IID_IHTMLDocument2 := Buffer(16)
+                DllCall("ole32\CLSIDFromString", "WStr", "{332C4425-26CB-11D0-B483-00C04FD90119}", "Ptr", IID_IHTMLDocument2)
+                
+                pDoc := 0
+                if !DllCall("oleacc\ObjectFromLresult", "Ptr", lResult, "Ptr", IID_IHTMLDocument2, "Ptr", 0, "Ptr*", &pDoc) {
+                    if (pDoc) {
+                        doc := ComValue(9, pDoc, 1)
+                        if (doc) {
+                            try {
+                                return doc.selection.createRange().text
+                            } catch {
+                                return ""
+                            }
+                        }
+                    }
+                }
+            }
+        } catch {
+            return ""
+        }
+        return ""
+    }
+
     if (shouldWait) {
         WaitForModifiers()
     }
     OldClip := A_Clipboard
     A_Clipboard := ""
     
-    ; Using SendEvent for better reliability in some target applications
-    SendEvent("^c")
+    ieTextCopied := false
+    try {
+        focusedHwnd := ControlGetHwnd(ControlGetFocus("A"), "A")
+        if (focusedHwnd && WinGetClass("ahk_id " focusedHwnd) == "Internet Explorer_Server") {
+            ieText := GetIESelectedText(focusedHwnd)
+            if (ieText != "") {
+                A_Clipboard := ieText
+                ieTextCopied := true
+            }
+        }
+    } catch {
+    }
+    
+    if (!ieTextCopied) {
+        ; Using SendEvent for better reliability in some target applications
+        SendEvent("^c")
+    }
     
     if !ClipWait(timeout) {
         ; Fallback to existing clipboard if no selection captured.
