@@ -43,6 +43,14 @@ global G_Initialized := false
 global G_BufferedArgs := []
 
 OnMessage(0x004A, Receive_WM_COPYDATA)
+OnMessage(0x0112, Disable_Alt_Menu)
+
+Disable_Alt_Menu(wParam, lParam, msg, hwnd) {
+    if ((wParam & 0xFFF0) == 0xF100) { ; SC_KEYMENU
+        return 0
+    }
+}
+
 A_IconHidden := 0
 
 #Include ..\Lib\ClipboardUtil.ahk
