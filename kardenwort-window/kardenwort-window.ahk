@@ -502,6 +502,19 @@ ActionFileChangedGuard(guiObj, payload) {
     }
 
     currentMTime := payload
+    
+    ; Diagnostic logging
+    try {
+        logFile := A_Temp "\karden_guard_debug.log"
+        isLazyVal := guiObj.FsmMemory.Has("IsLazy") ? (guiObj.FsmMemory["IsLazy"] ? "true" : "false") : "missing"
+        isProgVal := guiObj.FsmMemory.Has("IsProgressive") ? (guiObj.FsmMemory["IsProgressive"] ? "true" : "false") : "missing"
+        activeReprocVal := guiObj.FsmMemory.Has("ActiveReprocess") ? (guiObj.FsmMemory["ActiveReprocess"] ? "true" : "false") : "missing"
+        retriesVal := guiObj.FsmMemory.Has("AutoInjectRetries") ? guiObj.FsmMemory["AutoInjectRetries"] : "missing"
+        logMsg := A_Now ": payload=" payload ", LastMTime=" guiObj.FsmMemory.Get("LastMTime", "") ", IsLazy=" isLazyVal ", IsProgressive=" isProgVal ", ActiveReprocess=" activeReprocVal ", AutoInjectRetries=" retriesVal "`n"
+        FileAppend(logMsg, logFile, "UTF-8")
+    } catch {
+    }
+
     if (currentMTime == guiObj.FsmMemory.Get("LastMTime", "")) {
         return false
     }
