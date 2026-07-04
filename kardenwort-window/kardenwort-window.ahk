@@ -742,6 +742,10 @@ ActionReprocessStartIO(guiObj, payload) {
     }
 
     if (exitCode == 0) {
+        try {
+            guiObj.FsmMemory["LastMTime"] := FileGetTime(guiObj.TsvPath)
+        } catch {
+        }
         FsmDispatch(guiObj, EV_REPROCESS_DONE, "")
     } else {
         FsmDispatch(guiObj, EV_REPROCESS_FAILED, errJSON)
@@ -839,6 +843,10 @@ ActionRetextStartIO(guiObj, payload) {
     }
 
     if (exitCode == 0) {
+        try {
+            guiObj.FsmMemory["LastMTime"] := FileGetTime(guiObj.TsvPath)
+        } catch {
+        }
         FsmDispatch(guiObj, EV_RETEXT_DONE, "")
     } else {
         FsmDispatch(guiObj, EV_RETEXT_FAILED, errJSON)
