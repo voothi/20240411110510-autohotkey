@@ -626,6 +626,9 @@ ActionReloadDoneIO(guiObj, payload) {
     }
     try {
         guiObj.wb.document.parentWindow.ahkCall := OnAhkCall.Bind(guiObj)
+        if (G_HoverHighlightMvp == "1") {
+            InjectHoverHighlightMvp(guiObj, G_HoverHighlightMvpBookmarks)
+        }
         guiObj.wb.document.parentWindow.setSelectedRows(payload.selectedRowsJSON)
     } catch {
     }
@@ -1771,8 +1774,8 @@ UpdateButtonState(guiObj) {
         return
     }
 
-    if (guiObj.FsmState == FSM_RELOADING || guiObj.FsmState == FSM_REPROCESSING || guiObj.FsmState == FSM_LOADING ||
-        guiObj.FsmState == FSM_SAVING || guiObj.FsmState == FSM_CLOSING) {
+    if (guiObj.FsmState == FSM_RELOADING || guiObj.FsmState == FSM_REPROCESSING || guiObj.FsmState == FSM_RETEXTING ||
+        guiObj.FsmState == FSM_LOADING || guiObj.FsmState == FSM_SAVING || guiObj.FsmState == FSM_CLOSING) {
         guiObj.UpdateBtn.Visible := false
         guiObj.SaveBtn.Enabled := false
         guiObj.SendBtn.Enabled := false
