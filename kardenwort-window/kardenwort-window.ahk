@@ -515,8 +515,12 @@ ActionFileChangedGuard(guiObj, payload) {
         }
     }
 
-    isAutoInjecting := guiObj.FsmMemory["IsProgressive"] || guiObj.FsmMemory["IsLazy"]
+    isActiveReprocess := guiObj.FsmMemory.Has("ActiveReprocess") && guiObj.FsmMemory["ActiveReprocess"]
+    isAutoInjecting := guiObj.FsmMemory["IsProgressive"] || guiObj.FsmMemory["IsLazy"] || isActiveReprocess
     if (isAutoInjecting) {
+        if (!guiObj.FsmMemory.Has("AutoInjectRetries")) {
+            guiObj.FsmMemory["AutoInjectRetries"] := 0
+        }
         guiObj.FsmMemory["AutoInjectRetries"] += 1
         if (guiObj.FsmMemory["AutoInjectRetries"] < FSM_AUTO_INJECT_MAX_RETRIES) {
             return false
@@ -727,6 +731,7 @@ ActionReprocessStartIO(guiObj, payload) {
         return
     }
 
+    guiObj.FsmMemory["ActiveReprocess"] := true
     UpdateStatus(guiObj, "Preparing re-process...")
     updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
     if FileExist(updateJsPath) {
@@ -1799,6 +1804,9 @@ OnAhkCall(guiObj, action, value) {
             guiObj.FsmMemory["ActiveRetext"] := false
             FsmDispatch(guiObj, EV_UPDATE_CLICK)
         } else {
+            if (guiObj.FsmMemory.Has("ActiveReprocess")) {
+                guiObj.FsmMemory["ActiveReprocess"] := false
+            }
             UpdateButtonState(guiObj)
         }
     }
