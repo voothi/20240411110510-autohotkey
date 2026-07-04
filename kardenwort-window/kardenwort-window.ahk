@@ -433,6 +433,8 @@ ActionSaveSuccessApply(guiObj, payload) {
         }
     }
 
+    guiObj.FsmMemory["PendingUpdate"] := true
+
     if (guiObj.FsmMemory["PendingClose"]) {
         guiObj.FsmMemory["PendingClose"] := false
         return FSM_CLOSING
