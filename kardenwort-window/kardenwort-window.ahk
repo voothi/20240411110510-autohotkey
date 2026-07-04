@@ -2352,31 +2352,6 @@ UpdateStatus(guiObj, text) {
     if (G_FsmTestMode) {
         return
     }
-    if (!guiObj.HasOwnProp("StatusHoverInit")) {
-        guiObj.StatusHoverInit := true
-        OnMessage(0x0200, HandleMouseMove)
-    }
-}
-
-HandleMouseMove(wParam, lParam, msg, hwnd) {
-    try {
-        ctrl := GuiCtrlFromHwnd(hwnd)
-        if (ctrl && ctrl.Gui.HasOwnProp("StatusLog")) {
-            logStr := ""
-            for item in ctrl.Gui.StatusLog {
-                logStr .= item ""
-            }
-            ToolTip(Trim(logStr, ""))
-            SetTimer(HideStatusToolTip, -3000)
-            return
-        }
-    } catch {
-    }
-    ToolTip()
-}
-
-HideStatusToolTip() {
-    ToolTip()
 }
 
 InjectHoverHighlightMvp(guiObj, bookmarksN) {
