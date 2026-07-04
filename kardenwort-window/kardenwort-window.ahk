@@ -1676,12 +1676,12 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     guiTitle := "Kardenwort - " lang " (" textMode ")"
 
     ; Create GUI
-    MyGui := Gui("+Resize +MinSize400x300", guiTitle)
     local seqNum := GetSequenceNumber()
     local iconPath := A_ScriptDir "\..\assets\numbers\" seqNum ".ico"
     if (FileExist(iconPath)) {
-        MyGui.Opt("Icon" iconPath)
+        TraySetIcon(iconPath)
     }
+    MyGui := Gui("+Resize +MinSize400x300", guiTitle)
     MyGui.BackColor := G_GuiBgColor
     DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", MyGui.Hwnd, "UInt", 20, "Ptr*", G_DwmDark, "UInt", 4)
     MyGui.OnEvent("Close", GuiClose)
