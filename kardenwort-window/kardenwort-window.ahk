@@ -289,8 +289,12 @@ ActionRenderDoneIO(guiObj, payload) {
             guiObj.FsmMemory["IsProgressive"] := false
         }
         try {
-            guiObj.FsmMemory["IsLazy"] := GetElementText(guiObj.wb.document.getElementById("lazy-processing")) ==
-            "true"
+            guiObj.FsmMemory["RunEnrichment"] := GetElementText(guiObj.wb.document.getElementById("run-enrichment"))
+        } catch {
+            guiObj.FsmMemory["RunEnrichment"] := "auto"
+        }
+        try {
+            guiObj.FsmMemory["IsLazy"] := GetElementText(guiObj.wb.document.getElementById("lazy-processing")) == "true"
         } catch {
             guiObj.FsmMemory["IsLazy"] := false
         }
@@ -624,6 +628,22 @@ ActionReloadDoneIO(guiObj, payload) {
         } else {
             guiObj.FsmMemory["LastMTime"] := ""
         }
+        try {
+            guiObj.FsmMemory["IsProgressive"] := GetElementText(guiObj.wb.document.getElementById("display-mode")) == "progressive"
+        } catch {
+            guiObj.FsmMemory["IsProgressive"] := false
+        }
+        try {
+            guiObj.FsmMemory["RunEnrichment"] := GetElementText(guiObj.wb.document.getElementById("run-enrichment"))
+        } catch {
+            guiObj.FsmMemory["RunEnrichment"] := "auto"
+        }
+        try {
+            guiObj.FsmMemory["IsLazy"] := GetElementText(guiObj.wb.document.getElementById("lazy-processing")) == "true"
+        } catch {
+            guiObj.FsmMemory["IsLazy"] := false
+        }
+        
         if (guiObj.FsmMemory["IsLazy"]) {
             UpdateStatus(guiObj, "Lazy mode active. Select and Re-process. (Reloaded)")
         } else {
@@ -668,9 +688,11 @@ ActionReprocessStartIO(guiObj, payload) {
     }
 
     UpdateStatus(guiObj, "Preparing re-process...")
-    try {
-        guiObj.wb.document.parentWindow.startPolling()
-    } catch {
+    if (guiObj.FsmMemory["RunEnrichment"] == "auto") {
+        try {
+            guiObj.wb.document.parentWindow.startPolling()
+        } catch {
+        }
     }
     jsonStr := guiObj.FsmMemory["ReprocessSelection"]
     guiObj.FsmMemory.Delete("ReprocessSelection")
