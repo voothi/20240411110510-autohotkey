@@ -1677,6 +1677,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
 
     ; Create GUI
     local seqNum := GetSequenceNumber()
+    DllCall("shell32\SetCurrentProcessExplicitAppUserModelID", "WStr", "Kardenwort.Window." seqNum)
     local iconPath := A_ScriptDir "\..\assets\numbers\" seqNum ".ico"
     if (FileExist(iconPath)) {
         TraySetIcon(iconPath)
