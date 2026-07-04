@@ -828,7 +828,7 @@ ActionRetextStartIO(guiObj, payload) {
         return
     }
 
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" retext --selection-manifest "' tmpManifestFile '" --language ' guiObj.Lang
+    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" retext --selection-manifest "' tmpManifestFile '" --language ' guiObj.Lang ' --text-mode ' guiObj.TextMode
     try {
         exitCode := RunSilent(cmd, &outStr, &errJSON)
     } catch {
