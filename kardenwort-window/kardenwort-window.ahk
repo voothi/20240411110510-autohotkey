@@ -812,9 +812,6 @@ ActionReprocessStartIO(guiObj, payload) {
 }
 
 ActionReprocessDoneApply(guiObj, payload) {
-    if (guiObj.FsmMemory["IsLazy"]) {
-        guiObj.FsmMemory["ActiveReprocess"] := false
-    }
     return FSM_IDLE
 }
 ActionReprocessDoneIO(guiObj, payload) {
@@ -910,9 +907,6 @@ ActionRetextStartIO(guiObj, payload) {
 }
 
 ActionRetextDoneApply(guiObj, payload) {
-    if (guiObj.FsmMemory["IsLazy"]) {
-        guiObj.FsmMemory["ActiveRetext"] := false
-    }
     return FSM_IDLE
 }
 ActionRetextDoneIO(guiObj, payload) {
