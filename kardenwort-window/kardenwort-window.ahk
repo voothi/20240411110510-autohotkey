@@ -504,18 +504,19 @@ ActionFileChangedGuard(guiObj, payload) {
         return false
     }
 
+    updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
+    if (FileExist(updateJsPath)) {
+        jsMTime := FileGetTime(updateJsPath)
+        if (Abs(DateDiff(currentMTime, jsMTime, "Seconds")) <= 10) {
+            guiObj.FsmMemory["LastMTime"] := currentMTime
+            guiObj.FsmMemory["AutoInjectRetries"] := 0
+            UpdateStatus(guiObj, "Data injected automatically.")
+            return false
+        }
+    }
+
     isAutoInjecting := guiObj.FsmMemory["IsProgressive"] || guiObj.FsmMemory["IsLazy"]
     if (isAutoInjecting) {
-        updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
-        if (FileExist(updateJsPath)) {
-            jsMTime := FileGetTime(updateJsPath)
-            if (Abs(DateDiff(currentMTime, jsMTime, "Seconds")) <= 10) {
-                guiObj.FsmMemory["LastMTime"] := currentMTime
-                guiObj.FsmMemory["AutoInjectRetries"] := 0
-                UpdateStatus(guiObj, "Data injected automatically.")
-                return false
-            }
-        }
         guiObj.FsmMemory["AutoInjectRetries"] += 1
         if (guiObj.FsmMemory["AutoInjectRetries"] < FSM_AUTO_INJECT_MAX_RETRIES) {
             return false
@@ -645,6 +646,16 @@ ActionReloadDoneIO(guiObj, payload) {
 
     try {
         guiObj.TsvPath := GetElementText(guiObj.wb.document.getElementById("tsv-path"))
+        
+        ; Clean up any leftover update.js on reload
+        try {
+            updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
+            if FileExist(updateJsPath) {
+                FileDelete(updateJsPath)
+            }
+        } catch {
+        }
+        
         if (FileExist(guiObj.TsvPath)) {
             guiObj.FsmMemory["LastMTime"] := FileGetTime(guiObj.TsvPath)
         } else {
