@@ -547,7 +547,8 @@ ActionFileChangedGuard(guiObj, payload) {
     }
 
     isActiveReprocess := guiObj.FsmMemory.Has("ActiveReprocess") && guiObj.FsmMemory["ActiveReprocess"]
-    isAutoInjecting := guiObj.FsmMemory["IsProgressive"] || isActiveReprocess
+    isActiveRetext := guiObj.FsmMemory.Has("ActiveRetext") && guiObj.FsmMemory["ActiveRetext"]
+    isAutoInjecting := guiObj.FsmMemory["IsProgressive"] || isActiveReprocess || isActiveRetext
     if (isAutoInjecting) {
         ; Reset the grace period counter whenever a genuinely NEW TSV snapshot arrives
         if (currentMTime != guiObj.FsmMemory.Get("GracePeriodMTime", "")) {
