@@ -2904,11 +2904,19 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
 KardenMsgBox(Text, Title := "Kardenwort", Options := "") {
     local result := "OK"
     local mGui := Gui("+AlwaysOnTop -MinimizeBox -MaximizeBox +Owner" . (IsSet(MyGui) ? MyGui.Hwnd : ""), Title)
+    
+    if (IsSet(G_GuiBgColor))
+        mGui.BackColor := G_GuiBgColor
+    if (IsSet(G_DwmDark))
+        DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", mGui.Hwnd, "UInt", 20, "Ptr*", G_DwmDark, "UInt", 4)
+    
+    local textColor := IsSet(G_GuiTextColor) ? G_GuiTextColor : ""
+    
     mGui.OnEvent("Escape", (*) => Close("Cancel"))
     mGui.OnEvent("Close", (*) => Close("Cancel"))
     
     ; Parse options
-    local hasYesNoCancel := InStr(Options, "YesNoCancel")
+    local hasYesNoCancel := InStr(String(Options), "YesNoCancel")
     
     ; Fixed dimensions to unify size
     local boxW := 350
@@ -2918,22 +2926,25 @@ KardenMsgBox(Text, Title := "Kardenwort", Options := "") {
     mGui.MarginY := 20
     
     ; Add a text control with Center and Wrap
-    mGui.Add("Text", "w" . (boxW - 40) . " h" . (boxH - 80) . " Center", Text)
+    mGui.Add("Text", "w" . (boxW - 40) . " h" . (boxH - 80) . " Center " . textColor, Text)
     
     local btnW := 80
-    local btnH := 24
-    local btnY := boxH - 45
+    local btnH := 30
+    local btnY := boxH - 50
+    
+    local btnOpts := "Center +Border +0x200 " . textColor
     
     if (hasYesNoCancel) {
         local spacing := 10
         local totalW := (btnW * 3) + (spacing * 2)
         local startX := (boxW - totalW) / 2
-        mGui.Add("Button", "x" . startX . " y" . btnY . " w" . btnW . " h" . btnH . " Default", "Yes").OnEvent("Click", (*) => Close("Yes"))
-        mGui.Add("Button", "x" . (startX + btnW + spacing) . " y" . btnY . " w" . btnW . " h" . btnH, "No").OnEvent("Click", (*) => Close("No"))
-        mGui.Add("Button", "x" . (startX + (btnW + spacing)*2) . " y" . btnY . " w" . btnW . " h" . btnH, "Cancel").OnEvent("Click", (*) => Close("Cancel"))
+        
+        mGui.Add("Text", "x" . startX . " y" . btnY . " w" . btnW . " h" . btnH . " " . btnOpts, "Yes").OnEvent("Click", (*) => Close("Yes"))
+        mGui.Add("Text", "x" . (startX + btnW + spacing) . " y" . btnY . " w" . btnW . " h" . btnH . " " . btnOpts, "No").OnEvent("Click", (*) => Close("No"))
+        mGui.Add("Text", "x" . (startX + (btnW + spacing)*2) . " y" . btnY . " w" . btnW . " h" . btnH . " " . btnOpts, "Cancel").OnEvent("Click", (*) => Close("Cancel"))
     } else {
         local startX := (boxW - btnW) / 2
-        mGui.Add("Button", "x" . startX . " y" . btnY . " w" . btnW . " h" . btnH . " Default", "OK").OnEvent("Click", (*) => Close("OK"))
+        mGui.Add("Text", "x" . startX . " y" . btnY . " w" . btnW . " h" . btnH . " " . btnOpts, "OK").OnEvent("Click", (*) => Close("OK"))
     }
     
     Close(res) {
