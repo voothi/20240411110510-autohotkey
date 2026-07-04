@@ -665,6 +665,13 @@ ActionReloadDoneIO(guiObj, payload) {
         UpdateStatus(guiObj, "Metadata binding failed (Reloaded): " e.Message)
     }
     guiObj.FsmMemory["PendingUpdate"] := false
+    try {
+        updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
+        if FileExist(updateJsPath) {
+            FileDelete(updateJsPath)
+        }
+    } catch {
+    }
     UpdateButtonState(guiObj)
 }
 
@@ -825,6 +832,7 @@ ActionRetextStartIO(guiObj, payload) {
     }
 
     cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" retext --selection-manifest "' tmpManifestFile '" --language ' guiObj.Lang ' --text-mode ' guiObj.TextMode
+    guiObj.FsmMemory["ActiveRetext"] := true
     try {
         exitCode := RunSilent(cmd, &outStr, &errJSON)
     } catch {
@@ -859,6 +867,7 @@ ActionRetextDoneIO(guiObj, payload) {
 }
 
 ActionRetextFailedApply(guiObj, payload) {
+    guiObj.FsmMemory["ActiveRetext"] := false
     return FSM_IDLE
 }
 ActionRetextFailedIO(guiObj, payload) {
@@ -1755,7 +1764,22 @@ OnAhkCall(guiObj, action, value) {
         } catch {
         }
         guiObj.FsmMemory["PendingUpdate"] := false
-        UpdateButtonState(guiObj)
+        
+        ; Delete the temporary .update.js file now that the worker is finished
+        updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
+        if FileExist(updateJsPath) {
+            try {
+                FileDelete(updateJsPath)
+            } catch {
+            }
+        }
+
+        if (guiObj.FsmMemory.Has("ActiveRetext") && guiObj.FsmMemory["ActiveRetext"]) {
+            guiObj.FsmMemory["ActiveRetext"] := false
+            FsmDispatch(guiObj, EV_UPDATE_CLICK)
+        } else {
+            UpdateButtonState(guiObj)
+        }
     }
 }
 
