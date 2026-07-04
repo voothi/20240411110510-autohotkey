@@ -1056,15 +1056,18 @@ global G_FSM_TRANSITIONS := Map(
     ),
     FSM_RETEXTING, Map(
         EV_RETEXT_DONE, { nextState: FSM_IDLE, apply: "ActionRetextDoneApply", io: "ActionRetextDoneIO" },
-        EV_RETEXT_FAILED, { nextState: FSM_IDLE, apply: "ActionRetextFailedApply", io: "ActionRetextFailedIO" }
+        EV_RETEXT_FAILED, { nextState: FSM_IDLE, apply: "ActionRetextFailedApply", io: "ActionRetextFailedIO" },
+        EV_CLOSE, { nextState: FSM_CLOSING, apply: "ActionCloseApply", io: "ActionCloseIO" }
     ),
     FSM_REPROCESSING, Map(
         EV_REPROCESS_DONE, { nextState: FSM_IDLE, apply: "ActionReprocessDoneApply", io: "ActionReprocessDoneIO" },
-        EV_REPROCESS_FAILED, { nextState: FSM_IDLE, apply: "ActionReprocessFailedApply", io: "ActionReprocessFailedIO" }
+        EV_REPROCESS_FAILED, { nextState: FSM_IDLE, apply: "ActionReprocessFailedApply", io: "ActionReprocessFailedIO" },
+        EV_CLOSE, { nextState: FSM_CLOSING, apply: "ActionCloseApply", io: "ActionCloseIO" }
     ),
     FSM_EXPORTING, Map(
         EV_EXPORT_DONE, { nextState: FSM_IDLE, apply: "ActionExportDoneApply", io: "ActionExportDoneIO" },
-        EV_EXPORT_FAILED, { nextState: FSM_IDLE, apply: "ActionExportFailedApply", io: "ActionExportFailedIO" }
+        EV_EXPORT_FAILED, { nextState: FSM_IDLE, apply: "ActionExportFailedApply", io: "ActionExportFailedIO" },
+        EV_CLOSE, { nextState: FSM_CLOSING, apply: "ActionCloseApply", io: "ActionCloseIO" }
     ),
     FSM_CLOSING, Map(
         EV_SAVE_CLICK, { nextState: FSM_SAVING, guard: "ActionSaveStartGuard", apply: "ActionSaveStartApply", io: "ActionSaveStartIO" },
