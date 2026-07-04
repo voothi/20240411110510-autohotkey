@@ -1840,6 +1840,20 @@ OnDeleteClick(guiObj, *) {
     }
 }
 
+OnRetextClick(guiObj, *) {
+    try {
+        jsonStr := guiObj.wb.document.parentWindow.getSelectedRows()
+    } catch {
+        jsonStr := ""
+    }
+    if (jsonStr == "" || jsonStr == "[]") {
+        MsgBox("Please select rows to re-text.", "Kardenwort", 48)
+        UpdateStatus(guiObj, "Ready")
+        return
+    }
+    FsmDispatch(guiObj, EV_RETEXT_CLICK, jsonStr)
+}
+
 OnReprocessClick(guiObj, *) {
     try {
         jsonStr := guiObj.wb.document.parentWindow.getSelectedRows()
