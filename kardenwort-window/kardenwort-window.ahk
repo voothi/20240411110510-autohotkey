@@ -668,6 +668,10 @@ ActionReprocessStartIO(guiObj, payload) {
     }
 
     UpdateStatus(guiObj, "Preparing re-process...")
+    try {
+        guiObj.wb.document.parentWindow.startPolling()
+    } catch {
+    }
     jsonStr := guiObj.FsmMemory["ReprocessSelection"]
     guiObj.FsmMemory.Delete("ReprocessSelection")
 
