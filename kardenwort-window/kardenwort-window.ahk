@@ -1689,12 +1689,12 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
 
     ; Native Footer Buttons
     SaveBtn := MyGui.Add("Text", "x15 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor " Disabled", "Save (Ctrl+S)")
-    UpdateBtn := MyGui.Add("Text", "x115 y615 w100 h30 Center +Border +0x200 +Hidden " G_GuiTextColor, "⟳ Update")
-    RetextBtn := MyGui.Add("Text", "x225 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Re-text")
-    ReprocBtn := MyGui.Add("Text", "x325 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Re-word")
-    DeleteBtn := MyGui.Add("Text", "x435 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Delete")
-    SendBtn := MyGui.Add("Text", "x545 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
-    PointerBtn := MyGui.Add("Text", "x655 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Hand Tool")
+    UpdateBtn := MyGui.Add("Text", "x114 y615 w100 h30 Center +Border +0x200 +Hidden " G_GuiTextColor, "⟳ Update")
+    RetextBtn := MyGui.Add("Text", "x224 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Re-text")
+    ReprocBtn := MyGui.Add("Text", "x323 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Re-word")
+    DeleteBtn := MyGui.Add("Text", "x433 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Delete")
+    SendBtn := MyGui.Add("Text", "x543 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
+    PointerBtn := MyGui.Add("Text", "x653 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Hand Tool")
 
 
     ; Store references on GUI object
@@ -2106,12 +2106,12 @@ GuiSize(thisGui, MinMax, Width, Height) {
     thisGui.wvc.Move(, , Width - 20, Height - 65)
     btnY := Height - 40
     thisGui.SaveBtn.Move(15, btnY)
-    thisGui.UpdateBtn.Move(115, btnY)
-    thisGui.RetextBtn.Move(225, btnY)
-    thisGui.ReprocBtn.Move(325, btnY)
-    thisGui.DeleteBtn.Move(435, btnY)
-    thisGui.SendBtn.Move(545, btnY)
-    thisGui.PointerBtn.Move(655, btnY)
+    thisGui.UpdateBtn.Move(114, btnY)
+    thisGui.RetextBtn.Move(224, btnY)
+    thisGui.ReprocBtn.Move(323, btnY)
+    thisGui.DeleteBtn.Move(433, btnY)
+    thisGui.SendBtn.Move(543, btnY)
+    thisGui.PointerBtn.Move(653, btnY)
 
     try {
         if (MinMax == 1) {
