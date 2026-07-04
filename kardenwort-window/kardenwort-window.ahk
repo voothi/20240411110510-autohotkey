@@ -688,6 +688,13 @@ ActionReprocessStartIO(guiObj, payload) {
     }
 
     UpdateStatus(guiObj, "Preparing re-process...")
+    updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
+    if FileExist(updateJsPath) {
+        try {
+            FileDelete(updateJsPath)
+        } catch {
+        }
+    }
     if (guiObj.FsmMemory["RunEnrichment"] == "auto") {
         try {
             guiObj.wb.document.parentWindow.startPolling()
