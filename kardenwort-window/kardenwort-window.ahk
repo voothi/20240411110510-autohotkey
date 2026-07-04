@@ -464,6 +464,8 @@ ActionSaveSuccessApply(guiObj, payload) {
 ActionSaveSuccessIO(guiObj, payload) {
     if (guiObj.FsmState == FSM_CLOSING) {
         ActionCloseIO(guiObj, "")
+    } else if (guiObj.FsmState == FSM_RETEXTING) {
+        ActionRetextStartIO(guiObj, "")
     } else if (guiObj.FsmState == FSM_REPROCESSING) {
         ActionReprocessStartIO(guiObj, "")
     } else if (guiObj.FsmState == FSM_RELOADING) {
@@ -2359,7 +2361,7 @@ UpdateStatus(guiObj, text) {
 HandleMouseMove(wParam, lParam, msg, hwnd) {
     try {
         ctrl := GuiCtrlFromHwnd(hwnd)
-        if (ctrl && ctrl.Name == "StatusTxt" && ctrl.Gui.HasOwnProp("StatusLog")) {
+        if (ctrl && ctrl.Gui.HasOwnProp("StatusLog")) {
             logStr := ""
             for item in ctrl.Gui.StatusLog {
                 logStr .= item ""
