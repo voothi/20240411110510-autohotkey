@@ -1847,11 +1847,7 @@ OnDeleteClick(guiObj, *) {
 
 OnRetextClick(guiObj, *) {
     try {
-        if (guiObj.wb.document.parentWindow.getBookmarkIndices) {
-            indicesStr := guiObj.wb.document.parentWindow.getBookmarkIndices()
-            guiObj.FsmMemory["SavedBookmarkIndices"] := indicesStr
-            guiObj.wb.document.parentWindow.clearMVPBookmarks()
-        }
+        guiObj.wb.document.parentWindow.clearMVPBookmarks()
     } catch {
     }
     try {
@@ -1992,13 +1988,6 @@ WatchFile(guiObj) {
                 jsCode := FileRead(updateJsPath, "UTF-8")
                 try {
                     guiObj.wb.document.parentWindow.eval(jsCode)
-                    if (guiObj.FsmMemory.Has("SavedBookmarkIndices")) {
-                        savedIndices := guiObj.FsmMemory["SavedBookmarkIndices"]
-                        if (savedIndices != "" && guiObj.wb.document.parentWindow.restoreBookmarksByIndices) {
-                            guiObj.wb.document.parentWindow.restoreBookmarksByIndices(savedIndices)
-                        }
-                        guiObj.FsmMemory.Delete("SavedBookmarkIndices")
-                    }
                 } catch {
                 }
             }
