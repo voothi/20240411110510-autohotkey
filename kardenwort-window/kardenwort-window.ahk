@@ -1,4 +1,4 @@
-#Requires AutoHotkey v2.0
+﻿#Requires AutoHotkey v2.0
 #SingleInstance Off
 #NoTrayIcon
 
@@ -200,12 +200,12 @@ FsmSelfCheck() {
 
     for state, events in G_FSM_TRANSITIONS {
         if (!validStates.Has(state)) {
-            MsgBox("FSM Self-Check Failed: Invalid state '" state "' in transition table.", "Kardenwort FSM Error", 16)
+            KardenMsgBox("FSM Self-Check Failed: Invalid state '" state "' in transition table.", "Kardenwort FSM Error", 16)
             ExitApp()
         }
         for ev, trans in events {
             if (!validEvents.Has(ev)) {
-                MsgBox("FSM Self-Check Failed: Invalid event '" ev "' in transition table.", "Kardenwort FSM Error", 16
+                KardenMsgBox("FSM Self-Check Failed: Invalid event '" ev "' in transition table.", "Kardenwort FSM Error", 16
                 )
                 ExitApp()
             }
@@ -338,7 +338,7 @@ ActionRenderFailedIO(guiObj, payload) {
         return
     }
     UpdateStatus(guiObj, "Analysis failed")
-    MsgBox("Kardenwort Analysis failed:`n" payload, "Kardenwort Error", 16)
+    KardenMsgBox("Kardenwort Analysis failed:`n" payload, "Kardenwort Error", 16)
     global G_WindowCount
     G_WindowCount := Max(0, G_WindowCount - 1)
     guiObj.Destroy()
@@ -388,7 +388,7 @@ ActionSaveStartIO(guiObj, payload) {
     try {
         deltasJSON := guiObj.wb.document.parentWindow.getDeltas()
     } catch as e {
-        MsgBox("Failed to retrieve deltas from page: " e.Message, "Kardenwort Error", 16)
+        KardenMsgBox("Failed to retrieve deltas from page: " e.Message, "Kardenwort Error", 16)
         FsmDispatch(guiObj, EV_SAVE_FAILED, e.Message)
         return
     }
@@ -406,7 +406,7 @@ ActionSaveStartIO(guiObj, payload) {
     try {
         FileAppend(deltasJSON, tmpTextFile, "UTF-8-RAW")
     } catch as e {
-        MsgBox("Failed to write deltas to temp file: " e.Message, "Kardenwort Error", 16)
+        KardenMsgBox("Failed to write deltas to temp file: " e.Message, "Kardenwort Error", 16)
         FsmDispatch(guiObj, EV_SAVE_FAILED, e.Message)
         return
     }
@@ -491,7 +491,7 @@ ActionSaveFailedApply(guiObj, payload) {
 ActionSaveFailedIO(guiObj, payload) {
     UpdateStatus(guiObj, "Save failed")
     if (payload != "") {
-        MsgBox("Save failed:`n" payload, "Kardenwort Error", 16)
+        KardenMsgBox("Save failed:`n" payload, "Kardenwort Error", 16)
     }
     UpdateButtonState(guiObj)
 }
@@ -790,7 +790,7 @@ ActionReprocessStartIO(guiObj, payload) {
         FileAppend(manifest, tmpManifestFile, "UTF-8-RAW")
     } catch as e {
         UpdateStatus(guiObj, "Manifest write failed")
-        MsgBox("Failed to write temporary manifest file: " e.Message, "Kardenwort Error", 16)
+        KardenMsgBox("Failed to write temporary manifest file: " e.Message, "Kardenwort Error", 16)
         FsmDispatch(guiObj, EV_REPROCESS_FAILED, "")
         return
     }
@@ -836,7 +836,7 @@ ActionReprocessFailedIO(guiObj, payload) {
     }
     UpdateStatus(guiObj, "Re-process failed")
     if (payload != "") {
-        MsgBox("Failed to start re-processing:`n" payload, "Kardenwort Error", 16)
+        KardenMsgBox("Failed to start re-processing:`n" payload, "Kardenwort Error", 16)
     }
     UpdateButtonState(guiObj)
 }
@@ -886,7 +886,7 @@ ActionRetextStartIO(guiObj, payload) {
         FileAppend(manifest, tmpManifestFile, "UTF-8-RAW")
     } catch as e {
         UpdateStatus(guiObj, "Manifest write failed")
-        MsgBox("Failed to write temporary manifest file: " e.Message, "Kardenwort Error", 16)
+        KardenMsgBox("Failed to write temporary manifest file: " e.Message, "Kardenwort Error", 16)
         FsmDispatch(guiObj, EV_RETEXT_FAILED, "")
         return
     }
@@ -932,7 +932,7 @@ ActionRetextFailedIO(guiObj, payload) {
     }
     UpdateStatus(guiObj, "Re-text failed")
     if (payload != "") {
-        MsgBox("Failed to start re-texting:`n" payload, "Kardenwort Error", 16)
+        KardenMsgBox("Failed to start re-texting:`n" payload, "Kardenwort Error", 16)
     }
     UpdateButtonState(guiObj)
 }
@@ -995,11 +995,11 @@ ActionExportDoneIO(guiObj, payload) {
     }
     if (payload.isAsync) {
         if (G_ShowInfoWindows) {
-            MsgBox("Anki import started in the background.`nMonitor log: " payload.logPath, "Kardenwort", "Iconi")
+            KardenMsgBox("Anki import started in the background.`nMonitor log: " payload.logPath, "Kardenwort", "Iconi")
         }
     } else {
         if (G_ShowInfoWindows) {
-            MsgBox("Favorites exported.", "Kardenwort", "Iconi")
+            KardenMsgBox("Favorites exported.", "Kardenwort", "Iconi")
         }
     }
     UpdateStatus(guiObj, "Ready")
@@ -1015,7 +1015,7 @@ ActionExportFailedIO(guiObj, payload) {
     }
     UpdateStatus(guiObj, "Export failed")
     if (payload != "") {
-        MsgBox("Failed to export favorites:`n" payload, "Kardenwort Error", 16)
+        KardenMsgBox("Failed to export favorites:`n" payload, "Kardenwort Error", 16)
     }
     UpdateButtonState(guiObj)
 }
@@ -1041,7 +1041,7 @@ ActionCloseIO(guiObj, payload) {
                 res := payload
             }
         } else {
-            res := MsgBox("You have unsaved edits. Save changes before closing?", "Kardenwort", "YesNoCancel Icon!")
+            res := KardenMsgBox("You have unsaved edits. Save changes before closing?", "Kardenwort", "YesNoCancel Icon!")
         }
         if (res == "Cancel") {
             FsmDispatch(guiObj, EV_CLOSE_CANCEL)
@@ -1170,7 +1170,7 @@ global langInfo := Map()
 LoadConfig() {
     configPath := A_ScriptDir "\config.ini"
     if !FileExist(configPath) {
-        MsgBox("Configuration file not found: " configPath, "Kardenwort Error", 16)
+        KardenMsgBox("Configuration file not found: " configPath, "Kardenwort Error", 16)
         ExitApp()
     }
 
@@ -1200,11 +1200,11 @@ LoadConfig() {
 
 
     if (G_DeskPythonPath == "" || !FileExist(G_DeskPythonPath)) {
-        MsgBox("Python interpreter not found: " G_DeskPythonPath, "Kardenwort Error", 16)
+        KardenMsgBox("Python interpreter not found: " G_DeskPythonPath, "Kardenwort Error", 16)
         ExitApp()
     }
     if (G_DeskScriptPath == "" || !FileExist(G_DeskScriptPath)) {
-        MsgBox("Desk script not found: " G_DeskScriptPath, "Kardenwort Error", 16)
+        KardenMsgBox("Desk script not found: " G_DeskScriptPath, "Kardenwort Error", 16)
         ExitApp()
     }
 }
@@ -1346,7 +1346,7 @@ InitializeTrayMenu() {
             langCodes.Push(code)
         }
     } catch Any as e {
-        MsgBox("Error parsing [Languages] section in config.ini:`n" e.Message, "Config Error", "Icon!")
+        KardenMsgBox("Error parsing [Languages] section in config.ini:`n" e.Message, "Config Error", "Icon!")
     }
 
     UpdateTrayMenu()
@@ -1456,14 +1456,14 @@ CycleLanguage() {
 
 LaunchRestore(filePath) {
     if !FileExist(filePath) {
-        MsgBox("Restore target file not found: " filePath, "Kardenwort Error", 16)
+        KardenMsgBox("Restore target file not found: " filePath, "Kardenwort Error", 16)
         ExitApp()
     }
 
     SplitPath(filePath, &fileName, &fileDir)
     RegExMatch(fileName, "^(\d{14})", &mZid)
     if (!mZid) {
-        MsgBox("No valid 14-digit ZID prefix in restore file: " fileName, "Kardenwort Error", 16)
+        KardenMsgBox("No valid 14-digit ZID prefix in restore file: " fileName, "Kardenwort Error", 16)
         ExitApp()
     }
     ZID := mZid[1]
@@ -1489,7 +1489,7 @@ LaunchRestore(filePath) {
     if (siblingTxt != "" && FileExist(siblingTxt)) {
         sourceText := FileRead(siblingTxt, "UTF-8")
     } else {
-        MsgBox("Warning: Sibling source text file not found.", "Kardenwort Warning", 48)
+        KardenMsgBox("Warning: Sibling source text file not found.", "Kardenwort Warning", 48)
     }
 
     lang := G_DefaultLanguage
@@ -1527,7 +1527,7 @@ LaunchRestore(filePath) {
 
 LaunchDesk(filePath, textMode) {
     if !FileExist(filePath) {
-        MsgBox("File not found: " filePath, "Kardenwort Error", 16)
+        KardenMsgBox("File not found: " filePath, "Kardenwort Error", 16)
         ExitApp()
     }
 
@@ -1778,7 +1778,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
         FileAppend(sourceText, tmpTextFile, "UTF-8-RAW")
     } catch as e {
         UpdateStatus(MyGui, "Input write failed")
-        MsgBox("Failed to write temporary text input:`n" e.Message, "Kardenwort Error", 16)
+        KardenMsgBox("Failed to write temporary text input:`n" e.Message, "Kardenwort Error", 16)
         return
     }
 
@@ -1806,7 +1806,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
 
 OnAhkCall(guiObj, action, value) {
     if (action == "JS_Error") {
-        MsgBox("JavaScript Error: " value, "Kardenwort JS Error", 16)
+        KardenMsgBox("JavaScript Error: " value, "Kardenwort JS Error", 16)
         return
     }
     if (action == "dirty") {
@@ -1913,7 +1913,7 @@ OnSendToAnkiClick(guiObj, *) {
         jsonStr := ""
     }
     if (jsonStr == "" || jsonStr == "[]") {
-        MsgBox("Please select rows to export.", "Kardenwort", 48)
+        KardenMsgBox("Please select rows to export.", "Kardenwort", 48)
         UpdateStatus(guiObj, "Ready")
         return
     }
@@ -1951,7 +1951,7 @@ OnReprocessClick(guiObj, *) {
         jsonStr := ""
     }
     if (jsonStr == "" || jsonStr == "[]") {
-        MsgBox("Please select rows to re-process.", "Kardenwort", 48)
+        KardenMsgBox("Please select rows to re-process.", "Kardenwort", 48)
         UpdateStatus(guiObj, "Ready")
         return
     }
@@ -2893,6 +2893,55 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         scriptEl.text := js
         doc.body.appendChild(scriptEl)
     } catch Any as e {
-        MsgBox("Injection failed: " e.Message "`nLine: " e.Line "`nFile: " e.File, "Kardenwort Error", 16)
+        KardenMsgBox("Injection failed: " e.Message "`nLine: " e.Line "`nFile: " e.File, "Kardenwort Error", 16)
     }
+}
+
+
+; ===================================================================================
+; Custom GUI MsgBox Replacement
+; ===================================================================================
+KardenMsgBox(Text, Title := "Kardenwort", Options := "") {
+    local result := "OK"
+    local mGui := Gui("+AlwaysOnTop -MinimizeBox -MaximizeBox +Owner" . (IsSet(MyGui) ? MyGui.Hwnd : ""), Title)
+    mGui.OnEvent("Escape", (*) => Close("Cancel"))
+    mGui.OnEvent("Close", (*) => Close("Cancel"))
+    
+    ; Parse options
+    local hasYesNoCancel := InStr(Options, "YesNoCancel")
+    
+    ; Fixed dimensions to unify size
+    local boxW := 350
+    local boxH := 150
+    
+    mGui.MarginX := 20
+    mGui.MarginY := 20
+    
+    ; Add a text control with Center and Wrap
+    mGui.Add("Text", "w" . (boxW - 40) . " h" . (boxH - 80) . " Center", Text)
+    
+    local btnW := 80
+    local btnH := 24
+    local btnY := boxH - 45
+    
+    if (hasYesNoCancel) {
+        local spacing := 10
+        local totalW := (btnW * 3) + (spacing * 2)
+        local startX := (boxW - totalW) / 2
+        mGui.Add("Button", "x" . startX . " y" . btnY . " w" . btnW . " h" . btnH . " Default", "Yes").OnEvent("Click", (*) => Close("Yes"))
+        mGui.Add("Button", "x" . (startX + btnW + spacing) . " y" . btnY . " w" . btnW . " h" . btnH, "No").OnEvent("Click", (*) => Close("No"))
+        mGui.Add("Button", "x" . (startX + (btnW + spacing)*2) . " y" . btnY . " w" . btnW . " h" . btnH, "Cancel").OnEvent("Click", (*) => Close("Cancel"))
+    } else {
+        local startX := (boxW - btnW) / 2
+        mGui.Add("Button", "x" . startX . " y" . btnY . " w" . btnW . " h" . btnH . " Default", "OK").OnEvent("Click", (*) => Close("OK"))
+    }
+    
+    Close(res) {
+        result := res
+        mGui.Destroy()
+    }
+    
+    mGui.Show("w" . boxW . " h" . boxH)
+    WinWaitClose(mGui)
+    return result
 }
