@@ -301,7 +301,7 @@ ActionRenderDoneIO(guiObj, payload) {
             guiObj.FsmMemory["RunEnrichment"] := "auto"
         }
         try {
-            guiObj.FsmMemory["IsLazy"] := GetElementText(guiObj.wb.document.getElementById("lazy-processing")) == "true"
+            guiObj.FsmMemory["IsLazy"] := GetElementText(guiObj.wb.document.getElementById("auto-inject-updates")) != "true"
         } catch {
             guiObj.FsmMemory["IsLazy"] := false
         }
@@ -504,19 +504,21 @@ ActionFileChangedGuard(guiObj, payload) {
         return false
     }
 
-    updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
-    if (FileExist(updateJsPath)) {
-        jsMTime := FileGetTime(updateJsPath)
-        if (Abs(DateDiff(currentMTime, jsMTime, "Seconds")) <= 10) {
-            guiObj.FsmMemory["LastMTime"] := currentMTime
-            guiObj.FsmMemory["AutoInjectRetries"] := 0
-            UpdateStatus(guiObj, "Data injected automatically.")
-            return false
+    if (!guiObj.FsmMemory["IsLazy"]) {
+        updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
+        if (FileExist(updateJsPath)) {
+            jsMTime := FileGetTime(updateJsPath)
+            if (Abs(DateDiff(currentMTime, jsMTime, "Seconds")) <= 10) {
+                guiObj.FsmMemory["LastMTime"] := currentMTime
+                guiObj.FsmMemory["AutoInjectRetries"] := 0
+                UpdateStatus(guiObj, "Data injected automatically.")
+                return false
+            }
         }
     }
 
     isActiveReprocess := guiObj.FsmMemory.Has("ActiveReprocess") && guiObj.FsmMemory["ActiveReprocess"]
-    isAutoInjecting := guiObj.FsmMemory["IsProgressive"] || guiObj.FsmMemory["IsLazy"] || isActiveReprocess
+    isAutoInjecting := guiObj.FsmMemory["IsProgressive"] || isActiveReprocess
     if (isAutoInjecting) {
         if (!guiObj.FsmMemory.Has("AutoInjectRetries")) {
             guiObj.FsmMemory["AutoInjectRetries"] := 0
@@ -676,7 +678,7 @@ ActionReloadDoneIO(guiObj, payload) {
             guiObj.FsmMemory["RunEnrichment"] := "auto"
         }
         try {
-            guiObj.FsmMemory["IsLazy"] := GetElementText(guiObj.wb.document.getElementById("lazy-processing")) == "true"
+            guiObj.FsmMemory["IsLazy"] := GetElementText(guiObj.wb.document.getElementById("auto-inject-updates")) != "true"
         } catch {
             guiObj.FsmMemory["IsLazy"] := false
         }
@@ -2036,10 +2038,12 @@ WatchFile(guiObj) {
             jsMTime := FileGetTime(updateJsPath)
             if (!guiObj.FsmMemory.Has("LastJsMTime") || guiObj.FsmMemory["LastJsMTime"] != jsMTime) {
                 guiObj.FsmMemory["LastJsMTime"] := jsMTime
-                jsCode := FileRead(updateJsPath, "UTF-8")
-                try {
-                    guiObj.wb.document.parentWindow.eval(jsCode)
-                } catch {
+                if (!guiObj.FsmMemory["IsLazy"]) {
+                    jsCode := FileRead(updateJsPath, "UTF-8")
+                    try {
+                        guiObj.wb.document.parentWindow.eval(jsCode)
+                    } catch {
+                    }
                 }
                 try {
                     currentMTime := FileGetTime(guiObj.TsvPath)
