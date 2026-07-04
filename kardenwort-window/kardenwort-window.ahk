@@ -277,6 +277,16 @@ ActionRenderDoneIO(guiObj, payload) {
     try {
         tsvPath := GetElementText(guiObj.wb.document.getElementById("tsv-path"))
         guiObj.TsvPath := tsvPath
+        
+        ; Clean up any leftover update.js on load
+        try {
+            updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
+            if FileExist(updateJsPath) {
+                FileDelete(updateJsPath)
+            }
+        } catch {
+        }
+        
         SplitPath(tsvPath, &fileName)
         guiObj.Title := "Kardenwort - " guiObj.Lang " (" guiObj.TextMode ") - " fileName " - " (guiObj.HasProp("CurrentStatusText") ? guiObj.CurrentStatusText : "Ready")
 
@@ -2010,6 +2020,10 @@ WatchFile(guiObj) {
                 jsCode := FileRead(updateJsPath, "UTF-8")
                 try {
                     guiObj.wb.document.parentWindow.eval(jsCode)
+                } catch {
+                }
+                try {
+                    currentMTime := FileGetTime(guiObj.TsvPath)
                 } catch {
                 }
             }
