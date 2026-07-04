@@ -502,15 +502,40 @@ ActionFileChangedGuard(guiObj, payload) {
     }
 
     currentMTime := payload
-    if (currentMTime == guiObj.FsmMemory["LastMTime"]) {
+    if (currentMTime == guiObj.FsmMemory.Get("LastMTime", "")) {
         return false
     }
 
+    currentJsMTime := ""
+    updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
+    
+    if (FileExist(updateJsPath)) {
+        currentJsMTime := FileGetTime(updateJsPath)
+        
+        ; If we haven't parsed this JS payload yet, read it to look for the finish signal
+        if (currentJsMTime != guiObj.FsmMemory.Get("LastParsedJsMTime", "")) {
+            guiObj.FsmMemory["LastParsedJsMTime"] := currentJsMTime
+            jsCode := ""
+            try {
+                jsCode := FileRead(updateJsPath)
+            } catch {
+            }
+            
+            ; Instantly drop shields if the asynchronous background worker signals it is finished
+            if (jsCode != "" && RegExMatch(jsCode, 'i)"stage"\s*:\s*"finished"')) {
+                if (guiObj.FsmMemory.Has("ActiveReprocess")) {
+                    guiObj.FsmMemory["ActiveReprocess"] := false
+                }
+                if (guiObj.FsmMemory.Has("ActiveRetext")) {
+                    guiObj.FsmMemory["ActiveRetext"] := false
+                }
+            }
+        }
+    }
+
     if (!guiObj.FsmMemory["IsLazy"]) {
-        updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
-        if (FileExist(updateJsPath)) {
-            jsMTime := FileGetTime(updateJsPath)
-            if (Abs(DateDiff(currentMTime, jsMTime, "Seconds")) <= G_AutoInjectMaxFileAgeDiffSec) {
+        if (currentJsMTime != "") {
+            if (Abs(DateDiff(currentMTime, currentJsMTime, "Seconds")) <= G_AutoInjectMaxFileAgeDiffSec) {
                 guiObj.FsmMemory["LastMTime"] := currentMTime
                 guiObj.FsmMemory["AutoInjectRetries"] := 0
                 UpdateStatus(guiObj, "Data injected automatically.")
@@ -522,7 +547,9 @@ ActionFileChangedGuard(guiObj, payload) {
     isActiveReprocess := guiObj.FsmMemory.Has("ActiveReprocess") && guiObj.FsmMemory["ActiveReprocess"]
     isAutoInjecting := guiObj.FsmMemory["IsProgressive"] || isActiveReprocess
     if (isAutoInjecting) {
-        if (!guiObj.FsmMemory.Has("AutoInjectRetries")) {
+        ; Reset the grace period counter whenever a genuinely NEW TSV snapshot arrives
+        if (currentMTime != guiObj.FsmMemory.Get("GracePeriodMTime", "")) {
+            guiObj.FsmMemory["GracePeriodMTime"] := currentMTime
             guiObj.FsmMemory["AutoInjectRetries"] := 0
         }
         guiObj.FsmMemory["AutoInjectRetries"] += 1
