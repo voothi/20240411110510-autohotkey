@@ -1847,6 +1847,14 @@ OnDeleteClick(guiObj, *) {
 
 OnRetextClick(guiObj, *) {
     try {
+        if (guiObj.wb.document.parentWindow.getBookmarkIndices) {
+            indicesStr := guiObj.wb.document.parentWindow.getBookmarkIndices()
+            guiObj.FsmMemory["SavedBookmarkIndices"] := indicesStr
+            guiObj.wb.document.parentWindow.clearMVPBookmarks()
+        }
+    } catch {
+    }
+    try {
         jsonStr := guiObj.wb.document.parentWindow.getSelectedRows()
     } catch {
         jsonStr := "[]"
@@ -1984,6 +1992,13 @@ WatchFile(guiObj) {
                 jsCode := FileRead(updateJsPath, "UTF-8")
                 try {
                     guiObj.wb.document.parentWindow.eval(jsCode)
+                    if (guiObj.FsmMemory.Has("SavedBookmarkIndices")) {
+                        savedIndices := guiObj.FsmMemory["SavedBookmarkIndices"]
+                        if (savedIndices != "" && guiObj.wb.document.parentWindow.restoreBookmarksByIndices) {
+                            guiObj.wb.document.parentWindow.restoreBookmarksByIndices(savedIndices)
+                        }
+                        guiObj.FsmMemory.Delete("SavedBookmarkIndices")
+                    }
                 } catch {
                 }
             }
@@ -2741,6 +2756,31 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         js .= "      bookmarks = [];"
         js .= "    }"
         js .= "    return cleared;"
+        js .= "  };"
+        js .= "  window.getBookmarkIndices = function() {"
+        js .= "    var indices = [];"
+        js .= "    if (bookmarks) {"
+        js .= "      for (var i = 0; i < bookmarks.length; i++) {"
+        js .= "        indices.push(bookmarks[i].idx);"
+        js .= "      }"
+        js .= "    }"
+        js .= "    return indices.join(',');"
+        js .= "  };"
+        js .= "  window.restoreBookmarksByIndices = function(indicesStr) {"
+        js .= "    bookmarks = [];"
+        js .= "    if (!indicesStr) return;"
+        js .= "    var indices = indicesStr.split(',');"
+        js .= "    if (!isIndexBuilt) buildLcIndex();"
+        js .= "    for (var i = 0; i < indices.length; i++) {"
+        js .= "      var idxStr = indices[i];"
+        js .= "      if (idxStr === '') continue;"
+        js .= "      var idx = parseInt(idxStr, 10);"
+        js .= "      var srcSpan = sourceSpansArray[idx];"
+        js .= "      var transSpan = transSpansArray[idx];"
+        js .= "      if (srcSpan) addClass(srcSpan, 'hl-mvp-pin');"
+        js .= "      if (transSpan) addClass(transSpan, 'hl-mvp-pin');"
+        js .= "      bookmarks.push({ idx: idxStr, srcSpan: srcSpan, transSpan: transSpan });"
+        js .= "    }"
         js .= "  };"
         js .= "  addEvent(document, 'keydown', function(e) {"
         js .= "    e = e || window.event;"
