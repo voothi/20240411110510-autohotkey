@@ -101,14 +101,6 @@ if !IsSet(G_FsmTestMode) {
     G_FsmTestMode := false
 }
 
-global G_FileWatcherIntervalMs := 0
-global G_AutoSave := 0
-global G_DeskPythonPath := ""
-global G_DeskScriptPath := ""
-global G_AutoUpdate := 0
-global G_ShowInfoWindows := 0
-global G_ActiveWindows := Map()
-
 ; ===================================================================================
 ; FSM Engine
 ; ===================================================================================
@@ -1086,6 +1078,7 @@ FsmSelfCheck()
 ; ===================================================================================
 ; Configuration & Globals
 ; ===================================================================================
+global G_ActiveWindows := Map()
 global G_DeskPythonPath := ""
 global G_DeskScriptPath := ""
 global G_DefaultLanguage := "en"
