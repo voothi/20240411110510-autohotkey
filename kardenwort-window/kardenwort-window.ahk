@@ -768,10 +768,6 @@ ActionReprocessFailedIO(guiObj, payload) {
     }
     UpdateStatus(guiObj, "Re-process failed")
     if (payload != "") {
-        try {
-            FileAppend("Reprocess failed: " payload "`n", A_Desktop "\karden_error.txt")
-        } catch {
-        }
         MsgBox("Failed to start re-processing:`n" payload, "Kardenwort Error", 16)
     }
     UpdateButtonState(guiObj)
@@ -869,10 +865,6 @@ ActionRetextFailedIO(guiObj, payload) {
     }
     UpdateStatus(guiObj, "Re-text failed")
     if (payload != "") {
-        try {
-            FileAppend("Retext failed: " payload "`n", A_Desktop "\karden_error.txt")
-        } catch {
-        }
         MsgBox("Failed to start re-texting:`n" payload, "Kardenwort Error", 16)
     }
     UpdateButtonState(guiObj)
@@ -956,10 +948,6 @@ ActionExportFailedIO(guiObj, payload) {
     }
     UpdateStatus(guiObj, "Export failed")
     if (payload != "") {
-        try {
-            FileAppend("Export failed: " payload "`n", A_Desktop "\karden_error.txt")
-        } catch {
-        }
         MsgBox("Failed to export favorites:`n" payload, "Kardenwort Error", 16)
     }
     UpdateButtonState(guiObj)
