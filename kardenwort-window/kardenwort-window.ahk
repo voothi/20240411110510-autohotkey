@@ -567,7 +567,7 @@ ActionReloadDoneIO(guiObj, payload) {
 
     htmlContent := B64Decode(payload.outB64)
     if (payload.scrollY) {
-        scrollScript := "<script>window.addEventListener('load', function() { setTimeout(function() { window.scrollTo(0, " payload.scrollY "); }, 50); });</script>"
+        scrollScript := "<style>body { visibility: hidden; }</style><script>window.addEventListener('load', function() { setTimeout(function() { window.scrollTo(0, " payload.scrollY "); document.body.style.visibility = 'visible'; }, 50); });</script>"
         htmlContent := StrReplace(htmlContent, "</body>", scrollScript "</body>")
     }
     tmpHtmlFile := A_Temp "\karden_view_" guiObj.ZID "_" A_TickCount ".html"
