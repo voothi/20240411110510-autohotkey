@@ -709,11 +709,9 @@ ActionReprocessStartIO(guiObj, payload) {
         } catch {
         }
     }
-    if (guiObj.FsmMemory["RunEnrichment"] == "auto") {
-        try {
-            guiObj.wb.document.parentWindow.startPolling()
-        } catch {
-        }
+    try {
+        guiObj.wb.document.parentWindow.startPolling()
+    } catch {
     }
     jsonStr := guiObj.FsmMemory["ReprocessSelection"]
     guiObj.FsmMemory.Delete("ReprocessSelection")
