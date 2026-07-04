@@ -563,6 +563,10 @@ ActionReloadDoneIO(guiObj, payload) {
     }
 
     htmlContent := B64Decode(payload.outB64)
+    if (payload.scrollY) {
+        scrollScript := "<script>window.addEventListener('load', function() { setTimeout(function() { window.scrollTo(0, " payload.scrollY "); }, 50); });</script>"
+        htmlContent := StrReplace(htmlContent, "</body>", scrollScript "</body>")
+    }
     tmpHtmlFile := A_Temp "\karden_view_" guiObj.ZID "_" A_TickCount ".html"
     FileAppend(htmlContent, tmpHtmlFile, "UTF-8-RAW")
 
@@ -605,12 +609,6 @@ ActionReloadDoneIO(guiObj, payload) {
         guiObj.wb.document.parentWindow.ahkCall := OnAhkCall.Bind(guiObj)
         guiObj.wb.document.parentWindow.setSelectedRows(payload.selectedRowsJSON)
     } catch {
-    }
-    if (payload.scrollY) {
-        try {
-            guiObj.wb.document.parentWindow.scrollTo(0, payload.scrollY)
-        } catch {
-        }
     }
 
     guiObj.wvc.Visible := true
