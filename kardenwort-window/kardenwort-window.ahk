@@ -1979,6 +1979,10 @@ WatchFile(guiObj) {
                 } catch {
                 }
             }
+        } else {
+            if (guiObj.FsmMemory.Has("LastJsMTime")) {
+                guiObj.FsmMemory.Delete("LastJsMTime")
+            }
         }
     } catch {
     }
