@@ -94,7 +94,7 @@ global EV_EXPORT_FAILED := "EV_EXPORT_FAILED"
 global EV_CLOSE := "EV_CLOSE"
 global EV_CLOSE_CANCEL := "EV_CLOSE_CANCEL"
 
-global FSM_AUTO_INJECT_MAX_RETRIES := 6
+global G_AutoInjectGracePeriodSec := 6
 global G_FsmDispatching := false
 global G_FsmTestMode
 if !IsSet(G_FsmTestMode) {
@@ -524,7 +524,8 @@ ActionFileChangedGuard(guiObj, payload) {
             guiObj.FsmMemory["AutoInjectRetries"] := 0
         }
         guiObj.FsmMemory["AutoInjectRetries"] += 1
-        if (guiObj.FsmMemory["AutoInjectRetries"] < FSM_AUTO_INJECT_MAX_RETRIES) {
+        maxRetries := Round(G_AutoInjectGracePeriodSec * 1000 / G_FileWatcherIntervalMs)
+        if (guiObj.FsmMemory["AutoInjectRetries"] < maxRetries) {
             return false
         }
         guiObj.FsmMemory["AutoInjectRetries"] := 0
@@ -1152,6 +1153,7 @@ LoadConfig() {
     global G_CurrentLang := IniRead(configPath, "Settings", "DefaultLanguage", "en")
     global G_FileWatcherIntervalMs := IniRead(configPath, "Settings", "FileWatcherIntervalMs", 1000)
     global G_AutoUpdate := IniRead(configPath, "Settings", "AutoUpdate", 0)
+    global G_AutoInjectGracePeriodSec := IniRead(configPath, "Settings", "AutoInjectGracePeriodSec", 6)
     global G_AutoSave := IniRead(configPath, "Settings", "auto_save_on_edit", 0)
     global G_ShowInfoWindows := IniRead(configPath, "Settings", "ShowInfoWindows", 1)
     global G_MultiTapTimeout := IniRead(configPath, "Settings", "MultiTapTimeout", 300)
