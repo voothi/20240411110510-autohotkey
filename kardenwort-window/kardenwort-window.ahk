@@ -1677,6 +1677,11 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
 
     ; Create GUI
     MyGui := Gui("+Resize +MinSize400x300", guiTitle)
+    local seqNum := GetSequenceNumber()
+    local iconPath := A_ScriptDir "\..\assets\numbers\" seqNum ".ico"
+    if (FileExist(iconPath)) {
+        MyGui.Opt("Icon" iconPath)
+    }
     MyGui.BackColor := G_GuiBgColor
     DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", MyGui.Hwnd, "UInt", 20, "Ptr*", G_DwmDark, "UInt", 4)
     MyGui.OnEvent("Close", GuiClose)
@@ -2897,6 +2902,44 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
     }
 }
 
+
+
+; ===================================================================================
+; Window Sequence Numbering for Cascade Launches
+; ===================================================================================
+GetSequenceNumber() {
+    local hMutex := DllCall("CreateMutex", "Ptr", 0, "Int", 0, "Str", "KardenwortWindowMutex", "Ptr")
+    DllCall("WaitForSingleObject", "Ptr", hMutex, "UInt", 5000)
+    
+    local count := RegRead("HKEY_CURRENT_USER\Software\Kardenwort", "WindowCount", 0)
+    local lastTime := RegRead("HKEY_CURRENT_USER\Software\Kardenwort", "LastLaunchTime", 0)
+    
+    ; If last launch was more than 5 seconds ago, and no windows exist, reset to 1
+    local hwnds := WinGetList("ahk_class AutoHotkeyGUI ahk_exe AutoHotkey64.exe")
+    local actualCount := 0
+    for hwnd in hwnds {
+        try {
+            if InStr(WinGetTitle("ahk_id " hwnd), "Kardenwort - ")
+                actualCount++
+        }
+    }
+    
+    if (actualCount == 0 && A_TickCount - lastTime > 5000) {
+        count := 0
+    }
+    
+    count++
+    if (count > 20)
+        count := 20
+        
+    RegWrite(count, "REG_DWORD", "HKEY_CURRENT_USER\Software\Kardenwort", "WindowCount")
+    RegWrite(A_TickCount, "REG_DWORD", "HKEY_CURRENT_USER\Software\Kardenwort", "LastLaunchTime")
+    
+    DllCall("ReleaseMutex", "Ptr", hMutex)
+    DllCall("CloseHandle", "Ptr", hMutex)
+    
+    return count
+}
 
 ; ===================================================================================
 ; Custom GUI MsgBox Replacement
