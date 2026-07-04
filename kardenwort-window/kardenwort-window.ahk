@@ -287,7 +287,7 @@ ActionRenderDoneIO(guiObj, payload) {
         tsvPath := GetElementText(guiObj.wb.document.getElementById("tsv-path"))
         guiObj.TsvPath := tsvPath
         SplitPath(tsvPath, &fileName)
-        guiObj.Title := "Kardenwort - " guiObj.Lang " (" guiObj.TextMode ") - " fileName
+        guiObj.Title := "Kardenwort - " guiObj.Lang " (" guiObj.TextMode ") - " fileName " - " (guiObj.HasProp("CurrentStatusText") ? guiObj.CurrentStatusText : "Ready")
 
         try {
             guiObj.FsmMemory["IsProgressive"] := GetElementText(guiObj.wb.document.getElementById("display-mode")) == "progressive"
@@ -1632,8 +1632,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     DeleteBtn := MyGui.Add("Text", "x455 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Delete")
     SendBtn := MyGui.Add("Text", "x565 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
     PointerBtn := MyGui.Add("Text", "x675 y615 w30 h30 Center +Border +0x200 " G_GuiTextColor, "T")
-    StatusTxt := MyGui.Add("Text", "x715 y615 w210 h30 +0x200 vStatusTxt", "Ready")
-    StatusTxt.SetFont(G_GuiTextColor)
+
 
     ; Store references on GUI object
     MyGui.wb := wb
@@ -1645,7 +1644,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     MyGui.RetextBtn := RetextBtn
     MyGui.ReprocBtn := ReprocBtn
     MyGui.PointerBtn := PointerBtn
-    MyGui.StatusTxt := StatusTxt
+
     MyGui.ZID := ZID
     MyGui.Lang := lang
     MyGui.TextMode := textMode
@@ -1994,7 +1993,7 @@ GuiSize(thisGui, MinMax, Width, Height) {
     thisGui.DeleteBtn.Move(455, btnY)
     thisGui.SendBtn.Move(565, btnY)
     thisGui.PointerBtn.Move(675, btnY)
-    thisGui.StatusTxt.Move(715, btnY, Width - 730)
+
     try {
         if (MinMax == 1) {
             thisGui.wb.document.body.classList.add("maximized")
@@ -2299,10 +2298,20 @@ UpdateStatus(guiObj, text) {
     if (guiObj.StatusLog.Length > 15) {
         guiObj.StatusLog.Pop()
     }
-    guiObj.StatusTxt.Text := text
+    guiObj.CurrentStatusText := text
     try {
-        guiObj.StatusTxt.Redraw()
+        if (guiObj.HasProp("TsvPath") && guiObj.TsvPath != "") {
+            SplitPath(guiObj.TsvPath, &fileName)
+        } else {
+            fileName := ""
+        }
     } catch {
+        fileName := ""
+    }
+    if (fileName != "") {
+        guiObj.Title := "Kardenwort - " guiObj.Lang " (" guiObj.TextMode ") - " fileName " - " text
+    } else {
+        guiObj.Title := "Kardenwort - " guiObj.Lang " (" guiObj.TextMode ") - " text
     }
 
     if (G_FsmTestMode) {
