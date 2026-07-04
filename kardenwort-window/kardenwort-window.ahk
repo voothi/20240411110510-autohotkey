@@ -1749,6 +1749,14 @@ OnAhkCall(guiObj, action, value) {
             FsmDispatch(guiObj, EV_CLEAN)
         }
     }
+    if (action == "finished") {
+        try {
+            guiObj.FsmMemory["LastMTime"] := FileGetTime(guiObj.TsvPath)
+        } catch {
+        }
+        guiObj.FsmMemory["PendingUpdate"] := false
+        UpdateButtonState(guiObj)
+    }
 }
 
 UpdateButtonState(guiObj) {
