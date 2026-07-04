@@ -1,4 +1,4 @@
-﻿#Requires AutoHotkey v2.0
+#Requires AutoHotkey v2.0
 #SingleInstance Off
 #NoTrayIcon
 
@@ -2917,7 +2917,7 @@ GetSequenceNumber() {
     ; If last launch was more than 5 seconds ago, and no windows exist, reset to 1
     local hwnds := WinGetList("ahk_class AutoHotkeyGUI ahk_exe AutoHotkey64.exe")
     local actualCount := 0
-    for hwnd in hwnds {
+    for index, hwnd in hwnds {
         try {
             if InStr(WinGetTitle("ahk_id " hwnd), "Kardenwort - ")
                 actualCount++
