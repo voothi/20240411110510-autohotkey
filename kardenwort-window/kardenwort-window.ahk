@@ -1631,7 +1631,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     ReprocBtn := MyGui.Add("Text", "x345 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Re-word")
     DeleteBtn := MyGui.Add("Text", "x455 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Delete")
     SendBtn := MyGui.Add("Text", "x565 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
-    PointerBtn := MyGui.Add("Text", "x675 y615 w30 h30 Center +Border +0x200 " G_GuiTextColor, "T")
+    PointerBtn := MyGui.Add("Text", "x675 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Hand Tool")
 
 
     ; Store references on GUI object
@@ -1900,9 +1900,9 @@ ToggleSelectableTextMode(guiObj, state := "", isPersistent := false) {
 
 UpdateButtonText(guiObj, state) {
     if (state) {
-        guiObj.PointerBtn.Text := "S"
+        guiObj.PointerBtn.Text := "Select Text"
     } else {
-        guiObj.PointerBtn.Text := "T"
+        guiObj.PointerBtn.Text := "Hand Tool"
     }
 }
 
