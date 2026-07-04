@@ -95,6 +95,7 @@ global EV_CLOSE := "EV_CLOSE"
 global EV_CLOSE_CANCEL := "EV_CLOSE_CANCEL"
 
 global G_AutoInjectGracePeriodSec := 6
+global G_AutoInjectMaxFileAgeDiffSec := 10
 global G_FsmDispatching := false
 global G_FsmTestMode
 if !IsSet(G_FsmTestMode) {
@@ -508,7 +509,7 @@ ActionFileChangedGuard(guiObj, payload) {
         updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
         if (FileExist(updateJsPath)) {
             jsMTime := FileGetTime(updateJsPath)
-            if (Abs(DateDiff(currentMTime, jsMTime, "Seconds")) <= 10) {
+            if (Abs(DateDiff(currentMTime, jsMTime, "Seconds")) <= G_AutoInjectMaxFileAgeDiffSec) {
                 guiObj.FsmMemory["LastMTime"] := currentMTime
                 guiObj.FsmMemory["AutoInjectRetries"] := 0
                 UpdateStatus(guiObj, "Data injected automatically.")
@@ -1154,6 +1155,7 @@ LoadConfig() {
     global G_FileWatcherIntervalMs := IniRead(configPath, "Settings", "FileWatcherIntervalMs", 1000)
     global G_AutoUpdate := IniRead(configPath, "Settings", "AutoUpdate", 0)
     global G_AutoInjectGracePeriodSec := IniRead(configPath, "Settings", "AutoInjectGracePeriodSec", 6)
+    global G_AutoInjectMaxFileAgeDiffSec := IniRead(configPath, "Settings", "AutoInjectMaxFileAgeDiffSec", 10)
     global G_AutoSave := IniRead(configPath, "Settings", "auto_save_on_edit", 0)
     global G_ShowInfoWindows := IniRead(configPath, "Settings", "ShowInfoWindows", 1)
     global G_MultiTapTimeout := IniRead(configPath, "Settings", "MultiTapTimeout", 300)
