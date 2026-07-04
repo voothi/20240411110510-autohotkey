@@ -2,7 +2,6 @@
 #SingleInstance Off
 #NoTrayIcon
 
-myPid := ProcessExist()
 existingHwnd := 0
 ow := A_DetectHiddenWindows
 DetectHiddenWindows True
