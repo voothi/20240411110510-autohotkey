@@ -1967,6 +1967,22 @@ WatchFile(guiObj) {
         return
     }
 
+    try {
+        updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
+        if FileExist(updateJsPath) {
+            jsMTime := FileGetTime(updateJsPath)
+            if (!guiObj.FsmMemory.Has("LastJsMTime") || guiObj.FsmMemory["LastJsMTime"] != jsMTime) {
+                guiObj.FsmMemory["LastJsMTime"] := jsMTime
+                jsCode := FileRead(updateJsPath, "UTF-8")
+                try {
+                    guiObj.wb.document.parentWindow.eval(jsCode)
+                } catch {
+                }
+            }
+        }
+    } catch {
+    }
+
     FsmDispatch(guiObj, EV_FILE_CHANGED, currentMTime)
 }
 
