@@ -500,10 +500,6 @@ ActionFileChangedGuard(guiObj, payload) {
     if (payload == "") {
         return false
     }
-    
-    if (guiObj.FsmMemory["IsLazy"] && guiObj.FsmMemory.Has("ActiveRetext") && guiObj.FsmMemory["ActiveRetext"]) {
-        guiObj.FsmMemory["ActiveRetext"] := false
-    }
 
     currentMTime := payload
     if (currentMTime == guiObj.FsmMemory["LastMTime"]) {
@@ -803,6 +799,7 @@ ActionReprocessDoneIO(guiObj, payload) {
 }
 
 ActionReprocessFailedApply(guiObj, payload) {
+    guiObj.FsmMemory["ActiveReprocess"] := false
     return FSM_IDLE
 }
 ActionReprocessFailedIO(guiObj, payload) {
@@ -886,6 +883,9 @@ ActionRetextStartIO(guiObj, payload) {
 }
 
 ActionRetextDoneApply(guiObj, payload) {
+    if (guiObj.FsmMemory["IsLazy"]) {
+        guiObj.FsmMemory["ActiveRetext"] := false
+    }
     return FSM_IDLE
 }
 ActionRetextDoneIO(guiObj, payload) {
