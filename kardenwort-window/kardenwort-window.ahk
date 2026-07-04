@@ -284,8 +284,7 @@ ActionRenderDoneIO(guiObj, payload) {
         guiObj.Title := "Kardenwort - " guiObj.Lang " (" guiObj.TextMode ") - " fileName
 
         try {
-            guiObj.FsmMemory["IsProgressive"] := GetElementText(guiObj.wb.document.getElementById("progressive-loading"
-            )) == "true"
+            guiObj.FsmMemory["IsProgressive"] := GetElementText(guiObj.wb.document.getElementById("display-mode")) == "progressive"
         } catch {
             guiObj.FsmMemory["IsProgressive"] := false
         }
