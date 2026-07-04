@@ -1685,8 +1685,8 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     if (FileExist(iconPath)) {
         local hIcon := LoadPicture(iconPath, "w32 h32", &imageType := 1)
         if (hIcon) {
-            SendMessage(0x80, 0, hIcon, , "ahk_id " MyGui.Hwnd)
-            SendMessage(0x80, 1, hIcon, , "ahk_id " MyGui.Hwnd)
+            SendMessage(0x80, 0, hIcon, , MyGui.Hwnd)
+            SendMessage(0x80, 1, hIcon, , MyGui.Hwnd)
         }
     }
     MyGui.BackColor := G_GuiBgColor
