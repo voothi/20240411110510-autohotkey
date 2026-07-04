@@ -66,6 +66,7 @@ global FSM_IDLE := "IDLE"
 global FSM_SAVING := "SAVING"
 global FSM_RELOADING := "RELOADING"
 global FSM_REPROCESSING := "REPROCESSING"
+global FSM_RETEXTING := "RETEXTING"
 global FSM_EXPORTING := "EXPORTING"
 global FSM_CLOSING := "CLOSING"
 global FSM_ERROR := "ERROR"
@@ -85,6 +86,9 @@ global EV_RELOAD_FAILED := "EV_RELOAD_FAILED"
 global EV_REPROCESS_CLICK := "EV_REPROCESS_CLICK"
 global EV_REPROCESS_DONE := "EV_REPROCESS_DONE"
 global EV_REPROCESS_FAILED := "EV_REPROCESS_FAILED"
+global EV_RETEXT_CLICK := "EV_RETEXT_CLICK"
+global EV_RETEXT_DONE := "EV_RETEXT_DONE"
+global EV_RETEXT_FAILED := "EV_RETEXT_FAILED"
 global EV_EXPORT_CLICK := "EV_EXPORT_CLICK"
 global EV_EXPORT_DONE := "EV_EXPORT_DONE"
 global EV_EXPORT_FAILED := "EV_EXPORT_FAILED"
@@ -120,7 +124,9 @@ FsmInit(guiObj) {
         "IsLazy", false,
         "IsDirty", false,
         "AutoSavePending", false,
+        "PendingExport", false,
         "PendingReprocess", false,
+        "PendingRetext", false,
         "PendingClose", false
     )
 }
@@ -197,7 +203,7 @@ FsmSelfCheck() {
         1, FSM_CLOSING, 1, FSM_ERROR, 1)
     validEvents := Map(EV_RENDER_DONE, 1, EV_RENDER_FAILED, 1, EV_DIRTY, 1, EV_CLEAN, 1, EV_SAVE_CLICK, 1,
         EV_SAVE_SUCCESS, 1, EV_SAVE_FAILED, 1, EV_FILE_CHANGED, 1, EV_UPDATE_CLICK, 1, EV_RELOAD_DONE, 1,
-        EV_RELOAD_FAILED, 1, EV_REPROCESS_CLICK, 1, EV_REPROCESS_DONE, 1, EV_REPROCESS_FAILED, 1, EV_EXPORT_CLICK, 1,
+        EV_RELOAD_FAILED, 1, EV_REPROCESS_CLICK, 1, EV_REPROCESS_DONE, 1, EV_REPROCESS_FAILED, 1, EV_RETEXT_CLICK, 1, EV_RETEXT_DONE, 1, EV_RETEXT_FAILED, 1, EV_EXPORT_CLICK, 1,
         EV_EXPORT_DONE, 1, EV_EXPORT_FAILED, 1, EV_CLOSE, 1, EV_CLOSE_CANCEL, 1)
 
     for state, events in G_FSM_TRANSITIONS {
@@ -439,6 +445,12 @@ ActionSaveSuccessApply(guiObj, payload) {
     if (guiObj.FsmMemory["PendingClose"]) {
         guiObj.FsmMemory["PendingClose"] := false
         return FSM_CLOSING
+    } else if (guiObj.FsmMemory["PendingExport"]) {
+        guiObj.FsmMemory["PendingExport"] := false
+        return FSM_EXPORTING
+    } else if (guiObj.FsmMemory["PendingRetext"]) {
+        guiObj.FsmMemory["PendingRetext"] := false
+        return FSM_RETEXTING
     } else if (guiObj.FsmMemory["PendingReprocess"]) {
         guiObj.FsmMemory["PendingReprocess"] := false
         return FSM_REPROCESSING
@@ -464,6 +476,8 @@ ActionSaveSuccessIO(guiObj, payload) {
 
 ActionSaveFailedApply(guiObj, payload) {
     guiObj.FsmMemory["PendingClose"] := false
+    guiObj.FsmMemory["PendingExport"] := false
+    guiObj.FsmMemory["PendingRetext"] := false
     guiObj.FsmMemory["PendingReprocess"] := false
     guiObj.FsmMemory["PendingUpdate"] := false
     return FSM_IDLE
@@ -765,6 +779,103 @@ ActionReprocessFailedIO(guiObj, payload) {
     UpdateButtonState(guiObj)
 }
 
+ActionRetextStartGuard(guiObj, payload) {
+    return true
+}
+ActionRetextStartApply(guiObj, payload) {
+    guiObj.FsmMemory["RetextSelection"] := payload
+    if (guiObj.FsmMemory["IsDirty"]) {
+        guiObj.FsmMemory["PendingRetext"] := true
+        return FSM_IDLE
+    }
+    return FSM_RETEXTING
+}
+ActionRetextStartIO(guiObj, payload) {
+    if (guiObj.FsmMemory["PendingRetext"]) {
+        FsmDispatch(guiObj, EV_SAVE_CLICK)
+        return
+    }
+    if (G_FsmTestMode) {
+        return
+    }
+
+    UpdateStatus(guiObj, "Preparing re-text...")
+    updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
+    if FileExist(updateJsPath) {
+        try {
+            FileDelete(updateJsPath)
+        } catch {
+        }
+    }
+    
+    try {
+        guiObj.wb.document.parentWindow.startPolling()
+    } catch {
+    }
+
+    jsonStr := guiObj.FsmMemory["RetextSelection"]
+    guiObj.FsmMemory.Delete("RetextSelection")
+
+    tsvPathStr := StrReplace(guiObj.TsvPath, "\", "\\")
+    manifest := '{"selected_row_ids": ' jsonStr ', "zid": "' guiObj.ZID '", "tsv_path": "' tsvPathStr '"}'
+    tmpManifestFile := A_Temp "\karden_manifest_" guiObj.ZID "_retext.json"
+    try {
+        FileAppend(manifest, tmpManifestFile, "UTF-8-RAW")
+    } catch as e {
+        UpdateStatus(guiObj, "Manifest write failed")
+        MsgBox("Failed to write temporary manifest file: " e.Message, "Kardenwort Error", 16)
+        FsmDispatch(guiObj, EV_RETEXT_FAILED, "")
+        return
+    }
+
+    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" retext --selection-manifest "' tmpManifestFile '" --language ' guiObj.Lang
+    try {
+        exitCode := RunSilent(cmd, &outStr, &errJSON)
+    } catch {
+        exitCode := 1
+        errJSON := "RunSilent failed"
+    }
+    try {
+        FileDelete(tmpManifestFile)
+    } catch {
+    }
+
+    if (exitCode == 0) {
+        FsmDispatch(guiObj, EV_RETEXT_DONE, "")
+    } else {
+        FsmDispatch(guiObj, EV_RETEXT_FAILED, errJSON)
+    }
+}
+
+ActionRetextDoneApply(guiObj, payload) {
+    return FSM_IDLE
+}
+ActionRetextDoneIO(guiObj, payload) {
+    if (G_FsmTestMode) {
+        return
+    }
+    UpdateStatus(guiObj, "Re-text started")
+    UpdateButtonState(guiObj)
+}
+
+ActionRetextFailedApply(guiObj, payload) {
+    return FSM_IDLE
+}
+ActionRetextFailedIO(guiObj, payload) {
+    if (G_FsmTestMode) {
+        return
+    }
+    UpdateStatus(guiObj, "Re-text failed")
+    if (payload != "") {
+        try {
+            FileAppend("Retext failed: " payload "`n", A_Desktop "\karden_error.txt")
+        } catch {
+        }
+        MsgBox("Failed to start re-texting:`n" payload, "Kardenwort Error", 16)
+    }
+    UpdateButtonState(guiObj)
+}
+
 ActionExportStartGuard(guiObj, payload) {
     return true
 }
@@ -923,6 +1034,8 @@ global G_FSM_TRANSITIONS := Map(
         EV_UPDATE_CLICK, { nextState: FSM_RELOADING, apply: "ActionUpdateClickApply", io: "ActionUpdateClickIO" },
         EV_REPROCESS_CLICK, { nextState: FSM_REPROCESSING, guard: "ActionReprocessStartGuard", apply: "ActionReprocessStartApply",
             io: "ActionReprocessStartIO" },
+        EV_RETEXT_CLICK, { nextState: FSM_RETEXTING, guard: "ActionRetextStartGuard", apply: "ActionRetextStartApply",
+            io: "ActionRetextStartIO" },
         EV_EXPORT_CLICK, { nextState: FSM_EXPORTING, guard: "ActionExportStartGuard", apply: "ActionExportStartApply",
             io: "ActionExportStartIO" },
         EV_CLOSE, { nextState: FSM_CLOSING, apply: "ActionCloseApply", io: "ActionCloseIO" }
@@ -934,6 +1047,10 @@ global G_FSM_TRANSITIONS := Map(
     FSM_RELOADING, Map(
         EV_RELOAD_DONE, { nextState: FSM_IDLE, apply: "ActionReloadDoneApply", io: "ActionReloadDoneIO" },
         EV_RELOAD_FAILED, { nextState: FSM_IDLE, apply: "ActionReloadFailedApply", io: "ActionReloadFailedIO" }
+    ),
+    FSM_RETEXTING, Map(
+        EV_RETEXT_DONE, { nextState: FSM_IDLE, apply: "ActionRetextDoneApply", io: "ActionRetextDoneIO" },
+        EV_RETEXT_FAILED, { nextState: FSM_IDLE, apply: "ActionRetextFailedApply", io: "ActionRetextFailedIO" }
     ),
     FSM_REPROCESSING, Map(
         EV_REPROCESS_DONE, { nextState: FSM_IDLE, apply: "ActionReprocessDoneApply", io: "ActionReprocessDoneIO" },
@@ -1508,13 +1625,14 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     wb := wvc.Value
 
     ; Native Footer Buttons
-    SaveBtn := MyGui.Add("Text", "x15 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor " Disabled", "Save (Ctrl+S)")
-    UpdateBtn := MyGui.Add("Text", "x135 y615 w110 h30 Center +Border +0x200 +Hidden " G_GuiTextColor, "⟳ Update")
-    ReprocBtn := MyGui.Add("Text", "x255 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor, "Re-process")
-    DeleteBtn := MyGui.Add("Text", "x375 y615 w110 h30 Center +Border +0x200 " G_GuiTextColor, "Delete")
-    SendBtn := MyGui.Add("Text", "x495 y615 w120 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
-    PointerBtn := MyGui.Add("Text", "x625 y615 w30 h30 Center +Border +0x200 " G_GuiTextColor, "T")
-    StatusTxt := MyGui.Add("Text", "x665 y615 w260 h30 +0x200 vStatusTxt", "Ready")
+    SaveBtn := MyGui.Add("Text", "x15 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor " Disabled", "Save (Ctrl+S)")
+    UpdateBtn := MyGui.Add("Text", "x125 y615 w100 h30 Center +Border +0x200 +Hidden " G_GuiTextColor, "⟳ Update")
+    RetextBtn := MyGui.Add("Text", "x235 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Re-text")
+    ReprocBtn := MyGui.Add("Text", "x345 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Re-word")
+    DeleteBtn := MyGui.Add("Text", "x455 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Delete")
+    SendBtn := MyGui.Add("Text", "x565 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
+    PointerBtn := MyGui.Add("Text", "x675 y615 w30 h30 Center +Border +0x200 " G_GuiTextColor, "T")
+    StatusTxt := MyGui.Add("Text", "x715 y615 w210 h30 +0x200 vStatusTxt", "Ready")
     StatusTxt.SetFont(G_GuiTextColor)
 
     ; Store references on GUI object
@@ -1524,6 +1642,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     MyGui.UpdateBtn := UpdateBtn
     MyGui.SendBtn := SendBtn
     MyGui.DeleteBtn := DeleteBtn
+    MyGui.RetextBtn := RetextBtn
     MyGui.ReprocBtn := ReprocBtn
     MyGui.PointerBtn := PointerBtn
     MyGui.StatusTxt := StatusTxt
@@ -1541,6 +1660,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     UpdateBtn.OnEvent("Click", OnUpdateClick.Bind(MyGui))
     SendBtn.OnEvent("Click", OnSendToAnkiClick.Bind(MyGui))
     DeleteBtn.OnEvent("Click", OnDeleteClick.Bind(MyGui))
+    RetextBtn.OnEvent("Click", OnRetextClick.Bind(MyGui))
     ReprocBtn.OnEvent("Click", OnReprocessClick.Bind(MyGui))
     PointerBtn.OnEvent("Click", OnPointerToggleClick.Bind(MyGui))
 
@@ -1647,6 +1767,7 @@ UpdateButtonState(guiObj) {
         guiObj.SaveBtn.Enabled := false
         guiObj.SendBtn.Enabled := false
         guiObj.DeleteBtn.Enabled := false
+        guiObj.RetextBtn.Enabled := false
         guiObj.ReprocBtn.Enabled := false
         return
     }
@@ -1656,6 +1777,7 @@ UpdateButtonState(guiObj) {
         guiObj.SaveBtn.Enabled := false
         guiObj.SendBtn.Enabled := false
         guiObj.DeleteBtn.Enabled := false
+        guiObj.RetextBtn.Enabled := false
         guiObj.ReprocBtn.Enabled := false
         UpdateStatus(guiObj, "Exporting favorites...")
         return
@@ -1667,6 +1789,7 @@ UpdateButtonState(guiObj) {
     guiObj.SaveBtn.Enabled := isDirty
     guiObj.SendBtn.Enabled := true
     guiObj.DeleteBtn.Enabled := true
+    guiObj.RetextBtn.Enabled := true
     guiObj.ReprocBtn.Enabled := true
 
     if (pending) {
@@ -1853,12 +1976,13 @@ GuiSize(thisGui, MinMax, Width, Height) {
     thisGui.wvc.Move(, , Width - 20, Height - 65)
     btnY := Height - 40
     thisGui.SaveBtn.Move(15, btnY)
-    thisGui.UpdateBtn.Move(135, btnY)
-    thisGui.ReprocBtn.Move(255, btnY)
-    thisGui.DeleteBtn.Move(375, btnY)
-    thisGui.SendBtn.Move(495, btnY)
-    thisGui.PointerBtn.Move(625, btnY)
-    thisGui.StatusTxt.Move(665, btnY, Width - 680)
+    thisGui.UpdateBtn.Move(125, btnY)
+    thisGui.RetextBtn.Move(235, btnY)
+    thisGui.ReprocBtn.Move(345, btnY)
+    thisGui.DeleteBtn.Move(455, btnY)
+    thisGui.SendBtn.Move(565, btnY)
+    thisGui.PointerBtn.Move(675, btnY)
+    thisGui.StatusTxt.Move(715, btnY, Width - 730)
     try {
         if (MinMax == 1) {
             thisGui.wb.document.body.classList.add("maximized")
