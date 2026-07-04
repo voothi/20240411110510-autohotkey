@@ -1682,6 +1682,13 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
         TraySetIcon(iconPath)
     }
     MyGui := Gui("+Resize +MinSize400x300", guiTitle)
+    if (FileExist(iconPath)) {
+        local hIcon := LoadPicture(iconPath, "w32 h32", &imageType := 1)
+        if (hIcon) {
+            SendMessage(0x80, 0, hIcon, , "ahk_id " MyGui.Hwnd)
+            SendMessage(0x80, 1, hIcon, , "ahk_id " MyGui.Hwnd)
+        }
+    }
     MyGui.BackColor := G_GuiBgColor
     DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", MyGui.Hwnd, "UInt", 20, "Ptr*", G_DwmDark, "UInt", 4)
     MyGui.OnEvent("Close", GuiClose)
