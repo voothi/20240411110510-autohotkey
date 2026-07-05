@@ -1155,6 +1155,7 @@ global G_ShowInfoWindows := 1
 global G_HoverHighlightMvp := "0"
 global G_HoverHighlightMvpBookmarks := "3"
 global G_KeyTogglePointer := "Alt"
+global G_SplitGapLimit := "60"
 
 global G_PressCount := 0
 global G_CapturedText := ""
@@ -1197,6 +1198,7 @@ LoadConfig() {
     global G_HoverHighlightMvp := IniRead(configPath, "Settings", "HoverHighlightMvp", "0")
     global G_HoverHighlightMvpBookmarks := IniRead(configPath, "Settings", "HoverHighlightMvpBookmarks", "3")
     global G_KeyTogglePointer := IniRead(configPath, "Hotkey", "key_toggle_pointer", "Alt")
+    global G_SplitGapLimit := IniRead(configPath, "Settings", "SplitGapLimit", "60")
 
 
     if (G_DeskPythonPath == "" || !FileExist(G_DeskPythonPath)) {
@@ -1792,7 +1794,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
         return
     }
 
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' lang ' --zid ' ZID ' --text-mode ' textMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' < "' tmpTextFile '"'
+    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' lang ' --zid ' ZID ' --text-mode ' textMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' --split-gap-limit ' G_SplitGapLimit ' < "' tmpTextFile '"'
     if (tsvPath != "") {
         cmd := cmd ' --tsv "' tsvPath '"'
     }
@@ -2030,7 +2032,7 @@ PerformReload(guiObj, &outB64, &errJSON) {
     } catch as e {
         return 1
     }
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' guiObj.Lang ' --zid ' guiObj.ZID ' --text-mode ' guiObj.TextMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' < "' tmpTextFile '"'
+    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' guiObj.Lang ' --zid ' guiObj.ZID ' --text-mode ' guiObj.TextMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' --split-gap-limit ' G_SplitGapLimit ' < "' tmpTextFile '"'
     if (guiObj.HasProp("TsvPath") && guiObj.TsvPath != "") {
         cmd := cmd ' --tsv "' guiObj.TsvPath '"'
     }
