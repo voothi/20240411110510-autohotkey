@@ -2155,6 +2155,12 @@ HandleSmartAction() {
 }
 
 #MaxThreadsPerHotkey 2
+; Register global hotkey Ctrl+Alt+Shift+F1 (current tray-menu language)
+^+!F1::
+{
+    TriggerSmartAction()
+}
+
 ; Register global hotkey Ctrl+Alt+Shift+F2 (English)
 ^+!F2::
 {
