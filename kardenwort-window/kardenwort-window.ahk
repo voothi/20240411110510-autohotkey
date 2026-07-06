@@ -1456,7 +1456,7 @@ CycleLanguage() {
     SetLanguage(langCodes[nextIndex])
 }
 
-LaunchRestore(filePath) {
+LaunchRestore(filePath, textMode := "") {
     if !FileExist(filePath) {
         KardenMsgBox("Restore target file not found: " filePath, "Kardenwort Error", 16)
         ExitApp()
@@ -1519,9 +1519,17 @@ LaunchRestore(filePath) {
     UpdateTrayMenu()
     UpdateTrayIcon()
 
-    inferredMode := "single"
-    if (InStr(sourceText, "`n") || InStr(sourceText, "`r")) {
-        inferredMode := "multi"
+    inferredMode := textMode
+    if (inferredMode == "") {
+        try {
+            configPath := A_ScriptDir "\config.ini"
+            inferredMode := IniRead(configPath, "settings", "text_mode", "single")
+        } catch {
+            inferredMode := "single"
+            if (InStr(sourceText, "`n") || InStr(sourceText, "`r")) {
+                inferredMode := "multi"
+            }
+        }
     }
 
     LaunchKardenwortWindow(sourceText, inferredMode, ZID, foundTsvPath)
@@ -1603,7 +1611,7 @@ ProcessArgs(argsArray) {
         while (i <= argsArray.Length) {
             arg := argsArray[i]
             if (arg == "--restore") {
-                LaunchRestore(argsArray[i + 1])
+                LaunchRestore(argsArray[i + 1], textMode)
                 i += 2
             } else if (arg == "--desk") {
                 LaunchDesk(argsArray[i + 1], textMode)
