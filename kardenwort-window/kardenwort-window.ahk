@@ -1659,6 +1659,9 @@ ApplyZoom(wb) {
 ; GUI & Watcher Implementation
 ; ===================================================================================
 LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
+    if (textMode == "single") {
+        sourceText := CleanClipboardText(sourceText)
+    }
     ZID := presetZID != "" ? presetZID : A_Now
     
     global G_ActiveWindows
