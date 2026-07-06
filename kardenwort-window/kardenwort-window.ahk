@@ -1583,7 +1583,22 @@ Receive_WM_COPYDATA(wParam, lParam, msg, hwnd) {
 
 ProcessArgs(argsArray) {
     if (argsArray.Length > 0) {
-        textMode := "multi"
+        configPath := A_ScriptDir "\config.ini"
+        textMode := "single"
+        try {
+            textMode := IniRead(configPath, "settings", "text_mode", "single")
+        } catch {
+        }
+        
+        i := 1
+        while (i <= argsArray.Length) {
+            if (argsArray[i] == "--text-mode" && i + 1 <= argsArray.Length) {
+                textMode := argsArray[i + 1]
+                break
+            }
+            i += 1
+        }
+        
         i := 1
         while (i <= argsArray.Length) {
             arg := argsArray[i]
@@ -1594,7 +1609,6 @@ ProcessArgs(argsArray) {
                 LaunchDesk(argsArray[i + 1], textMode)
                 i += 2
             } else if (arg == "--text-mode") {
-                textMode := argsArray[i + 1]
                 i += 2
             } else {
                 i += 1
