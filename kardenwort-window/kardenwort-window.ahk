@@ -980,7 +980,8 @@ ActionExportStartIO(guiObj, payload) {
             logPath := StrReplace(match[1], "\\", "\")
         }
         isAsync := InStr(outStr, '"import_started": true') > 0
-        FsmDispatch(guiObj, EV_EXPORT_DONE, { isAsync: isAsync, logPath: logPath })
+        showWindow := !(InStr(outStr, '"show_window": false') > 0)
+        FsmDispatch(guiObj, EV_EXPORT_DONE, { isAsync: isAsync, logPath: logPath, showWindow: showWindow })
     } else {
         FsmDispatch(guiObj, EV_EXPORT_FAILED, errJSON)
     }
@@ -993,12 +994,15 @@ ActionExportDoneIO(guiObj, payload) {
     if (G_FsmTestMode) {
         return
     }
+    
+    showWindow := payload.HasProp("showWindow") ? payload.showWindow : 1
+    
     if (payload.isAsync) {
-        if (G_ShowInfoWindows) {
+        if (G_ShowInfoWindows && showWindow) {
             KardenMsgBox("Anki import started in the background.`nMonitor log: " payload.logPath, "Kardenwort", "Iconi")
         }
     } else {
-        if (G_ShowInfoWindows) {
+        if (G_ShowInfoWindows && showWindow) {
             KardenMsgBox("Favorites exported.", "Kardenwort", "Iconi")
         }
     }
