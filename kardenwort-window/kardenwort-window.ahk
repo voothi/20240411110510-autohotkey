@@ -543,6 +543,15 @@ ActionFileChangedGuard(guiObj, payload) {
                 UpdateStatus(guiObj, "Data injected automatically.")
                 return false
             }
+            ; In progressive mode the update.js may be older than the timestamp window
+            ; (e.g. lemma chunks ran for a long time) but the data was still injected via eval.
+            ; Skip the reload as long as an update.js is present.
+            if (guiObj.FsmMemory["IsProgressive"]) {
+                guiObj.FsmMemory["LastMTime"] := currentMTime
+                guiObj.FsmMemory["AutoInjectRetries"] := 0
+                UpdateStatus(guiObj, "Progressive data injected automatically.")
+                return false
+            }
         }
     }
 
