@@ -2358,6 +2358,9 @@ $^a::
                 g.wb.document.parentWindow.selectAllInActiveEdit()
                 return
             }
+            ; Select all table rows
+            g.wb.document.parentWindow.selectAllRows()
+            return
         }
     } catch {
     }
