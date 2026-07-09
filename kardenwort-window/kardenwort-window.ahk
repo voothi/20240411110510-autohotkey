@@ -1877,42 +1877,46 @@ UpdateButtonState(guiObj) {
         return
     }
 
-    if (guiObj.FsmState == FSM_RELOADING || guiObj.FsmState == FSM_REPROCESSING || guiObj.FsmState == FSM_RETEXTING ||
-        guiObj.FsmState == FSM_LOADING || guiObj.FsmState == FSM_SAVING || guiObj.FsmState == FSM_CLOSING) {
-        guiObj.UpdateBtn.Visible := false
-        guiObj.SaveBtn.Enabled := false
-        guiObj.SendBtn.Enabled := false
-        guiObj.DeleteBtn.Enabled := false
-        guiObj.RetextBtn.Enabled := false
-        guiObj.ReprocBtn.Enabled := false
-        return
-    }
+    try {
+        if (guiObj.FsmState == FSM_RELOADING || guiObj.FsmState == FSM_REPROCESSING || guiObj.FsmState == FSM_RETEXTING ||
+            guiObj.FsmState == FSM_LOADING || guiObj.FsmState == FSM_SAVING || guiObj.FsmState == FSM_CLOSING) {
+            guiObj.UpdateBtn.Visible := false
+            guiObj.SaveBtn.Enabled := false
+            guiObj.SendBtn.Enabled := false
+            guiObj.DeleteBtn.Enabled := false
+            guiObj.RetextBtn.Enabled := false
+            guiObj.ReprocBtn.Enabled := false
+            return
+        }
 
-    if (guiObj.FsmState == FSM_EXPORTING) {
-        guiObj.UpdateBtn.Visible := false
-        guiObj.SaveBtn.Enabled := false
-        guiObj.SendBtn.Enabled := false
-        guiObj.DeleteBtn.Enabled := false
-        guiObj.RetextBtn.Enabled := false
-        guiObj.ReprocBtn.Enabled := false
-        UpdateStatus(guiObj, "Exporting favorites...")
-        return
-    }
+        if (guiObj.FsmState == FSM_EXPORTING) {
+            guiObj.UpdateBtn.Visible := false
+            guiObj.SaveBtn.Enabled := false
+            guiObj.SendBtn.Enabled := false
+            guiObj.DeleteBtn.Enabled := false
+            guiObj.RetextBtn.Enabled := false
+            guiObj.ReprocBtn.Enabled := false
+            UpdateStatus(guiObj, "Exporting favorites...")
+            return
+        }
 
-    isDirty := guiObj.FsmMemory["IsDirty"]
-    pending := guiObj.FsmMemory["PendingUpdate"]
+        isDirty := guiObj.FsmMemory["IsDirty"]
+        pending := guiObj.FsmMemory["PendingUpdate"]
 
-    guiObj.SaveBtn.Enabled := isDirty
-    guiObj.SendBtn.Enabled := true
-    guiObj.DeleteBtn.Enabled := true
-    guiObj.RetextBtn.Enabled := true
-    guiObj.ReprocBtn.Enabled := true
+        guiObj.SaveBtn.Enabled := isDirty
+        guiObj.SendBtn.Enabled := true
+        guiObj.DeleteBtn.Enabled := true
+        guiObj.RetextBtn.Enabled := true
+        guiObj.ReprocBtn.Enabled := true
 
-    if (pending) {
-        guiObj.UpdateBtn.Visible := true
-        guiObj.UpdateBtn.Enabled := true
-    } else {
-        guiObj.UpdateBtn.Visible := false
+        if (pending) {
+            guiObj.UpdateBtn.Visible := true
+            guiObj.UpdateBtn.Enabled := true
+        } else {
+            guiObj.UpdateBtn.Visible := false
+        }
+    } catch {
+        ; Ignore if window is destroyed
     }
 
     if (isDirty && pending) {
@@ -2468,10 +2472,14 @@ UpdateStatus(guiObj, text) {
     } catch {
         fileName := ""
     }
-    if (fileName != "") {
-        guiObj.Title := "Kardenwort - " guiObj.Lang " (" guiObj.TextMode ") - " fileName " - " text
-    } else {
-        guiObj.Title := "Kardenwort - " guiObj.Lang " (" guiObj.TextMode ") - " text
+    try {
+        if (fileName != "") {
+            guiObj.Title := "Kardenwort - " guiObj.Lang " (" guiObj.TextMode ") - " fileName " - " text
+        } else {
+            guiObj.Title := "Kardenwort - " guiObj.Lang " (" guiObj.TextMode ") - " text
+        }
+    } catch {
+        ; Ignore if window is destroyed
     }
 
     if (G_FsmTestMode) {
