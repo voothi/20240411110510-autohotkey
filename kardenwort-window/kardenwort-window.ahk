@@ -1720,9 +1720,9 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     UpdateBtn := MyGui.Add("Text", "x114 y615 w100 h30 Center +Border +0x200 +Hidden " G_GuiTextColor, "⟳ Update")
     RetextBtn := MyGui.Add("Text", "x224 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Re-text")
     ReprocBtn := MyGui.Add("Text", "x323 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Re-word")
-    DeleteBtn := MyGui.Add("Text", "x433 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Delete")
-    SendBtn := MyGui.Add("Text", "x543 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
-    PointerBtn := MyGui.Add("Text", "x653 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Hand Tool")
+    SendBtn := MyGui.Add("Text", "x433 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
+    PointerBtn := MyGui.Add("Text", "x543 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Hand Tool")
+    DeleteBtn := MyGui.Add("Text", "x653 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Delete")
 
 
     ; Store references on GUI object
@@ -2137,9 +2137,9 @@ GuiSize(thisGui, MinMax, Width, Height) {
     thisGui.UpdateBtn.Move(114, btnY)
     thisGui.RetextBtn.Move(224, btnY)
     thisGui.ReprocBtn.Move(323, btnY)
-    thisGui.DeleteBtn.Move(433, btnY)
-    thisGui.SendBtn.Move(543, btnY)
-    thisGui.PointerBtn.Move(653, btnY)
+    thisGui.SendBtn.Move(433, btnY)
+    thisGui.PointerBtn.Move(543, btnY)
+    thisGui.DeleteBtn.Move(653, btnY)
 
     try {
         if (MinMax == 1) {
