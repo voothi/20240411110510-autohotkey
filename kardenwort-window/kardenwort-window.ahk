@@ -1006,11 +1006,7 @@ ActionExportDoneIO(guiObj, payload) {
     
     showWindow := payload.HasProp("showWindow") ? payload.showWindow : 1
     
-    if (payload.isAsync) {
-        if (G_ShowInfoWindows && showWindow) {
-            KardenMsgBox("Anki import started in the background.`nMonitor log: " payload.logPath, "Kardenwort", "Iconi")
-        }
-    } else {
+    if (!payload.isAsync) {
         if (G_ShowInfoWindows && showWindow) {
             KardenMsgBox("Favorites exported.", "Kardenwort", "Iconi")
         }
