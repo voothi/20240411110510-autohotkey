@@ -2020,10 +2020,14 @@ ToggleSelectableTextMode(guiObj, state := "", isPersistent := false) {
 }
 
 UpdateButtonText(guiObj, state) {
-    if (state) {
-        guiObj.PointerBtn.Text := "Select Text"
-    } else {
-        guiObj.PointerBtn.Text := "Hand Tool"
+    try {
+        if (state) {
+            guiObj.PointerBtn.Text := "Select Text"
+        } else {
+            guiObj.PointerBtn.Text := "Hand Tool"
+        }
+    } catch {
+        ; Ignore errors if control is destroyed (e.g. during Alt+F4 window close)
     }
 }
 
