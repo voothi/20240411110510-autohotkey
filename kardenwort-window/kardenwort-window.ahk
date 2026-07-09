@@ -1916,7 +1916,7 @@ UpdateButtonState(guiObj) {
             guiObj.UpdateBtn.Visible := false
         }
     } catch {
-        ; Ignore if window is destroyed
+        return ; Ignore if window is destroyed
     }
 
     if (isDirty && pending) {
