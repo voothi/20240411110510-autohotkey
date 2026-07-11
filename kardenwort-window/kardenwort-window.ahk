@@ -33,7 +33,11 @@ if (existingHwnd) {
         NumPut("Ptr", strBuf.Ptr, CopyDataStruct, 2 * A_PtrSize)
         
         DetectHiddenWindows True
-        SendMessage(0x004A, 0, CopyDataStruct.Ptr,, "ahk_id " existingHwnd)
+        try {
+            SendMessage(0x004A, 0, CopyDataStruct.Ptr,, "ahk_id " existingHwnd,,,, 15000)
+        } catch Error as err {
+            KardenMsgBox("Failed to send arguments to existing instance (timeout/error):`n" err.Message, "Kardenwort SendMessage Error", 16)
+        }
     }
     ExitApp()
 }
