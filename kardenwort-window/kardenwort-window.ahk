@@ -1044,6 +1044,12 @@ ActionCloseIO(guiObj, payload) {
         return
     }
     if (guiObj.FsmMemory["IsDirty"]) {
+        if (G_AutoSaveOnClose) {
+            ; Auto-save without prompting
+            guiObj.FsmMemory["PendingClose"] := true
+            FsmDispatch(guiObj, EV_SAVE_CLICK)
+            return
+        }
         res := "Cancel"
         if (G_FsmTestMode) {
             if (payload != "") {
@@ -1150,6 +1156,7 @@ global G_CurrentLang := "en"
 global G_FileWatcherIntervalMs := 1000
 global G_AutoUpdate := 0
 global G_AutoSave := 0
+global G_AutoSaveOnClose := 0
 global G_MultiTapTimeout := 300
 global G_TapSingleMode := "single"
 global G_TapDoubleMode := "multi"
@@ -1193,6 +1200,7 @@ LoadConfig() {
     global G_AutoInjectGracePeriodSec := IniRead(configPath, "Settings", "AutoInjectGracePeriodSec", 6)
     global G_AutoInjectMaxFileAgeDiffSec := IniRead(configPath, "Settings", "AutoInjectMaxFileAgeDiffSec", 10)
     global G_AutoSave := IniRead(configPath, "Settings", "auto_save_on_edit", 0)
+    global G_AutoSaveOnClose := IniRead(configPath, "Settings", "auto_save_on_close", 0)
     global G_ShowInfoWindows := IniRead(configPath, "Settings", "ShowInfoWindows", 1)
     global G_MultiTapTimeout := IniRead(configPath, "Settings", "MultiTapTimeout", 300)
     global G_TapSingleMode := IniRead(configPath, "Hotkey", "TapSingleMode", "single")
