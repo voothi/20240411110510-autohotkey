@@ -1597,7 +1597,7 @@ Receive_WM_COPYDATA(wParam, lParam, msg, hwnd) {
             G_BufferedArgs.Push(arg)
         }
     } else {
-        ProcessArgs(args)
+        SetTimer(ProcessArgs.Bind(args), -10)
     }
     return true
 }
