@@ -1894,6 +1894,8 @@ UpdateButtonState(guiObj) {
             guiObj.DeleteBtn.Enabled := false
             guiObj.RetextBtn.Enabled := false
             guiObj.ReprocBtn.Enabled := false
+            guiObj.GetClientPos(, , &clientWidth, &clientHeight)
+            LayoutButtons(guiObj, clientWidth, clientHeight)
             return
         }
 
@@ -1905,6 +1907,8 @@ UpdateButtonState(guiObj) {
             guiObj.RetextBtn.Enabled := false
             guiObj.ReprocBtn.Enabled := false
             UpdateStatus(guiObj, "Exporting favorites...")
+            guiObj.GetClientPos(, , &clientWidth, &clientHeight)
+            LayoutButtons(guiObj, clientWidth, clientHeight)
             return
         }
 
@@ -1935,6 +1939,11 @@ UpdateButtonState(guiObj) {
         UpdateStatus(guiObj, "Data ready. Click ⟳ to update.")
     } else {
         UpdateStatus(guiObj, "Ready")
+    }
+
+    try {
+        guiObj.GetClientPos(, , &clientWidth, &clientHeight)
+        LayoutButtons(guiObj, clientWidth, clientHeight)
     }
 }
 
@@ -2144,18 +2153,140 @@ GuiClose(thisGui) {
     return 1
 }
 
+LayoutButtons(thisGui, Width, Height) {
+    blocks := []
+    
+    ; Block 1: Save & Update
+    visible1 := []
+    try {
+        if (thisGui.SaveBtn.Visible)
+            visible1.Push(thisGui.SaveBtn)
+    }
+    try {
+        if (thisGui.UpdateBtn.Visible)
+            visible1.Push(thisGui.UpdateBtn)
+    }
+    if (visible1.Length > 0)
+        blocks.Push(visible1)
+        
+    ; Block 2: Retext & Reproc
+    visible2 := []
+    try {
+        if (thisGui.RetextBtn.Visible)
+            visible2.Push(thisGui.RetextBtn)
+    }
+    try {
+        if (thisGui.ReprocBtn.Visible)
+            visible2.Push(thisGui.ReprocBtn)
+    }
+    if (visible2.Length > 0)
+        blocks.Push(visible2)
+        
+    ; Block 3: Send
+    try {
+        if (thisGui.SendBtn.Visible)
+            blocks.Push([thisGui.SendBtn])
+    }
+    
+    ; Block 4: Pointer
+    try {
+        if (thisGui.PointerBtn.Visible)
+            blocks.Push([thisGui.PointerBtn])
+    }
+    
+    ; Block 5: Delete
+    try {
+        if (thisGui.DeleteBtn.Visible)
+            blocks.Push([thisGui.DeleteBtn])
+    }
+    
+    if (blocks.Length == 0)
+        return
+        
+    ; Calculate block widths
+    blockWidths := []
+    for block in blocks {
+        if (block.Length == 1) {
+            w := 100
+            try {
+                block[1].GetPos(, , &tempW)
+                w := tempW
+            }
+            blockWidths.Push(w)
+        } else {
+            w1 := 100
+            w2 := 100
+            try {
+                block[1].GetPos(, , &tempW1)
+                w1 := tempW1
+            }
+            try {
+                block[2].GetPos(, , &tempW2)
+                w2 := tempW2
+            }
+            blockWidths.Push(w1 + w2 - 1)
+        }
+    }
+    
+    ; Check if all blocks fit on one line
+    totalWidth := 0
+    for w in blockWidths {
+        totalWidth += w
+    }
+    totalWidth += 10 * (blocks.Length - 1)
+    
+    totalRows := 1
+    blockPositions := []
+    
+    if (totalWidth <= Width - 30) {
+        ; All fit on one line, so center them
+        startX := (Width - totalWidth) / 2
+        currX := startX
+        for i, block in blocks {
+            blockPositions.Push({x: currX, row: 1})
+            currX += blockWidths[i] + 10
+        }
+    } else {
+        ; Wrap blocks, align to the left (starting at x=15)
+        currX := 15
+        currentRow := 1
+        for i, block in blocks {
+            w := blockWidths[i]
+            if (currX > 15 && currX + w > Width - 15) {
+                currentRow += 1
+                currX := 15
+            }
+            blockPositions.Push({x: currX, row: currentRow})
+            currX += w + 10
+        }
+        totalRows := currentRow
+    }
+    
+    wvcHeight := Height - 25 - totalRows * 40
+    try {
+        thisGui.wvc.Move(, , Width - 20, wvcHeight)
+    }
+    
+    for i, block in blocks {
+        pos := blockPositions[i]
+        btnY := Height - (totalRows - pos.row + 1) * 40
+        
+        try {
+            if (block.Length == 1) {
+                block[1].Move(pos.x, btnY)
+            } else {
+                block[1].Move(pos.x, btnY)
+                block[1].GetPos(, , &w1)
+                block[2].Move(pos.x + w1 - 1, btnY)
+            }
+        }
+    }
+}
+
 GuiSize(thisGui, MinMax, Width, Height) {
     if (MinMax == -1)
         return
-    thisGui.wvc.Move(, , Width - 20, Height - 65)
-    btnY := Height - 40
-    thisGui.SaveBtn.Move(15, btnY)
-    thisGui.UpdateBtn.Move(114, btnY)
-    thisGui.RetextBtn.Move(224, btnY)
-    thisGui.ReprocBtn.Move(323, btnY)
-    thisGui.SendBtn.Move(433, btnY)
-    thisGui.PointerBtn.Move(543, btnY)
-    thisGui.DeleteBtn.Move(653, btnY)
+    LayoutButtons(thisGui, Width, Height)
 
     try {
         if (MinMax == 1) {
