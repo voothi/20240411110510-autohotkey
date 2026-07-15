@@ -655,7 +655,10 @@ ActionReloadDoneIO(guiObj, payload) {
             FileDelete(tmpHtmlFile)
         } catch {
         }
-        guiObj.wvc.Visible := true
+        try {
+            guiObj.wvc.Visible := true
+        } catch {
+        }
         return
     }
     try {
@@ -689,7 +692,10 @@ ActionReloadDoneIO(guiObj, payload) {
     } catch {
     }
 
-    guiObj.wvc.Visible := true
+    try {
+        guiObj.wvc.Visible := true
+    } catch {
+    }
     try {
         WinRedraw(guiObj.wvc.Hwnd)
         WinRedraw(guiObj.Hwnd)
