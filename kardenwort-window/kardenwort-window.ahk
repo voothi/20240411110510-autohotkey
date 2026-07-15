@@ -2154,110 +2154,101 @@ GuiClose(thisGui) {
 }
 
 LayoutButtons(thisGui, Width, Height) {
-    blocks := []
+    allButtons := [
+        thisGui.SaveBtn,
+        thisGui.UpdateBtn,
+        thisGui.RetextBtn,
+        thisGui.ReprocBtn,
+        thisGui.SendBtn,
+        thisGui.PointerBtn,
+        thisGui.DeleteBtn
+    ]
     
-    ; Block 1: Save & Update
-    visible1 := []
-    try {
-        if (thisGui.SaveBtn.Visible)
-            visible1.Push(thisGui.SaveBtn)
-    }
-    try {
-        if (thisGui.UpdateBtn.Visible)
-            visible1.Push(thisGui.UpdateBtn)
-    }
-    if (visible1.Length > 0)
-        blocks.Push(visible1)
-        
-    ; Block 2: Retext & Reproc
-    visible2 := []
-    try {
-        if (thisGui.RetextBtn.Visible)
-            visible2.Push(thisGui.RetextBtn)
-    }
-    try {
-        if (thisGui.ReprocBtn.Visible)
-            visible2.Push(thisGui.ReprocBtn)
-    }
-    if (visible2.Length > 0)
-        blocks.Push(visible2)
-        
-    ; Block 3: Send
-    try {
-        if (thisGui.SendBtn.Visible)
-            blocks.Push([thisGui.SendBtn])
-    }
-    
-    ; Block 4: Pointer
-    try {
-        if (thisGui.PointerBtn.Visible)
-            blocks.Push([thisGui.PointerBtn])
-    }
-    
-    ; Block 5: Delete
-    try {
-        if (thisGui.DeleteBtn.Visible)
-            blocks.Push([thisGui.DeleteBtn])
-    }
-    
-    if (blocks.Length == 0)
-        return
-        
-    ; Calculate block widths
-    blockWidths := []
-    for block in blocks {
-        if (block.Length == 1) {
-            w := 100
-            try {
-                block[1].GetPos(, , &tempW)
-                w := tempW
-            }
-            blockWidths.Push(w)
-        } else {
-            w1 := 100
-            w2 := 100
-            try {
-                block[1].GetPos(, , &tempW1)
-                w1 := tempW1
-            }
-            try {
-                block[2].GetPos(, , &tempW2)
-                w2 := tempW2
-            }
-            blockWidths.Push(w1 + w2 - 1)
+    visibleButtons := []
+    for btn in allButtons {
+        try {
+            if (btn.Visible)
+                visibleButtons.Push(btn)
         }
     }
     
-    ; Check if all blocks fit on one line
-    totalWidth := 0
-    for w in blockWidths {
-        totalWidth += w
+    if (visibleButtons.Length == 0)
+        return
+        
+    ; Calculate widths of all visible buttons
+    btnWidths := []
+    for btn in visibleButtons {
+        w := 100
+        try {
+            btn.GetPos(, , &tempW)
+            w := tempW
+        }
+        btnWidths.Push(w)
     }
-    totalWidth += 10 * (blocks.Length - 1)
+    
+    ; Define the gap before each button (except the first one)
+    gaps := []
+    if (visibleButtons.Length > 1) {
+        Loop visibleButtons.Length - 1 {
+            i := A_Index + 1
+            btnPrev := visibleButtons[i-1]
+            btnCurr := visibleButtons[i]
+            
+            if ((btnPrev == thisGui.SaveBtn && btnCurr == thisGui.UpdateBtn) || 
+                (btnPrev == thisGui.RetextBtn && btnCurr == thisGui.ReprocBtn)) {
+                gaps.Push(-1)
+            } else {
+                gaps.Push(10)
+            }
+        }
+    }
+    
+    ; Calculate total width
+    totalWidth := btnWidths[1]
+    if (visibleButtons.Length > 1) {
+        Loop visibleButtons.Length - 1 {
+            i := A_Index + 1
+            totalWidth += gaps[i-1] + btnWidths[i]
+        }
+    }
     
     totalRows := 1
-    blockPositions := []
+    btnPositions := []
     
     if (totalWidth <= Width - 30) {
         ; All fit on one line, so center them
         startX := (Width - totalWidth) / 2
         currX := startX
-        for i, block in blocks {
-            blockPositions.Push({x: currX, row: 1})
-            currX += blockWidths[i] + 10
+        btnPositions.Push({x: currX, row: 1})
+        if (visibleButtons.Length > 1) {
+            Loop visibleButtons.Length - 1 {
+                i := A_Index + 1
+                currX += gaps[i-1] + btnWidths[i-1]
+                btnPositions.Push({x: currX, row: 1})
+            }
         }
     } else {
-        ; Wrap blocks, align to the left (starting at x=15)
+        ; Wrap buttons, align to the left (starting at x=15)
         currX := 15
         currentRow := 1
-        for i, block in blocks {
-            w := blockWidths[i]
-            if (currX > 15 && currX + w > Width - 15) {
-                currentRow += 1
-                currX := 15
+        btnPositions.Push({x: currX, row: currentRow})
+        
+        if (visibleButtons.Length > 1) {
+            Loop visibleButtons.Length - 1 {
+                i := A_Index + 1
+                w := btnWidths[i]
+                gap := gaps[i-1]
+                
+                rightEdge := currX + btnWidths[i-1] + gap + w
+                if (currX > 15 && rightEdge > Width - 15) {
+                    currentRow += 1
+                    currX := 15
+                    btnPositions.Push({x: currX, row: currentRow})
+                } else {
+                    currX := currX + btnWidths[i-1] + gap
+                    btnPositions.Push({x: currX, row: currentRow})
+                }
             }
-            blockPositions.Push({x: currX, row: currentRow})
-            currX += w + 10
         }
         totalRows := currentRow
     }
@@ -2267,18 +2258,11 @@ LayoutButtons(thisGui, Width, Height) {
         thisGui.wvc.Move(, , Width - 20, wvcHeight)
     }
     
-    for i, block in blocks {
-        pos := blockPositions[i]
+    for i, btn in visibleButtons {
+        pos := btnPositions[i]
         btnY := Height - (totalRows - pos.row + 1) * 40
-        
         try {
-            if (block.Length == 1) {
-                block[1].Move(pos.x, btnY)
-            } else {
-                block[1].Move(pos.x, btnY)
-                block[1].GetPos(, , &w1)
-                block[2].Move(pos.x + w1 - 1, btnY)
-            }
+            btn.Move(pos.x, btnY)
         }
     }
 }
