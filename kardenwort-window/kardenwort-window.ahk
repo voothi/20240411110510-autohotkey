@@ -1954,14 +1954,26 @@ UpdateButtonState(guiObj) {
 }
 
 OnUpdateClick(guiObj, *) {
+    try {
+        guiObj.wb.document.parentWindow.commitActiveEdit()
+    } catch {
+    }
     FsmDispatch(guiObj, EV_UPDATE_CLICK)
 }
 
 OnSaveClick(guiObj, *) {
+    try {
+        guiObj.wb.document.parentWindow.commitActiveEdit()
+    } catch {
+    }
     FsmDispatch(guiObj, EV_SAVE_CLICK)
 }
 
 OnSendToAnkiClick(guiObj, *) {
+    try {
+        guiObj.wb.document.parentWindow.commitActiveEdit()
+    } catch {
+    }
     try {
         jsonStr := guiObj.wb.document.parentWindow.getSelectedRows()
     } catch {
@@ -1977,6 +1989,10 @@ OnSendToAnkiClick(guiObj, *) {
 
 OnDeleteClick(guiObj, *) {
     try {
+        guiObj.wb.document.parentWindow.cancelActiveEdit()
+    } catch {
+    }
+    try {
         guiObj.wb.document.parentWindow.deleteSelectedRows()
         FsmDispatch(guiObj, EV_DIRTY)
     } catch {
@@ -1984,6 +2000,10 @@ OnDeleteClick(guiObj, *) {
 }
 
 OnRetextClick(guiObj, *) {
+    try {
+        guiObj.wb.document.parentWindow.commitActiveEdit()
+    } catch {
+    }
     try {
         guiObj.wb.document.parentWindow.clearMVPBookmarks()
     } catch {
@@ -2000,6 +2020,10 @@ OnRetextClick(guiObj, *) {
 }
 
 OnReprocessClick(guiObj, *) {
+    try {
+        guiObj.wb.document.parentWindow.commitActiveEdit()
+    } catch {
+    }
     try {
         jsonStr := guiObj.wb.document.parentWindow.getSelectedRows()
     } catch {
@@ -2152,6 +2176,10 @@ WatchFile(guiObj) {
 
 GuiClose(thisGui) {
     global G_ActiveWindows
+    try {
+        thisGui.wb.document.parentWindow.commitActiveEdit()
+    } catch {
+    }
     if (thisGui.HasProp("SessionID") && G_ActiveWindows.Has(thisGui.SessionID)) {
         G_ActiveWindows.Delete(thisGui.SessionID)
     }
