@@ -3131,6 +3131,10 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         scriptEl.text := js
         doc.body.appendChild(scriptEl)
     } catch Any as e {
+        if (IsSet(G_FsmTestMode) && G_FsmTestMode) {
+            FileAppend("ERROR: Injection failed: " e.Message " at line " e.Line " in " e.File "`n", "test_results.txt")
+            return
+        }
         KardenMsgBox("Injection failed: " e.Message "`nLine: " e.Line "`nFile: " e.File, "Kardenwort Error", 16)
     }
 }

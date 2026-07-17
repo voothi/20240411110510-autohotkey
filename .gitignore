@@ -103,3 +103,6 @@ scratch/
 openspec/
 AGENTS.md
 kardenwort-window/watcher.log
+kardenwort-window/tests/test_results.txt
+kardenwort-window/tests/ahk_out.txt
+kardenwort-window/tests/ahk_err.txt

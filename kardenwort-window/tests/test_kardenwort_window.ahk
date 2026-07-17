@@ -5,8 +5,8 @@
 ; ===================================================================================
 global G_FsmTestMode := true
 
-#Include "..\Lib\B64Util.ahk"
-#Include "..\kardenwort-window\kardenwort-window.ahk"
+#Include "..\..\Lib\B64Util.ahk"
+#Include "..\kardenwort-window.ahk"
 
 ; ===================================================================================
 ; Mock Setup for FSM tests
@@ -29,14 +29,15 @@ class MockGui {
     SourceText := "mock source text"
     TextMode := "single"
     StatusLog := []
-    
+    selectableTextMode := false
+
     SaveBtn := MockControl()
     UpdateBtn := MockControl()
     SendBtn := MockControl()
     DeleteBtn := MockControl()
     ReprocBtn := MockControl()
     StatusTxt := MockControl()
-    
+
     Destroy() => 0
 }
 
@@ -84,7 +85,8 @@ G_CascadeIndex := 1
 GetCascadeCoords(&x2, &y2)
 G_CascadeIndex := 2
 GetCascadeCoords(&x3, &y3)
-Assert(x1 == 50 && y1 == 50 && x2 == 80 && y2 == 80 && x3 == 110 && y3 == 110, "Cascading coordinates incremented correctly.")
+Assert(x1 == 50 && y1 == 50 && x2 == 80 && y2 == 80 && x3 == 110 && y3 == 110,
+    "Cascading coordinates incremented correctly.")
 
 ; Test 3: Cascade wrap-around behavior
 G_CascadeIndex := 14
@@ -94,7 +96,7 @@ GetCascadeCoords(&x15, &y15) ; should wrap to 0 (50, 50)
 Assert(x14 == 470 && x15 == 50, "Coordinate wrap-around reset after 15 windows.")
 
 ; Test 4: Verify config file existence and format
-configPath := "..\kardenwort-window\config.ini"
+configPath := "..\config.ini"
 if FileExist(configPath) {
     pythonPath := IniRead(configPath, "Paths", "DeskPythonPath", "")
     scriptPath := IniRead(configPath, "Paths", "DeskScriptPath", "")
@@ -244,7 +246,7 @@ class MockDocument {
     __mvpBookmarks := 0
     parentWindow := this
     body := MockElement()
-    
+
     createElement(tagName) {
         el := MockElement()
         return el
@@ -268,8 +270,18 @@ class MockGuiWithWb extends MockGui {
 
 g_mvp := MockGuiWithWb()
 InjectHoverHighlightMvp(g_mvp, 5)
-Assert(g_mvp.wb.document.parentWindow.__mvpBookmarks == 5, "InjectHoverHighlightMvp set parentWindow.__mvpBookmarks correctly.")
+Assert(g_mvp.wb.document.parentWindow.__mvpBookmarks == 5,
+    "InjectHoverHighlightMvp set parentWindow.__mvpBookmarks correctly.")
+
+; Test 17: OnAhkCall with 'play' action
+g_play := MockGui()
+try {
+    OnAhkCall(g_play, "play", "python_dummy`ncli_dummy`nen`nhello_dummy")
+    Assert(true, "OnAhkCall 'play' action handled successfully without throwing error")
+} catch as err {
+    Assert(false, "OnAhkCall 'play' action threw an error: " err.Message)
+}
 
 ; Write summary
 FileAppend("`nSummary: " (totalTests - failedTests) "/" totalTests " tests passed.`n", "test_results.txt")
-
+ExitApp()
