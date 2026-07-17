@@ -2204,7 +2204,7 @@ GuiClose(thisGui) {
     return 1
 }
 
-LayoutButtons(thisGui, Width, Height) {
+LayoutButtons(thisGui, Width, Height, triggerRedraw := true) {
     allButtons := [
         thisGui.SaveBtn,
         thisGui.UpdateBtn,
@@ -2316,15 +2316,17 @@ LayoutButtons(thisGui, Width, Height) {
             btn.Move(pos.x, btnY)
         }
     }
-    try {
-        WinRedraw(thisGui.Hwnd)
+    if (triggerRedraw) {
+        try {
+            WinRedraw(thisGui.Hwnd)
+        }
     }
 }
 
 GuiSize(thisGui, MinMax, Width, Height) {
     if (MinMax == -1)
         return
-    LayoutButtons(thisGui, Width, Height)
+    LayoutButtons(thisGui, Width, Height, false)
 
     try {
         if (MinMax == 1) {
