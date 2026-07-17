@@ -1180,6 +1180,7 @@ global G_DwmDark := 1
 global G_ShowInfoWindows := 1
 global G_HoverHighlightMvp := "0"
 global G_HoverHighlightMvpBookmarks := "3"
+global G_HoverHighlightMvpRainbow := "0"
 global G_KeyTogglePointer := "Alt"
 global G_SplitGapLimit := "60"
 
@@ -1224,6 +1225,7 @@ LoadConfig() {
     global G_DwmDark := (G_Theme == "light" || G_Theme == "white") ? 0 : 1
     global G_HoverHighlightMvp := IniRead(configPath, "Settings", "HoverHighlightMvp", "0")
     global G_HoverHighlightMvpBookmarks := IniRead(configPath, "Settings", "HoverHighlightMvpBookmarks", "3")
+    global G_HoverHighlightMvpRainbow := IniRead(configPath, "Settings", "HoverHighlightMvpRainbow", "0")
     global G_KeyTogglePointer := IniRead(configPath, "Hotkey", "key_toggle_pointer", "Alt")
     global G_SplitGapLimit := IniRead(configPath, "Settings", "SplitGapLimit", "60")
 
@@ -2702,6 +2704,30 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         css .= "  border-radius: 4px !important;"
         css .= "  margin: -1px !important;"
         css .= "}"
+
+        colorsDark := ["#39d353", "#b78cf7", "#ff9c3a", "#ff79c6", "#f2ca30", "#39c5ff", "#ff7b72", "#a5b4fc"]
+        colorsLight := ["#1a7f37", "#8250df", "#bc4c00", "#cf222e", "#b08800", "#0891b2", "#e11d48", "#7c3aed"]
+        Loop bookmarksN {
+            i := A_Index - 1
+            colorIdx := Mod(i, 8) + 1
+            cDark := colorsDark[colorIdx]
+            cLight := colorsLight[colorIdx]
+
+            css .= "body.theme-dark #source-container span.word.hl-mvp-pin-" i ","
+            css .= "body.theme-dark #translation-container span.word.hl-mvp-pin-" i ","
+            css .= "body.theme-white #source-container span.word.hl-mvp-pin-" i ","
+            css .= "body.theme-white #translation-container span.word.hl-mvp-pin-" i " {"
+            css .= "  border: 1px dashed " cDark " !important;"
+            css .= "  border-radius: 4px !important;"
+            css .= "  margin: -1px !important;"
+            css .= "}"
+            css .= "body.theme-light #source-container span.word.hl-mvp-pin-" i ","
+            css .= "body.theme-light #translation-container span.word.hl-mvp-pin-" i " {"
+            css .= "  border: 1px dashed " cLight " !important;"
+            css .= "  border-radius: 4px !important;"
+            css .= "  margin: -1px !important;"
+            css .= "}"
+        }
         css .= "#source-container span.word,"
         css .= "#translation-container span.word {"
         css .= "  cursor: pointer;"
@@ -2792,6 +2818,7 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         scriptEl.id := "hl-mvp-script"
         scriptEl.type := "text/javascript"
         scriptEl.setAttribute("data-bookmarks", bookmarksN)
+        scriptEl.setAttribute("data-rainbow", G_HoverHighlightMvpRainbow)
 
         js := ""
         js .= "(function() {"
