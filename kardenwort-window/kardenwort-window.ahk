@@ -1847,6 +1847,23 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
 }
 
 OnAhkCall(guiObj, action, value) {
+    if (action == "play") {
+        parts := StrSplit(value, "`n")
+        if (parts.Length >= 4) {
+            text := parts[1]
+            lang := parts[2]
+            cli_path := parts[3]
+            python_path := parts[4]
+            if (text != "" && lang != "" && cli_path != "" && python_path != "") {
+                cmd := '"' python_path '" "' cli_path '" "' text '" "' lang '"'
+                try {
+                    Run(cmd, , "Hide")
+                } catch {
+                }
+            }
+        }
+        return
+    }
     if (action == "JS_Error") {
         KardenMsgBox("JavaScript Error: " value, "Kardenwort JS Error", 16)
         return
