@@ -1848,16 +1848,16 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
 
 OnAhkCall(guiObj, action, value) {
     if (action == "play") {
-        parts := StrSplit(value, "`n")
+        parts := StrSplit(value, "`n", "`r", 4)
         if (parts.Length >= 4) {
-            text := parts[1]
-            lang := parts[2]
-            cli_path := parts[3]
-            python_path := parts[4]
+            python_path := parts[1]
+            cli_path := parts[2]
+            lang := parts[3]
+            text := parts[4]
             if (text != "" && lang != "" && cli_path != "" && python_path != "") {
                 cmd := '"' python_path '" "' cli_path '" "' text '" "' lang '"'
                 try {
-                    Run(cmd, , "Hide")
+                    Run(cmd, "", "Hide")
                 } catch {
                 }
             }
