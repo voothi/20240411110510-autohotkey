@@ -2316,6 +2316,9 @@ LayoutButtons(thisGui, Width, Height) {
             btn.Move(pos.x, btnY)
         }
     }
+    try {
+        WinRedraw(thisGui.Hwnd)
+    }
 }
 
 GuiSize(thisGui, MinMax, Width, Height) {
