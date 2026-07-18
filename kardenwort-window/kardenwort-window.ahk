@@ -284,6 +284,22 @@ ActionRenderDoneIO(guiObj, payload) {
     } catch {
     }
     try {
+        isStubDiv := guiObj.wb.document.getElementById("kardenwort-is-stub")
+        if (isStubDiv) {
+            guiObj.IsStub := true
+            guiObj.SaveBtn.Visible := false
+            guiObj.UpdateBtn.Visible := false
+            guiObj.RetextBtn.Visible := false
+            guiObj.ReprocBtn.Visible := false
+            guiObj.SendBtn.Visible := false
+            guiObj.PointerBtn.Visible := false
+            guiObj.DeleteBtn.Visible := false
+            guiObj.GetClientPos(, , &clientWidth, &clientHeight)
+            LayoutButtons(guiObj, clientWidth, clientHeight)
+        }
+    } catch {
+    }
+    try {
         WinRedraw(guiObj.wvc.Hwnd)
         WinRedraw(guiObj.Hwnd)
     } catch {
@@ -1975,17 +1991,27 @@ UpdateButtonState(guiObj) {
         isDirty := guiObj.FsmMemory["IsDirty"]
         pending := guiObj.FsmMemory["PendingUpdate"]
 
-        guiObj.SaveBtn.Enabled := isDirty
-        guiObj.SendBtn.Enabled := true
-        guiObj.DeleteBtn.Enabled := true
-        guiObj.RetextBtn.Enabled := true
-        guiObj.ReprocBtn.Enabled := true
-
-        if (pending) {
-            guiObj.UpdateBtn.Visible := true
-            guiObj.UpdateBtn.Enabled := true
-        } else {
+        if (guiObj.HasProp("IsStub") && guiObj.IsStub) {
+            guiObj.SaveBtn.Visible := false
             guiObj.UpdateBtn.Visible := false
+            guiObj.SendBtn.Visible := false
+            guiObj.DeleteBtn.Visible := false
+            guiObj.RetextBtn.Visible := false
+            guiObj.ReprocBtn.Visible := false
+            guiObj.PointerBtn.Visible := false
+        } else {
+            guiObj.SaveBtn.Enabled := isDirty
+            guiObj.SendBtn.Enabled := true
+            guiObj.DeleteBtn.Enabled := true
+            guiObj.RetextBtn.Enabled := true
+            guiObj.ReprocBtn.Enabled := true
+
+            if (pending) {
+                guiObj.UpdateBtn.Visible := true
+                guiObj.UpdateBtn.Enabled := true
+            } else {
+                guiObj.UpdateBtn.Visible := false
+            }
         }
     } catch {
         return ; Ignore if window is destroyed
