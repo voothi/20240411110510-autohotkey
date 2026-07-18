@@ -1502,6 +1502,9 @@ LaunchRestore(filePath) {
     siblingTxt := ""
     txtPattern := fileDir "\" ZID "-*.txt"
     loop files, txtPattern {
+        if RegExMatch(A_LoopFileName, "i)\.[a-z]{2,3}\.txt$") {
+            continue
+        }
         siblingTxt := A_LoopFilePath
         break
     }
