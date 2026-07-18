@@ -233,6 +233,12 @@ ActionRenderDoneIO(guiObj, payload) {
     }
 
     htmlContent := B64Decode(payload.outB64)
+    if InStr(htmlContent, "<!-- KARDENWORT_CLOSE -->") {
+        guiObj.Destroy()
+        global G_WindowCount
+        G_WindowCount := Max(0, G_WindowCount - 1)
+        return
+    }
     tmpHtmlFile := A_Temp "\karden_view_" guiObj.ZID "_" A_TickCount ".html"
     FileAppend(htmlContent, tmpHtmlFile, "UTF-8-RAW")
 
@@ -1741,10 +1747,27 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
 
     guiTitle := "[" seqNum "] Kardenwort - " lang " (" textMode ")"
 
+    ; Check if this is a sentences-mode stub window
+    isStubWindow := false
+    if (tsvPath == "") {
+        try {
+            pyConfigPath := RegExReplace(G_DeskScriptPath, "kardenwort_desk\.py$", "config.ini")
+            if FileExist(pyConfigPath) {
+                sentencesEnabled := IniRead(pyConfigPath, "sentences_mode", "enabled", "0")
+                parentMode := IniRead(pyConfigPath, "sentences_mode", "parent_mode", "full")
+                if ((sentencesEnabled == "1" || sentencesEnabled == "true") && parentMode == "stub") {
+                    isStubWindow := true
+                }
+            }
+        } catch {
+        }
+    }
+
     ; Create GUI
     DllCall("shell32\SetCurrentProcessExplicitAppUserModelID", "WStr", "Kardenwort.Window." seqNum)
     local iconPath := A_ScriptDir "\..\assets\numbers\" seqNum ".ico"
     MyGui := Gui("+Resize +MinSize400x300", guiTitle)
+    MyGui.IsStubWindow := isStubWindow
     if (FileExist(iconPath)) {
         local hIcon := LoadPicture(iconPath, "w32 h32", &imageType := 1)
         if (hIcon) {
@@ -1763,13 +1786,14 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     wb := wvc.Value
 
     ; Native Footer Buttons
-    SaveBtn := MyGui.Add("Text", "x15 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor " Disabled", "Save (Ctrl+S)")
+    btnOpts := isStubWindow ? " +Hidden " : " "
+    SaveBtn := MyGui.Add("Text", "x15 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor btnOpts "Disabled", "Save (Ctrl+S)")
     UpdateBtn := MyGui.Add("Text", "x114 y615 w100 h30 Center +Border +0x200 +Hidden " G_GuiTextColor, "⟳ Update")
-    RetextBtn := MyGui.Add("Text", "x224 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Re-text")
-    ReprocBtn := MyGui.Add("Text", "x323 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Re-word")
-    SendBtn := MyGui.Add("Text", "x433 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
-    PointerBtn := MyGui.Add("Text", "x543 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Hand Tool")
-    DeleteBtn := MyGui.Add("Text", "x653 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Delete")
+    RetextBtn := MyGui.Add("Text", "x224 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor btnOpts, "Re-text")
+    ReprocBtn := MyGui.Add("Text", "x323 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor btnOpts, "Re-word")
+    SendBtn := MyGui.Add("Text", "x433 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor btnOpts, "Send to Anki")
+    PointerBtn := MyGui.Add("Text", "x543 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor btnOpts, "Hand Tool")
+    DeleteBtn := MyGui.Add("Text", "x653 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor btnOpts, "Delete")
 
 
     ; Store references on GUI object
@@ -2290,7 +2314,7 @@ LayoutButtons(thisGui, Width, Height) {
         }
     }
     
-    if (visibleButtons.Length == 0) {
+    if ((thisGui.HasProp("IsStubWindow") && thisGui.IsStubWindow) || visibleButtons.Length == 0) {
         try {
             thisGui.wvc.Move(, , Width - 20, Height - 20)
         }
