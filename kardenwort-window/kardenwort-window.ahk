@@ -1880,6 +1880,22 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
 }
 
 OnAhkCall(guiObj, action, value) {
+    if (action == "hide_buttons") {
+        try {
+            guiObj.SaveBtn.Visible := false
+            guiObj.UpdateBtn.Visible := false
+            guiObj.RetextBtn.Visible := false
+            guiObj.ReprocBtn.Visible := false
+            guiObj.SendBtn.Visible := false
+            guiObj.PointerBtn.Visible := false
+            guiObj.DeleteBtn.Visible := false
+            
+            guiObj.GetClientPos(, , &clientWidth, &clientHeight)
+            LayoutButtons(guiObj, clientWidth, clientHeight)
+        } catch {
+        }
+        return
+    }
     if (action == "close") {
         guiObj.Destroy()
         return
@@ -2274,8 +2290,12 @@ LayoutButtons(thisGui, Width, Height) {
         }
     }
     
-    if (visibleButtons.Length == 0)
+    if (visibleButtons.Length == 0) {
+        try {
+            thisGui.wvc.Move(, , Width - 20, Height - 20)
+        }
         return
+    }
         
     ; Calculate widths of all visible buttons
     btnWidths := []
