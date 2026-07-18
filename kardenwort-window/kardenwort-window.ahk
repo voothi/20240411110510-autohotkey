@@ -1193,6 +1193,7 @@ global G_HoverHighlightMvpBookmarks := "3"
 global G_HoverHighlightMvpRainbow := "0"
 global G_KeyTogglePointer := "Alt"
 global G_SplitGapLimit := "60"
+global G_CloseDescendantsOnParentClose := 1
 
 global G_PressCount := 0
 global G_CapturedText := ""
@@ -1238,6 +1239,7 @@ LoadConfig() {
     global G_HoverHighlightMvpRainbow := IniRead(configPath, "Settings", "HoverHighlightMvpRainbow", "0")
     global G_KeyTogglePointer := IniRead(configPath, "Hotkey", "key_toggle_pointer", "Alt")
     global G_SplitGapLimit := IniRead(configPath, "Settings", "SplitGapLimit", "60")
+    global G_CloseDescendantsOnParentClose := IniRead(configPath, "Settings", "CloseDescendantsOnParentClose", 1)
 
 
     if (G_DeskPythonPath == "" || !FileExist(G_DeskPythonPath)) {
@@ -2212,14 +2214,17 @@ WatchFile(guiObj) {
 
 GuiClose(thisGui) {
     global G_ActiveWindows
-    if (thisGui.HasProp("Children")) {
+    global G_CloseDescendantsOnParentClose
+    if (G_CloseDescendantsOnParentClose && thisGui.HasProp("Children")) {
         for childSessionID in thisGui.Children {
-            if (G_ActiveWindows.Has(childSessionID)) {
-                childHwnd := G_ActiveWindows[childSessionID]
-                if WinExist("ahk_id " childHwnd) {
-                    WinClose("ahk_id " childHwnd)
+            try {
+                if (G_ActiveWindows.Has(childSessionID)) {
+                    childHwnd := G_ActiveWindows[childSessionID]
+                    if WinExist("ahk_id " childHwnd) {
+                        WinClose("ahk_id " childHwnd)
+                    }
                 }
-                G_ActiveWindows.Delete(childSessionID)
+            } catch {
             }
         }
     }
