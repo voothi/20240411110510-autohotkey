@@ -1849,6 +1849,10 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
 }
 
 OnAhkCall(guiObj, action, value) {
+    if (action == "close") {
+        guiObj.Destroy()
+        return
+    }
     if (action == "play") {
         parts := StrSplit(value, "`n", "`r", 4)
         if (parts.Length >= 4) {
