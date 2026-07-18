@@ -2300,8 +2300,12 @@ LayoutButtons(thisGui, Width, Height) {
         }
     }
     
-    if (visibleButtons.Length == 0)
+    if (visibleButtons.Length == 0) {
+        try {
+            thisGui.wvc.Move(, , Width - 20, Height - 20)
+        }
         return
+    }
         
     ; Calculate widths of all visible buttons
     btnWidths := []
