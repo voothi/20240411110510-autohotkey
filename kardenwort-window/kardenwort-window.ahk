@@ -1194,6 +1194,7 @@ global G_HoverHighlightMvpRainbow := "0"
 global G_KeyTogglePointer := "Alt"
 global G_SplitGapLimit := "60"
 global G_CloseDescendantsOnParentClose := 1
+global G_OverrideSeqNum := ""
 
 global G_PressCount := 0
 global G_CapturedText := ""
@@ -1631,7 +1632,10 @@ ProcessArgs(argsArray) {
         i := 1
         while (i <= argsArray.Length) {
             arg := argsArray[i]
-            if (arg == "--restore") {
+            if (arg == "--seq-num") {
+                global G_OverrideSeqNum := argsArray[i + 1]
+                i += 2
+            } else if (arg == "--restore") {
                 LaunchRestore(argsArray[i + 1])
                 i += 2
             } else if (arg == "--desk") {
@@ -1722,10 +1726,22 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     
     lang := G_CurrentLang
 
-    guiTitle := "Kardenwort - " lang " (" textMode ")"
+    local seqNum
+    global G_OverrideSeqNum
+    if (G_OverrideSeqNum != "") {
+        seqNum := G_OverrideSeqNum
+        G_OverrideSeqNum := ""
+        try {
+            RegWrite(seqNum, "REG_DWORD", "HKEY_CURRENT_USER\Software\Kardenwort", "WindowCount")
+        } catch {
+        }
+    } else {
+        seqNum := GetSequenceNumber()
+    }
+
+    guiTitle := "[" seqNum "] Kardenwort - " lang " (" textMode ")"
 
     ; Create GUI
-    local seqNum := GetSequenceNumber()
     DllCall("shell32\SetCurrentProcessExplicitAppUserModelID", "WStr", "Kardenwort.Window." seqNum)
     local iconPath := A_ScriptDir "\..\assets\numbers\" seqNum ".ico"
     MyGui := Gui("+Resize +MinSize400x300", guiTitle)
@@ -1841,7 +1857,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
         return
     }
 
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' lang ' --zid ' ZID ' --text-mode ' textMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' --split-gap-limit ' G_SplitGapLimit ' < "' tmpTextFile '"'
+    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' lang ' --zid ' ZID ' --text-mode ' textMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' --split-gap-limit ' G_SplitGapLimit ' --seq-num ' seqNum ' < "' tmpTextFile '"'
     if (tsvPath != "") {
         cmd := cmd ' --tsv "' tsvPath '"'
     }
