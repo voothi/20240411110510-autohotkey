@@ -276,7 +276,7 @@ ActionRenderDoneIO(guiObj, payload) {
     try {
         childrenDiv := guiObj.wb.document.getElementById("kardenwort-children")
         if (childrenDiv) {
-            childrenStr := childrenDiv.innerText
+            childrenStr := childrenDiv.innerHTML
             if (childrenStr != "") {
                 guiObj.Children := StrSplit(childrenStr, ",")
             }
