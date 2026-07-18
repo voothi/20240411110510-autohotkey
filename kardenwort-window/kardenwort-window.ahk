@@ -274,6 +274,16 @@ ActionRenderDoneIO(guiObj, payload) {
     }
     guiObj.wvc.Visible := true
     try {
+        childrenDiv := guiObj.wb.document.getElementById("kardenwort-children")
+        if (childrenDiv) {
+            childrenStr := childrenDiv.innerText
+            if (childrenStr != "") {
+                guiObj.Children := StrSplit(childrenStr, ",")
+            }
+        }
+    } catch {
+    }
+    try {
         WinRedraw(guiObj.wvc.Hwnd)
         WinRedraw(guiObj.Hwnd)
     } catch {
@@ -2202,6 +2212,17 @@ WatchFile(guiObj) {
 
 GuiClose(thisGui) {
     global G_ActiveWindows
+    if (thisGui.HasProp("Children")) {
+        for childSessionID in thisGui.Children {
+            if (G_ActiveWindows.Has(childSessionID)) {
+                childHwnd := G_ActiveWindows[childSessionID]
+                if WinExist("ahk_id " childHwnd) {
+                    WinClose("ahk_id " childHwnd)
+                }
+                G_ActiveWindows.Delete(childSessionID)
+            }
+        }
+    }
     try {
         thisGui.wb.document.parentWindow.commitActiveEdit()
     } catch {
