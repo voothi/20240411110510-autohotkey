@@ -33,9 +33,9 @@ CleanClipboardText(text) {
     ; 4. Replace multiple spaces with a single space
     text := RegExReplace(text, "\s{2,}", " ")
     
-    ; 5. Remove space before punctuation marks, but protect file extensions (.js)
+    ; 5. Remove space before punctuation marks, but protect file extensions and numbers (.js, .25)
     text := RegExReplace(text, "\s+([:;,!?])", "$1")
-    text := RegExReplace(text, "\s+\.(?!\w)", ".")
+    text := RegExReplace(text, "\s+\.(?![a-zA-Z0-9])", ".")
     
     ; 6. Remove non-printable characters (ZID: 20260505122804)
     text := RegExReplace(text, "[\x00-\x1F\x7F-\x9F]", "")
