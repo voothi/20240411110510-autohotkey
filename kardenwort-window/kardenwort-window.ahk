@@ -31,12 +31,13 @@ if (existingHwnd) {
         NumPut("Ptr", 1, CopyDataStruct, 0)
         NumPut("UInt", strBuf.Size, CopyDataStruct, A_PtrSize)
         NumPut("Ptr", strBuf.Ptr, CopyDataStruct, 2 * A_PtrSize)
-        
+
         DetectHiddenWindows True
         try {
-            SendMessage(0x004A, 0, CopyDataStruct.Ptr,, "ahk_id " existingHwnd,,,, 15000)
+            SendMessage(0x004A, 0, CopyDataStruct.Ptr, , "ahk_id " existingHwnd, , , , 15000)
         } catch Error as err {
-            KardenMsgBox("Failed to send arguments to existing instance (timeout/error):`n" err.Message, "Kardenwort SendMessage Error", 16)
+            KardenMsgBox("Failed to send arguments to existing instance (timeout/error):`n" err.Message,
+                "Kardenwort SendMessage Error", 16)
         }
     }
     ExitApp()
@@ -135,7 +136,8 @@ FsmDispatch(guiObj, event, payload := "") {
             guiObj.StatusLog := []
         }
         timeStr := FormatTime(A_Now, "yyyy-MM-dd HH:mm:ss")
-        guiObj.StatusLog.InsertAt(1, "[" timeStr "] FSM: dropped re-entrant event " event " in state " guiObj.FsmState " @" guiObj.ZID)
+        guiObj.StatusLog.InsertAt(1, "[" timeStr "] FSM: dropped re-entrant event " event " in state " guiObj.FsmState " @" guiObj
+            .ZID)
         if (guiObj.StatusLog.Length > 15) {
             guiObj.StatusLog.Pop()
         }
@@ -195,21 +197,25 @@ FsmLog(guiObj, fromState, toState, event) {
 
 FsmSelfCheck() {
     global G_FSM_TRANSITIONS
-    validStates := Map(FSM_LOADING, 1, FSM_IDLE, 1, FSM_SAVING, 1, FSM_RELOADING, 1, FSM_REPROCESSING, 1, FSM_RETEXTING, 1, FSM_EXPORTING,
+    validStates := Map(FSM_LOADING, 1, FSM_IDLE, 1, FSM_SAVING, 1, FSM_RELOADING, 1, FSM_REPROCESSING, 1, FSM_RETEXTING,
+        1, FSM_EXPORTING,
         1, FSM_CLOSING, 1, FSM_ERROR, 1)
     validEvents := Map(EV_RENDER_DONE, 1, EV_RENDER_FAILED, 1, EV_DIRTY, 1, EV_CLEAN, 1, EV_SAVE_CLICK, 1,
         EV_SAVE_SUCCESS, 1, EV_SAVE_FAILED, 1, EV_FILE_CHANGED, 1, EV_UPDATE_CLICK, 1, EV_RELOAD_DONE, 1,
-        EV_RELOAD_FAILED, 1, EV_REPROCESS_CLICK, 1, EV_REPROCESS_DONE, 1, EV_REPROCESS_FAILED, 1, EV_RETEXT_CLICK, 1, EV_RETEXT_DONE, 1, EV_RETEXT_FAILED, 1, EV_EXPORT_CLICK, 1,
+        EV_RELOAD_FAILED, 1, EV_REPROCESS_CLICK, 1, EV_REPROCESS_DONE, 1, EV_REPROCESS_FAILED, 1, EV_RETEXT_CLICK, 1,
+        EV_RETEXT_DONE, 1, EV_RETEXT_FAILED, 1, EV_EXPORT_CLICK, 1,
         EV_EXPORT_DONE, 1, EV_EXPORT_FAILED, 1, EV_CLOSE, 1, EV_CLOSE_CANCEL, 1)
 
     for state, events in G_FSM_TRANSITIONS {
         if (!validStates.Has(state)) {
-            KardenMsgBox("FSM Self-Check Failed: Invalid state '" state "' in transition table.", "Kardenwort FSM Error", 16)
+            KardenMsgBox("FSM Self-Check Failed: Invalid state '" state "' in transition table.",
+                "Kardenwort FSM Error", 16)
             ExitApp()
         }
         for ev, trans in events {
             if (!validEvents.Has(ev)) {
-                KardenMsgBox("FSM Self-Check Failed: Invalid event '" ev "' in transition table.", "Kardenwort FSM Error", 16
+                KardenMsgBox("FSM Self-Check Failed: Invalid event '" ev "' in transition table.",
+                    "Kardenwort FSM Error", 16
                 )
                 ExitApp()
             }
@@ -308,7 +314,7 @@ ActionRenderDoneIO(guiObj, payload) {
     try {
         tsvPath := GetElementText(guiObj.wb.document.getElementById("tsv-path"))
         guiObj.TsvPath := tsvPath
-        
+
         ; Clean up any leftover update.js on load
         try {
             updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
@@ -317,12 +323,14 @@ ActionRenderDoneIO(guiObj, payload) {
             }
         } catch {
         }
-        
+
         SplitPath(tsvPath, &fileName)
-        guiObj.Title := "Kardenwort - " guiObj.Lang " (" guiObj.TextMode ") - " fileName " - " (guiObj.HasProp("CurrentStatusText") ? guiObj.CurrentStatusText : "Ready")
+        guiObj.Title := "Kardenwort - " guiObj.Lang " (" guiObj.TextMode ") - " fileName " - " (guiObj.HasProp(
+            "CurrentStatusText") ? guiObj.CurrentStatusText : "Ready")
 
         try {
-            guiObj.FsmMemory["IsProgressive"] := GetElementText(guiObj.wb.document.getElementById("display-mode")) == "progressive"
+            guiObj.FsmMemory["IsProgressive"] := GetElementText(guiObj.wb.document.getElementById("display-mode")) ==
+            "progressive"
         } catch {
             guiObj.FsmMemory["IsProgressive"] := false
         }
@@ -332,7 +340,8 @@ ActionRenderDoneIO(guiObj, payload) {
             guiObj.FsmMemory["RunEnrichment"] := "auto"
         }
         try {
-            guiObj.FsmMemory["IsLazy"] := GetElementText(guiObj.wb.document.getElementById("auto-inject-updates")) != "true"
+            guiObj.FsmMemory["IsLazy"] := GetElementText(guiObj.wb.document.getElementById("auto-inject-updates")) !=
+            "true"
         } catch {
             guiObj.FsmMemory["IsLazy"] := false
         }
@@ -441,7 +450,8 @@ ActionSaveStartIO(guiObj, payload) {
         return
     }
 
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" edit-save --deltas "' tmpTextFile '" --zid ' guiObj.ZID ' --language ' guiObj.Lang ' --tsv "' guiObj.TsvPath '"'
+    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" edit-save --deltas "' tmpTextFile '" --zid ' guiObj.ZID ' --language ' guiObj
+        .Lang ' --tsv "' guiObj.TsvPath '"'
     try {
         exitCode := RunSilent(cmd, &outB64, &errJSON)
     } catch {
@@ -538,10 +548,10 @@ ActionFileChangedGuard(guiObj, payload) {
 
     currentJsMTime := ""
     updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
-    
+
     if (FileExist(updateJsPath)) {
         currentJsMTime := FileGetTime(updateJsPath)
-        
+
         ; If we haven't parsed this JS payload yet, read it to look for the finish signal
         if (currentJsMTime != guiObj.FsmMemory.Get("LastParsedJsMTime", "")) {
             guiObj.FsmMemory["LastParsedJsMTime"] := currentJsMTime
@@ -550,7 +560,7 @@ ActionFileChangedGuard(guiObj, payload) {
                 jsCode := FileRead(updateJsPath)
             } catch {
             }
-            
+
             ; Instantly drop shields if the asynchronous background worker signals it is finished
             if (jsCode != "" && RegExMatch(jsCode, 'i)"stage"\s*:\s*"finished"')) {
                 guiObj.FsmMemory["IsProgressive"] := false
@@ -611,7 +621,7 @@ ActionFileChangedGuard(guiObj, payload) {
         guiObj.FsmMemory["AutoInjectRetries"] := 0
     }
 
-    if (G_AutoUpdate) {
+    if (G_AutoUpdate || guiObj.FsmMemory["IsProgressive"]) {
         return true
     } else {
         guiObj.FsmMemory["PendingUpdate"] := true
@@ -674,7 +684,9 @@ ActionReloadDoneIO(guiObj, payload) {
 
     htmlContent := B64Decode(payload.outB64)
     if (payload.scrollY) {
-        scrollScript := "<style>body { visibility: hidden; }</style><script>window.addEventListener('load', function() { setTimeout(function() { window.scrollTo(0, " payload.scrollY "); document.body.style.visibility = 'visible'; }, 50); });</script>"
+        scrollScript :=
+            "<style>body { visibility: hidden; }</style><script>window.addEventListener('load', function() { setTimeout(function() { window.scrollTo(0, " payload
+            .scrollY "); document.body.style.visibility = 'visible'; }, 50); });</script>"
         htmlContent := StrReplace(htmlContent, "</body>", scrollScript "</body>")
     }
     tmpHtmlFile := A_Temp "\karden_view_" guiObj.ZID "_" A_TickCount ".html"
@@ -739,7 +751,7 @@ ActionReloadDoneIO(guiObj, payload) {
 
     try {
         guiObj.TsvPath := GetElementText(guiObj.wb.document.getElementById("tsv-path"))
-        
+
         ; Clean up any leftover update.js on reload
         try {
             updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
@@ -748,14 +760,15 @@ ActionReloadDoneIO(guiObj, payload) {
             }
         } catch {
         }
-        
+
         if (FileExist(guiObj.TsvPath)) {
             guiObj.FsmMemory["LastMTime"] := FileGetTime(guiObj.TsvPath)
         } else {
             guiObj.FsmMemory["LastMTime"] := ""
         }
         try {
-            guiObj.FsmMemory["IsProgressive"] := GetElementText(guiObj.wb.document.getElementById("display-mode")) == "progressive"
+            guiObj.FsmMemory["IsProgressive"] := GetElementText(guiObj.wb.document.getElementById("display-mode")) ==
+            "progressive"
         } catch {
             guiObj.FsmMemory["IsProgressive"] := false
         }
@@ -765,11 +778,12 @@ ActionReloadDoneIO(guiObj, payload) {
             guiObj.FsmMemory["RunEnrichment"] := "auto"
         }
         try {
-            guiObj.FsmMemory["IsLazy"] := GetElementText(guiObj.wb.document.getElementById("auto-inject-updates")) != "true"
+            guiObj.FsmMemory["IsLazy"] := GetElementText(guiObj.wb.document.getElementById("auto-inject-updates")) !=
+            "true"
         } catch {
             guiObj.FsmMemory["IsLazy"] := false
         }
-        
+
         if (guiObj.FsmMemory["IsLazy"]) {
             UpdateStatus(guiObj, "Lazy mode active. Select and Re-process. (Reloaded)")
         } else {
@@ -876,7 +890,7 @@ ActionReprocessDoneIO(guiObj, payload) {
     if (G_FsmTestMode) {
         return
     }
-    
+
     statusStr := ""
     msgStr := "Reprocess skipped."
     if (Type(payload) == "Map") {
@@ -885,7 +899,7 @@ ActionReprocessDoneIO(guiObj, payload) {
         if (payload.Has("message"))
             msgStr := payload["message"]
     }
-    
+
     if (statusStr == "skipped") {
         UpdateStatus(guiObj, "Reprocess skipped")
         KardenMsgBox(msgStr, "Kardenwort", "Iconi")
@@ -940,7 +954,7 @@ ActionRetextStartIO(guiObj, payload) {
         } catch {
         }
     }
-    
+
     try {
         guiObj.wb.document.parentWindow.startPolling()
     } catch {
@@ -961,7 +975,8 @@ ActionRetextStartIO(guiObj, payload) {
         return
     }
 
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" retext --selection-manifest "' tmpManifestFile '" --language ' guiObj.Lang ' --text-mode ' guiObj.TextMode
+    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" retext --selection-manifest "' tmpManifestFile '" --language ' guiObj
+        .Lang ' --text-mode ' guiObj.TextMode
     guiObj.FsmMemory["ActiveRetext"] := true
     try {
         exitCode := RunSilent(cmd, &outStr, &errJSON)
@@ -997,7 +1012,7 @@ ActionRetextDoneIO(guiObj, payload) {
         if (payload.Has("message"))
             msgStr := payload["message"]
     }
-    
+
     if (statusStr == "skipped") {
         UpdateStatus(guiObj, "Retext skipped")
         KardenMsgBox(msgStr, "Kardenwort", "Iconi")
@@ -1048,7 +1063,8 @@ ActionExportStartIO(guiObj, payload) {
         return
     }
 
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" export --selection-manifest "' tmpManifestFile '" --language ' guiObj.Lang
+    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" export --selection-manifest "' tmpManifestFile '" --language ' guiObj
+        .Lang
     try {
         exitCode := RunSilent(cmd, &outStr, &errJSON)
     } catch {
@@ -1075,7 +1091,8 @@ ActionExportStartIO(guiObj, payload) {
         }
         isAsync := InStr(outStr, '"import_started": true') > 0
         showWindow := !(InStr(outStr, '"show_window": false') > 0)
-        FsmDispatch(guiObj, EV_EXPORT_DONE, { isAsync: isAsync, logPath: logPath, showWindow: showWindow, status: statusStr, message: msgStr })
+        FsmDispatch(guiObj, EV_EXPORT_DONE, { isAsync: isAsync, logPath: logPath, showWindow: showWindow, status: statusStr,
+            message: msgStr })
     } else {
         FsmDispatch(guiObj, EV_EXPORT_FAILED, errJSON)
     }
@@ -1088,9 +1105,9 @@ ActionExportDoneIO(guiObj, payload) {
     if (G_FsmTestMode) {
         return
     }
-    
+
     showWindow := payload.HasProp("showWindow") ? payload.showWindow : 1
-    
+
     if (payload.HasProp("status") && payload.status == "skipped") {
         msg := payload.HasProp("message") && payload.message != "" ? payload.message : "Export skipped."
         UpdateStatus(guiObj, "Export skipped")
@@ -1148,7 +1165,8 @@ ActionCloseIO(guiObj, payload) {
                 res := payload
             }
         } else {
-            res := KardenMsgBox("You have unsaved edits. Save changes before closing?", "Kardenwort", "YesNoCancel Icon!")
+            res := KardenMsgBox("You have unsaved edits. Save changes before closing?", "Kardenwort",
+                "YesNoCancel Icon!")
         }
         if (res == "Cancel") {
             FsmDispatch(guiObj, EV_CLOSE_CANCEL)
@@ -1314,7 +1332,6 @@ LoadConfig() {
     global G_SplitGapLimit := IniRead(configPath, "Settings", "SplitGapLimit", "60")
     global G_CloseDescendantsOnParentClose := IniRead(configPath, "Settings", "CloseDescendantsOnParentClose", 1)
 
-
     if (G_DeskPythonPath == "" || !FileExist(G_DeskPythonPath)) {
         KardenMsgBox("Python interpreter not found: " G_DeskPythonPath, "Kardenwort Error", 16)
         ExitApp()
@@ -1329,13 +1346,13 @@ RegisterPointerToggleHotkeys() {
     global G_KeyTogglePointer
     if (G_KeyTogglePointer == "")
         return
-        
+
     keys := StrSplit(G_KeyTogglePointer, " ")
     for k in keys {
         k := Trim(k)
         if (k == "")
             continue
-            
+
         RegisterSingleHotkey(k)
     }
 }
@@ -1343,16 +1360,17 @@ RegisterPointerToggleHotkeys() {
 RegisterSingleHotkey(hkStr) {
     if InStr(hkStr, "+") {
         parts := StrSplit(hkStr, "+")
-        
+
         allModifiers := true
         for p in parts {
             p := Trim(p)
-            if !(p = "Ctrl" || p = "Alt" || p = "Shift" || p = "Win" || p = "LAlt" || p = "RAlt" || p = "LCtrl" || p = "RCtrl" || p = "LShift" || p = "RShift") {
+            if !(p = "Ctrl" || p = "Alt" || p = "Shift" || p = "Win" || p = "LAlt" || p = "RAlt" || p = "LCtrl" || p =
+                "RCtrl" || p = "LShift" || p = "RShift") {
                 allModifiers := false
                 break
             }
         }
-        
+
         if (allModifiers) {
             if (parts.Length == 2) {
                 p1 := parts[1]
@@ -1380,7 +1398,8 @@ RegisterSingleHotkey(hkStr) {
         }
     } else {
         hkPrefix := ""
-        if (hkStr = "Alt" || hkStr = "Ctrl" || hkStr = "Shift" || hkStr = "Win" || hkStr = "LAlt" || hkStr = "RAlt" || hkStr = "LCtrl" || hkStr = "RCtrl" || hkStr = "LShift" || hkStr = "RShift") {
+        if (hkStr = "Alt" || hkStr = "Ctrl" || hkStr = "Shift" || hkStr = "Win" || hkStr = "LAlt" || hkStr = "RAlt" ||
+            hkStr = "LCtrl" || hkStr = "RCtrl" || hkStr = "LShift" || hkStr = "RShift") {
             hkPrefix := "~"
         }
         RegisterAHKHotkey(hkPrefix hkStr, hkStr)
@@ -1411,15 +1430,15 @@ OnToggleHotkeyPress(keyToWait, thisHotkey) {
     activeHwnd := WinActive("A")
     if (!activeHwnd)
         return
-        
+
     guiObj := GuiFromHwnd(activeHwnd)
     if (!guiObj || !guiObj.HasProp("wb"))
         return
-        
+
     ToggleSelectableTextMode(guiObj, true)
-    
+
     KeyWait(keyToWait)
-    
+
     ToggleSelectableTextMode(guiObj, false)
 }
 
@@ -1687,7 +1706,7 @@ Receive_WM_COPYDATA(wParam, lParam, msg, hwnd) {
     strPtr := NumGet(lParam, 2 * A_PtrSize, "Ptr")
     payload := StrGet(strPtr, "UTF-16")
     args := StrSplit(Trim(payload, "`n"), "`n")
-    
+
     if (!G_Initialized) {
         for arg in args {
             G_BufferedArgs.Push(arg)
@@ -1783,7 +1802,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
         sourceText := CleanClipboardText(sourceText)
     }
     ZID := presetZID != "" ? presetZID : A_Now
-    
+
     global G_ActiveWindows
     sessionID := tsvPath != "" ? tsvPath : ZID
     if (G_ActiveWindows.Has(sessionID)) {
@@ -1795,7 +1814,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
             G_ActiveWindows.Delete(sessionID)
         }
     }
-    
+
     lang := G_CurrentLang
 
     local seqNum
@@ -1835,14 +1854,14 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     wb := wvc.Value
 
     ; Native Footer Buttons
-    SaveBtn := MyGui.Add("Text", "x15 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor " Disabled", "Save (Ctrl+S)")
+    SaveBtn := MyGui.Add("Text", "x15 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor " Disabled", "Save (Ctrl+S)"
+    )
     UpdateBtn := MyGui.Add("Text", "x114 y615 w100 h30 Center +Border +0x200 +Hidden " G_GuiTextColor, "⟳ Update")
     RetextBtn := MyGui.Add("Text", "x224 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Re-text")
     ReprocBtn := MyGui.Add("Text", "x323 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Re-word")
     SendBtn := MyGui.Add("Text", "x433 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
     PointerBtn := MyGui.Add("Text", "x543 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Hand Tool")
     DeleteBtn := MyGui.Add("Text", "x653 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Delete")
-
 
     ; Store references on GUI object
     MyGui.wb := wb
@@ -1910,7 +1929,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     }
     G_WindowCount += 1
     G_CascadeIndex += 1
-    
+
     G_ActiveWindows[sessionID] := MyGui.Hwnd
 
     ; Fetch HTML from Python core
@@ -1990,7 +2009,7 @@ OnAhkCall(guiObj, action, value) {
         } catch {
         }
         guiObj.FsmMemory["PendingUpdate"] := false
-        
+
         ; Delete the temporary .update.js file now that the worker is finished
         updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
         if FileExist(updateJsPath) {
@@ -2183,9 +2202,10 @@ OnPointerToggleClick(guiObj, *) {
 
 ToggleSelectableTextMode(guiObj, state := "", isPersistent := false) {
     currState := guiObj.HasProp("selectableTextMode") ? guiObj.selectableTextMode : false
-    
+
     if (isPersistent) {
-        pState := (state !== "") ? state : !(guiObj.HasProp("persistentSelectableTextMode") ? guiObj.persistentSelectableTextMode : false)
+        pState := (state !== "") ? state : !(guiObj.HasProp("persistentSelectableTextMode") ? guiObj.persistentSelectableTextMode :
+            false)
         guiObj.persistentSelectableTextMode := pState
         newState := pState
     } else {
@@ -2193,18 +2213,19 @@ ToggleSelectableTextMode(guiObj, state := "", isPersistent := false) {
             if (state) {
                 newState := true
             } else {
-                newState := guiObj.HasProp("persistentSelectableTextMode") ? guiObj.persistentSelectableTextMode : false
+                newState := guiObj.HasProp("persistentSelectableTextMode") ? guiObj.persistentSelectableTextMode :
+                    false
             }
         } else {
             newState := !currState
         }
     }
-    
+
     if (currState == newState) {
         UpdateButtonText(guiObj, newState)
         return
     }
-        
+
     guiObj.selectableTextMode := newState
     UpdateButtonText(guiObj, newState)
     UpdateWebViewMode(guiObj, newState)
@@ -2243,7 +2264,8 @@ PerformReload(guiObj, &outB64, &errJSON) {
     } catch as e {
         return 1
     }
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' guiObj.Lang ' --zid ' guiObj.ZID ' --text-mode ' guiObj.TextMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' --split-gap-limit ' G_SplitGapLimit ' < "' tmpTextFile '"'
+    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' guiObj.Lang ' --zid ' guiObj.ZID ' --text-mode ' guiObj
+        .TextMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' --split-gap-limit ' G_SplitGapLimit ' < "' tmpTextFile '"'
     if (guiObj.HasProp("TsvPath") && guiObj.TsvPath != "") {
         cmd := cmd ' --tsv "' guiObj.TsvPath '"'
     }
@@ -2352,7 +2374,7 @@ LayoutButtons(thisGui, Width, Height) {
         thisGui.PointerBtn,
         thisGui.DeleteBtn
     ]
-    
+
     visibleButtons := []
     for btn in allButtons {
         try {
@@ -2360,14 +2382,14 @@ LayoutButtons(thisGui, Width, Height) {
                 visibleButtons.Push(btn)
         }
     }
-    
+
     if (visibleButtons.Length == 0) {
         try {
             thisGui.wvc.Move(, , Width - 20, Height - 20)
         }
         return
     }
-        
+
     ; Calculate widths of all visible buttons
     btnWidths := []
     for btn in visibleButtons {
@@ -2378,79 +2400,79 @@ LayoutButtons(thisGui, Width, Height) {
         }
         btnWidths.Push(w)
     }
-    
+
     ; Define the gap before each button (except the first one)
     gaps := []
     if (visibleButtons.Length > 1) {
-        Loop visibleButtons.Length - 1 {
+        loop visibleButtons.Length - 1 {
             i := A_Index + 1
-            btnPrev := visibleButtons[i-1]
+            btnPrev := visibleButtons[i - 1]
             btnCurr := visibleButtons[i]
-            
-            if ((btnPrev == thisGui.SaveBtn && btnCurr == thisGui.UpdateBtn) || 
-                (btnPrev == thisGui.RetextBtn && btnCurr == thisGui.ReprocBtn)) {
+
+            if ((btnPrev == thisGui.SaveBtn && btnCurr == thisGui.UpdateBtn) ||
+            (btnPrev == thisGui.RetextBtn && btnCurr == thisGui.ReprocBtn)) {
                 gaps.Push(-1)
             } else {
                 gaps.Push(10)
             }
         }
     }
-    
+
     ; Calculate total width
     totalWidth := btnWidths[1]
     if (visibleButtons.Length > 1) {
-        Loop visibleButtons.Length - 1 {
+        loop visibleButtons.Length - 1 {
             i := A_Index + 1
-            totalWidth += gaps[i-1] + btnWidths[i]
+            totalWidth += gaps[i - 1] + btnWidths[i]
         }
     }
-    
+
     totalRows := 1
     btnPositions := []
-    
+
     if (totalWidth <= Width - 30) {
         ; All fit on one line, so center them
         startX := (Width - totalWidth) / 2
         currX := startX
-        btnPositions.Push({x: currX, row: 1})
+        btnPositions.Push({ x: currX, row: 1 })
         if (visibleButtons.Length > 1) {
-            Loop visibleButtons.Length - 1 {
+            loop visibleButtons.Length - 1 {
                 i := A_Index + 1
-                currX += gaps[i-1] + btnWidths[i-1]
-                btnPositions.Push({x: currX, row: 1})
+                currX += gaps[i - 1] + btnWidths[i - 1]
+                btnPositions.Push({ x: currX, row: 1 })
             }
         }
     } else {
         ; Wrap buttons, align to the left (starting at x=15)
         currX := 15
         currentRow := 1
-        btnPositions.Push({x: currX, row: currentRow})
-        
+        btnPositions.Push({ x: currX, row: currentRow })
+
         if (visibleButtons.Length > 1) {
-            Loop visibleButtons.Length - 1 {
+            loop visibleButtons.Length - 1 {
                 i := A_Index + 1
                 w := btnWidths[i]
-                gap := gaps[i-1]
-                
-                rightEdge := currX + btnWidths[i-1] + gap + w
+                gap := gaps[i - 1]
+
+                rightEdge := currX + btnWidths[i - 1] + gap + w
                 if (currX > 15 && rightEdge > Width - 15) {
                     currentRow += 1
                     currX := 15
-                    btnPositions.Push({x: currX, row: currentRow})
+                    btnPositions.Push({ x: currX, row: currentRow })
                 } else {
-                    currX := currX + btnWidths[i-1] + gap
-                    btnPositions.Push({x: currX, row: currentRow})
+                    currX := currX + btnWidths[i - 1] + gap
+                    btnPositions.Push({ x: currX, row: currentRow })
                 }
             }
         }
         totalRows := currentRow
     }
-    
+
     wvcHeight := Height - 25 - totalRows * 40
     try {
         thisGui.wvc.Move(, , Width - 20, wvcHeight)
     }
-    
+
     for i, btn in visibleButtons {
         pos := btnPositions[i]
         btnY := Height - (totalRows - pos.row + 1) * 40
@@ -2847,7 +2869,7 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
 
         colorsDark := ["#39d353", "#b78cf7", "#ff9c3a", "#ff79c6", "#f2ca30", "#39c5ff", "#ff7b72", "#a5b4fc"]
         colorsLight := ["#1a7f37", "#8250df", "#bc4c00", "#cf222e", "#b08800", "#0891b2", "#e11d48", "#7c3aed"]
-        Loop bookmarksN {
+        loop bookmarksN {
             i := A_Index - 1
             colorIdx := Mod(i, 8) + 1
             cDark := colorsDark[colorIdx]
@@ -3060,7 +3082,8 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         js .= "    for (var i = 0; i < divs.length; i++) {"
         js .= "      var div = divs[i];"
         js .= "      var firstChild = div.firstChild;"
-        js .= "      if (firstChild && firstChild.nodeType === 1 && firstChild.tagName === 'SPAN' && firstChild.classList && firstChild.classList.contains('word')) {"
+        js .=
+            "      if (firstChild && firstChild.nodeType === 1 && firstChild.tagName === 'SPAN' && firstChild.classList && firstChild.classList.contains('word')) {"
         js .= "        if (firstChild.classList.contains('hl-mvp')) continue;"
         js .= "        var childSpans = div.getElementsByTagName('span');"
         js .= "        for (var j = 0; j < childSpans.length; j++) {"
@@ -3079,7 +3102,8 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
         js .= "          if (!part) continue;"
         js .= "          if (k % 2 === 1) {"
         js .= "            var lc = part.toLowerCase();"
-        js .= "            html += '<span class=`"word hl-mvp`" data-lower-clean=`"' + escapeHtml(lc) + '`" data-line-idx=`"' + i + '`">' + escapeHtml(part) + '</span>';"
+        js .=
+            "            html += '<span class=`"word hl-mvp`" data-lower-clean=`"' + escapeHtml(lc) + '`" data-line-idx=`"' + i + '`">' + escapeHtml(part) + '</span>';"
         js .= "          } else {"
         js .= "            html += escapeHtml(part);"
         js .= "          }"
@@ -3380,18 +3404,16 @@ InjectHoverHighlightMvp(guiObj, bookmarksN) {
     }
 }
 
-
-
 ; ===================================================================================
 ; Window Sequence Numbering for Cascade Launches
 ; ===================================================================================
 GetSequenceNumber() {
     local hMutex := DllCall("CreateMutex", "Ptr", 0, "Int", 0, "Str", "KardenwortWindowMutex", "Ptr")
     DllCall("WaitForSingleObject", "Ptr", hMutex, "UInt", 5000)
-    
+
     local count := RegRead("HKEY_CURRENT_USER\Software\Kardenwort", "WindowCount", 0)
     local lastTime := RegRead("HKEY_CURRENT_USER\Software\Kardenwort", "LastLaunchTime", 0)
-    
+
     ; If last launch was more than 5 seconds ago, and no windows exist, reset to 1
     local hwnds := WinGetList("ahk_class AutoHotkeyGUI ahk_exe AutoHotkey64.exe")
     local actualCount := 0
@@ -3401,21 +3423,21 @@ GetSequenceNumber() {
                 actualCount++
         }
     }
-    
+
     if (actualCount == 0 && A_TickCount - lastTime > 5000) {
         count := 0
     }
-    
+
     count++
     if (count > 20)
         count := 20
-        
+
     RegWrite(count, "REG_DWORD", "HKEY_CURRENT_USER\Software\Kardenwort", "WindowCount")
     RegWrite(A_TickCount, "REG_DWORD", "HKEY_CURRENT_USER\Software\Kardenwort", "LastLaunchTime")
-    
+
     DllCall("ReleaseMutex", "Ptr", hMutex)
     DllCall("CloseHandle", "Ptr", hMutex)
-    
+
     return count
 }
 
@@ -3425,54 +3447,58 @@ GetSequenceNumber() {
 KardenMsgBox(Text, Title := "Kardenwort", Options := "") {
     local result := "OK"
     local mGui := Gui("+AlwaysOnTop -MinimizeBox -MaximizeBox +Owner" . (IsSet(MyGui) ? MyGui.Hwnd : ""), Title)
-    
+
     if (IsSet(G_GuiBgColor))
         mGui.BackColor := G_GuiBgColor
     if (IsSet(G_DwmDark))
         DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", mGui.Hwnd, "UInt", 20, "Ptr*", G_DwmDark, "UInt", 4)
-    
+
     local textColor := IsSet(G_GuiTextColor) ? G_GuiTextColor : ""
-    
+
     mGui.OnEvent("Escape", (*) => Close("Cancel"))
     mGui.OnEvent("Close", (*) => Close("Cancel"))
-    
+
     ; Parse options
     local hasYesNoCancel := InStr(String(Options), "YesNoCancel")
-    
+
     ; Fixed dimensions to unify size
     local boxW := 350
     local boxH := 150
-    
+
     mGui.MarginX := 20
     mGui.MarginY := 20
-    
+
     ; Add a text control with Center and Wrap
     mGui.Add("Text", "w" . (boxW - 40) . " h" . (boxH - 80) . " Center " . textColor, Text)
-    
+
     local btnW := 80
     local btnH := 30
     local btnY := boxH - 50
-    
+
     local btnOpts := "Center +Border +0x200 " . textColor
-    
+
     if (hasYesNoCancel) {
         local spacing := 10
         local totalW := (btnW * 3) + (spacing * 2)
         local startX := (boxW - totalW) / 2
-        
-        mGui.Add("Text", "x" . startX . " y" . btnY . " w" . btnW . " h" . btnH . " " . btnOpts, "Yes").OnEvent("Click", (*) => Close("Yes"))
-        mGui.Add("Text", "x" . (startX + btnW + spacing) . " y" . btnY . " w" . btnW . " h" . btnH . " " . btnOpts, "No").OnEvent("Click", (*) => Close("No"))
-        mGui.Add("Text", "x" . (startX + (btnW + spacing)*2) . " y" . btnY . " w" . btnW . " h" . btnH . " " . btnOpts, "Cancel").OnEvent("Click", (*) => Close("Cancel"))
+
+        mGui.Add("Text", "x" . startX . " y" . btnY . " w" . btnW . " h" . btnH . " " . btnOpts, "Yes").OnEvent("Click",
+            (*) => Close("Yes"))
+        mGui.Add("Text", "x" . (startX + btnW + spacing) . " y" . btnY . " w" . btnW . " h" . btnH . " " . btnOpts,
+        "No").OnEvent("Click", (*) => Close("No"))
+        mGui.Add("Text", "x" . (startX + (btnW + spacing) * 2) . " y" . btnY . " w" . btnW . " h" . btnH . " " .
+        btnOpts, "Cancel").OnEvent("Click", (*) => Close("Cancel"))
     } else {
         local startX := (boxW - btnW) / 2
-        mGui.Add("Text", "x" . startX . " y" . btnY . " w" . btnW . " h" . btnH . " " . btnOpts, "OK").OnEvent("Click", (*) => Close("OK"))
+        mGui.Add("Text", "x" . startX . " y" . btnY . " w" . btnW . " h" . btnH . " " . btnOpts, "OK").OnEvent("Click",
+            (*) => Close("OK"))
     }
-    
+
     Close(res) {
         result := res
         mGui.Destroy()
     }
-    
+
     mGui.Show("w" . boxW . " h" . boxH)
     WinWaitClose(mGui)
     return result
