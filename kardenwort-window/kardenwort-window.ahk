@@ -854,7 +854,7 @@ ActionReprocessStartIO(guiObj, payload) {
     }
 
     if (exitCode == 0) {
-        FsmDispatch(guiObj, EV_REPROCESS_DONE, "")
+        FsmDispatch(guiObj, EV_REPROCESS_DONE, errJSON)
     } else {
         FsmDispatch(guiObj, EV_REPROCESS_FAILED, errJSON)
     }
@@ -867,7 +867,23 @@ ActionReprocessDoneIO(guiObj, payload) {
     if (G_FsmTestMode) {
         return
     }
-    UpdateStatus(guiObj, "Re-processing started")
+    
+    statusStr := ""
+    msgStr := "Reprocess skipped."
+    if (Type(payload) == "Map") {
+        if (payload.Has("status"))
+            statusStr := payload["status"]
+        if (payload.Has("message"))
+            msgStr := payload["message"]
+    }
+    
+    if (statusStr == "skipped") {
+        UpdateStatus(guiObj, "Reprocess skipped")
+        KardenMsgBox(msgStr, "Kardenwort", "Iconi")
+        guiObj.FsmMemory["ActiveReprocess"] := false
+    } else {
+        UpdateStatus(guiObj, "Re-processing started")
+    }
     UpdateButtonState(guiObj)
 }
 
@@ -950,7 +966,7 @@ ActionRetextStartIO(guiObj, payload) {
     }
 
     if (exitCode == 0) {
-        FsmDispatch(guiObj, EV_RETEXT_DONE, "")
+        FsmDispatch(guiObj, EV_RETEXT_DONE, errJSON)
     } else {
         FsmDispatch(guiObj, EV_RETEXT_FAILED, errJSON)
     }
@@ -963,7 +979,23 @@ ActionRetextDoneIO(guiObj, payload) {
     if (G_FsmTestMode) {
         return
     }
-    UpdateStatus(guiObj, "Re-text started")
+
+    statusStr := ""
+    msgStr := "Retext skipped."
+    if (Type(payload) == "Map") {
+        if (payload.Has("status"))
+            statusStr := payload["status"]
+        if (payload.Has("message"))
+            msgStr := payload["message"]
+    }
+    
+    if (statusStr == "skipped") {
+        UpdateStatus(guiObj, "Retext skipped")
+        KardenMsgBox(msgStr, "Kardenwort", "Iconi")
+        guiObj.FsmMemory["ActiveRetext"] := false
+    } else {
+        UpdateStatus(guiObj, "Re-text started")
+    }
     UpdateButtonState(guiObj)
 }
 
@@ -1024,9 +1056,17 @@ ActionExportStartIO(guiObj, payload) {
         if RegExMatch(outStr, '"log":\s*"([^"]+)"', &match) {
             logPath := StrReplace(match[1], "\\", "\")
         }
+        statusStr := ""
+        if RegExMatch(outStr, '"status":\s*"([^"]+)"', &match) {
+            statusStr := match[1]
+        }
+        msgStr := ""
+        if RegExMatch(outStr, '"message":\s*"([^"]+)"', &match) {
+            msgStr := StrReplace(match[1], "\\", "\")
+        }
         isAsync := InStr(outStr, '"import_started": true') > 0
         showWindow := !(InStr(outStr, '"show_window": false') > 0)
-        FsmDispatch(guiObj, EV_EXPORT_DONE, { isAsync: isAsync, logPath: logPath, showWindow: showWindow })
+        FsmDispatch(guiObj, EV_EXPORT_DONE, { isAsync: isAsync, logPath: logPath, showWindow: showWindow, status: statusStr, message: msgStr })
     } else {
         FsmDispatch(guiObj, EV_EXPORT_FAILED, errJSON)
     }
@@ -1042,12 +1082,19 @@ ActionExportDoneIO(guiObj, payload) {
     
     showWindow := payload.HasProp("showWindow") ? payload.showWindow : 1
     
-    if (!payload.isAsync) {
-        if (G_ShowInfoWindows && showWindow) {
-            KardenMsgBox("Favorites exported.", "Kardenwort", "Iconi")
+    if (payload.HasProp("status") && payload.status == "skipped") {
+        msg := payload.HasProp("message") && payload.message != "" ? payload.message : "Export skipped."
+        UpdateStatus(guiObj, "Export skipped")
+        KardenMsgBox(msg, "Kardenwort", "Iconi")
+    } else {
+        isAsync := payload.HasProp("isAsync") ? payload.isAsync : false
+        if (!isAsync) {
+            if (G_ShowInfoWindows && showWindow) {
+                KardenMsgBox("Favorites exported.", "Kardenwort", "Iconi")
+            }
         }
+        UpdateStatus(guiObj, "Ready")
     }
-    UpdateStatus(guiObj, "Ready")
     UpdateButtonState(guiObj)
 }
 
@@ -2017,7 +2064,11 @@ UpdateButtonState(guiObj) {
         return ; Ignore if window is destroyed
     }
 
-    if (isDirty && pending) {
+    if (guiObj.FsmMemory.Has("ActiveReprocess") && guiObj.FsmMemory["ActiveReprocess"]) {
+        UpdateStatus(guiObj, "Re-processing...")
+    } else if (guiObj.FsmMemory.Has("ActiveRetext") && guiObj.FsmMemory["ActiveRetext"]) {
+        UpdateStatus(guiObj, "Re-texting...")
+    } else if (isDirty && pending) {
         UpdateStatus(guiObj, "Unsaved edits + update ready")
     } else if (isDirty && !pending) {
         UpdateStatus(guiObj, "Unsaved edits")
