@@ -315,15 +315,7 @@ ActionRenderDoneIO(guiObj, payload) {
         tsvPath := GetElementText(guiObj.wb.document.getElementById("tsv-path"))
         guiObj.TsvPath := tsvPath
 
-        ; Clean up any leftover update.js on load
-        try {
-            updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
-            if FileExist(updateJsPath) {
-                FileDelete(updateJsPath)
-            }
-        } catch {
-        }
-
+        ; Allow any live update.js created during load to be processed by WatchFile
         SplitPath(tsvPath, &fileName)
         guiObj.Title := "Kardenwort - " guiObj.Lang " (" guiObj.TextMode ") - " fileName " - " (guiObj.HasProp(
             "CurrentStatusText") ? guiObj.CurrentStatusText : "Ready")
@@ -752,14 +744,7 @@ ActionReloadDoneIO(guiObj, payload) {
     try {
         guiObj.TsvPath := GetElementText(guiObj.wb.document.getElementById("tsv-path"))
 
-        ; Clean up any leftover update.js on reload
-        try {
-            updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
-            if FileExist(updateJsPath) {
-                FileDelete(updateJsPath)
-            }
-        } catch {
-        }
+        ; Allow live update.js created during reload to be processed by WatchFile
 
         if (FileExist(guiObj.TsvPath)) {
             guiObj.FsmMemory["LastMTime"] := FileGetTime(guiObj.TsvPath)
@@ -2312,14 +2297,16 @@ WatchFile(guiObj) {
         if FileExist(updateJsPath) {
             jsMTime := FileGetTime(updateJsPath)
             if (!guiObj.FsmMemory.Has("LastJsMTime") || guiObj.FsmMemory["LastJsMTime"] != jsMTime) {
-                guiObj.FsmMemory["LastJsMTime"] := jsMTime
                 if (!guiObj.FsmMemory["IsLazy"]) {
                     jsCode := FileRead(updateJsPath, "UTF-8")
                     try {
                         guiObj.wb.document.parentWindow.eval(jsCode)
+                        guiObj.FsmMemory["LastJsMTime"] := jsMTime
                         WinRedraw("ahk_id " hwnd)
                     } catch {
                     }
+                } else {
+                    guiObj.FsmMemory["LastJsMTime"] := jsMTime
                 }
                 try {
                     currentMTime := FileGetTime(guiObj.TsvPath)
