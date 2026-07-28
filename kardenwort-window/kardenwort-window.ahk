@@ -551,15 +551,22 @@ ActionFileChangedGuard(guiObj, payload) {
             } catch {
             }
             
-            ; Instantly drop shields if the asynchronous background worker signals it is finished (Lazy Mode only)
+            ; Instantly drop shields if the asynchronous background worker signals it is finished
             if (jsCode != "" && RegExMatch(jsCode, 'i)"stage"\s*:\s*"finished"')) {
-                if (guiObj.FsmMemory["IsLazy"]) {
-                    if (guiObj.FsmMemory.Has("ActiveReprocess")) {
-                        guiObj.FsmMemory["ActiveReprocess"] := false
-                    }
-                    if (guiObj.FsmMemory.Has("ActiveRetext")) {
-                        guiObj.FsmMemory["ActiveRetext"] := false
-                    }
+                guiObj.FsmMemory["IsProgressive"] := false
+                if (guiObj.FsmMemory.Has("ActiveReprocess")) {
+                    guiObj.FsmMemory["ActiveReprocess"] := false
+                }
+                if (guiObj.FsmMemory.Has("ActiveRetext")) {
+                    guiObj.FsmMemory["ActiveRetext"] := false
+                }
+                if (guiObj.FsmState == FSM_RETEXTING) {
+                    FsmDispatch(guiObj, EV_RETEXT_DONE, "")
+                } else if (guiObj.FsmState == FSM_REPROCESSING) {
+                    FsmDispatch(guiObj, EV_REPROCESS_DONE, "")
+                } else {
+                    UpdateStatus(guiObj, "Ready")
+                    UpdateButtonState(guiObj)
                 }
             }
         }
