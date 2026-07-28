@@ -2235,6 +2235,7 @@ WatchFile(guiObj) {
                     jsCode := FileRead(updateJsPath, "UTF-8")
                     try {
                         guiObj.wb.document.parentWindow.eval(jsCode)
+                        WinRedraw("ahk_id " hwnd)
                     } catch {
                     }
                 }
