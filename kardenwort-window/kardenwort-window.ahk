@@ -571,6 +571,7 @@ ActionFileChangedGuard(guiObj, payload) {
                 guiObj.FsmMemory["LastMTime"] := currentMTime
                 guiObj.FsmMemory["AutoInjectRetries"] := 0
                 UpdateStatus(guiObj, "Data injected automatically.")
+                SetTimer(UpdateButtonState.Bind(guiObj), -2500)
                 return false
             }
             ; In progressive mode the update.js may be older than the timestamp window
@@ -580,6 +581,7 @@ ActionFileChangedGuard(guiObj, payload) {
                 guiObj.FsmMemory["LastMTime"] := currentMTime
                 guiObj.FsmMemory["AutoInjectRetries"] := 0
                 UpdateStatus(guiObj, "Progressive data injected automatically.")
+                SetTimer(UpdateButtonState.Bind(guiObj), -2500)
                 return false
             }
         }
