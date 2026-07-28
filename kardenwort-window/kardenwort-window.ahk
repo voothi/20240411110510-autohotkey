@@ -43,6 +43,22 @@ if (existingHwnd) {
     ExitApp()
 }
 
+EnsureBrowserEmulation() {
+    static key := "HKEY_CURRENT_USER\Software\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BROWSER_EMULATION"
+    try {
+        RegWrite(11001, "REG_DWORD", key, "AutoHotkey.exe")
+        RegWrite(11001, "REG_DWORD", key, "AutoHotkey64.exe")
+        RegWrite(11001, "REG_DWORD", key, "AutoHotkey32.exe")
+        RegWrite(11001, "REG_DWORD", key, A_ScriptName)
+        if (A_IsCompiled) {
+            SplitPath(A_ScriptFullPath, &exeName)
+            RegWrite(11001, "REG_DWORD", key, exeName)
+        }
+    } catch {
+    }
+}
+EnsureBrowserEmulation()
+
 global G_Initialized := false
 global G_BufferedArgs := []
 
