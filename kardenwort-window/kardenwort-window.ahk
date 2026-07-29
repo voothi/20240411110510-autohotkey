@@ -315,7 +315,7 @@ ActionRenderDoneIO(guiObj, payload) {
         tsvPath := GetElementText(guiObj.wb.document.getElementById("tsv-path"))
         guiObj.TsvPath := tsvPath
 
-        ; Allow any live update.js created during load to be processed by WatchFile
+        ; Allow any live .updates files created during load to be processed by WatchFile
         SplitPath(tsvPath, &fileName)
         guiObj.Title := "Kardenwort - " guiObj.Lang " (" guiObj.TextMode ") - " fileName " - " (guiObj.HasProp(
             "CurrentStatusText") ? guiObj.CurrentStatusText : "Ready")
@@ -712,7 +712,7 @@ ActionReloadDoneIO(guiObj, payload) {
     try {
         guiObj.TsvPath := GetElementText(guiObj.wb.document.getElementById("tsv-path"))
 
-        ; Allow live update.js created during reload to be processed by WatchFile
+        ; Allow live .updates files created during reload to be processed by WatchFile
 
         if (FileExist(guiObj.TsvPath)) {
             guiObj.FsmMemory["LastMTime"] := FileGetTime(guiObj.TsvPath)
@@ -1962,8 +1962,9 @@ OnAhkCall(guiObj, action, value) {
         } catch {
         }
         guiObj.FsmMemory["PendingUpdate"] := false
+        guiObj.FsmMemory["IsProgressive"] := false
 
-        ; Delete the temporary .update.js file now that the worker is finished
+        ; Delete the .updates directory now that the worker is finished
         updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
         DelayedDelete() {
             if DirExist(updatesDir) {
@@ -2304,9 +2305,6 @@ WatchFile(guiObj) {
                         FileDelete(filePath)
                     } catch {
                     }
-                }
-                if (!guiObj.FsmMemory["IsLazy"]) {
-                    WinRedraw("ahk_id " hwnd)
                 }
                 try {
                     currentMTime := FileGetTime(guiObj.TsvPath)
