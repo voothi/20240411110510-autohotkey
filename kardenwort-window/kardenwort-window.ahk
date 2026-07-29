@@ -355,6 +355,7 @@ ActionRenderDoneIO(guiObj, payload) {
             }
             guiObj.TimerFn := WatchFile.Bind(guiObj)
             WatchFolder(updatesDir, guiObj.TimerFn)
+            WatchFile(guiObj)
         }
         if (guiObj.FsmMemory["IsLazy"]) {
             UpdateStatus(guiObj, "Lazy mode active. Select and Re-process.")
@@ -760,10 +761,17 @@ ActionReloadDoneIO(guiObj, payload) {
     try {
         updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
         if DirExist(updatesDir) {
-            DirDelete(updatesDir, 1)
+            Loop Files, updatesDir "\*.js"
+            {
+                try {
+                    FileDelete(A_LoopFileFullPath)
+                } catch {
+                }
+            }
         }
     } catch {
     }
+    WatchFile(guiObj)
     UpdateButtonState(guiObj)
 }
 
@@ -803,9 +811,12 @@ ActionReprocessStartIO(guiObj, payload) {
     UpdateStatus(guiObj, "Preparing re-process...")
     updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
     if DirExist(updatesDir) {
-        try {
-            DirDelete(updatesDir, 1)
-        } catch {
+        Loop Files, updatesDir "\*.js"
+        {
+            try {
+                FileDelete(A_LoopFileFullPath)
+            } catch {
+            }
         }
     }
     try {
@@ -913,9 +924,12 @@ ActionRetextStartIO(guiObj, payload) {
     UpdateStatus(guiObj, "Preparing re-text...")
     updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
     if DirExist(updatesDir) {
-        try {
-            DirDelete(updatesDir, 1)
-        } catch {
+        Loop Files, updatesDir "\*.js"
+        {
+            try {
+                FileDelete(A_LoopFileFullPath)
+            } catch {
+            }
         }
     }
 
@@ -1157,9 +1171,12 @@ ActionCloseIO(guiObj, payload) {
     if (guiObj.HasOwnProp("TsvPath") && guiObj.TsvPath != "") {
         updatesDir := StrReplace(guiObj.TsvPath, ".tsv", ".updates")
         if DirExist(updatesDir) {
-            try {
-                DirDelete(updatesDir, 1)
-            } catch {
+            Loop Files, updatesDir "\\*.js"
+            {
+                try {
+                    FileDelete(A_LoopFileFullPath)
+                } catch {
+                }
             }
         }
     }
@@ -1985,9 +2002,12 @@ OnAhkCall(guiObj, action, value) {
         updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
         DelayedDelete() {
             if DirExist(updatesDir) {
-                try {
-                    DirDelete(updatesDir, 1)
-                } catch {
+                Loop Files, updatesDir "\\*.js"
+                {
+                    try {
+                        FileDelete(A_LoopFileFullPath)
+                    } catch {
+                    }
                 }
             }
         }
@@ -2375,9 +2395,12 @@ GuiClose(thisGui) {
     if (thisGui.HasProp("TsvPath") && thisGui.TsvPath != "") {
         updatesDir := RegExReplace(thisGui.TsvPath, "(?i)\.tsv$", ".updates")
         if DirExist(updatesDir) {
-            try {
-                DirDelete(updatesDir, 1)
-            } catch {
+            Loop Files, updatesDir "\\*.js"
+            {
+                try {
+                    FileDelete(A_LoopFileFullPath)
+                } catch {
+                }
             }
         }
     }
