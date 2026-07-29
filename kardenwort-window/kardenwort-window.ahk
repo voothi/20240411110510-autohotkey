@@ -2307,7 +2307,12 @@ WatchFile(guiObj) {
                         guiObj.FsmMemory["LastJsMTime"] := jsMTime
                         WinRedraw("ahk_id " hwnd)
                         if (RegExMatch(jsCode, 'i)"stage"\s*:\s*"finished"')) {
-                            SetTimer(() => WinRedraw("ahk_id " hwnd), -500)
+                            SetTimer(() {
+                                try {
+                                    WinRedraw("ahk_id " hwnd)
+                                } catch {
+                                }
+                            }, -500)
                         }
                     } catch {
                     }
