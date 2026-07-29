@@ -306,11 +306,7 @@ ActionRenderDoneIO(guiObj, payload) {
         }
     } catch {
     }
-    try {
-        WinRedraw(guiObj.wvc.Hwnd)
-        WinRedraw(guiObj.Hwnd)
-    } catch {
-    }
+
 
     try {
         tsvPath := GetElementText(guiObj.wb.document.getElementById("tsv-path"))
@@ -716,11 +712,7 @@ ActionReloadDoneIO(guiObj, payload) {
         guiObj.wvc.Visible := true
     } catch {
     }
-    try {
-        WinRedraw(guiObj.wvc.Hwnd)
-        WinRedraw(guiObj.Hwnd)
-    } catch {
-    }
+
 
     try {
         guiObj.TsvPath := GetElementText(guiObj.wb.document.getElementById("tsv-path"))
@@ -2040,13 +2032,7 @@ OnAhkCall(guiObj, action, value) {
             UpdateButtonState(guiObj)
         }
 
-        ; Force repaint of both the Shell.Explorer control and the outer window
-        ; to flush the MSHTML compositing surface after the COM dispatch
-        try {
-            WinRedraw(guiObj.wvc.Hwnd)
-            WinRedraw(guiObj.Hwnd)
-        } catch {
-        }
+
     }
 }
 
@@ -2362,20 +2348,6 @@ WatchFile(guiObj, Folder := "", Changes := "") {
                         jsCode := FileRead(filePath, "UTF-8")
                         try {
                             guiObj.wb.document.parentWindow.eval(jsCode)
-                            if (RegExMatch(jsCode, 'i)"stage"\s*:\s*"finished"')) {
-                                DelayedRedraw() {
-                                    try {
-                                        if (wvcHwnd != 0)
-                                            WinRedraw("ahk_id " wvcHwnd)
-                                    } catch {
-                                    }
-                                    try {
-                                        WinRedraw("ahk_id " hwnd)
-                                    } catch {
-                                    }
-                                }
-                                SetTimer(DelayedRedraw, -500)
-                            }
                         } catch {
                         }
                     }
@@ -2384,22 +2356,6 @@ WatchFile(guiObj, Folder := "", Changes := "") {
                     } catch {
                     }
                 }
-                
-                if (!guiObj.FsmMemory["IsLazy"]) {
-                    DelayedBatchRedraw() {
-                        try {
-                            if (wvcHwnd != 0)
-                                WinRedraw("ahk_id " wvcHwnd)
-                        } catch {
-                        }
-                        try {
-                            WinRedraw("ahk_id " hwnd)
-                        } catch {
-                        }
-                    }
-                    SetTimer(DelayedBatchRedraw, -150)
-                }
-
                 try {
                     currentMTime := FileGetTime(guiObj.TsvPath)
                 } catch {
