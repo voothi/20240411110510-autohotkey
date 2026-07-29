@@ -2306,6 +2306,17 @@ WatchFile(guiObj) {
                     } catch {
                     }
                 }
+                
+                if (!guiObj.FsmMemory["IsLazy"]) {
+                    DelayedBatchRedraw() {
+                        try {
+                            WinRedraw("ahk_id " hwnd)
+                        } catch {
+                        }
+                    }
+                    SetTimer(DelayedBatchRedraw, -50)
+                }
+
                 try {
                     currentMTime := FileGetTime(guiObj.TsvPath)
                 } catch {
