@@ -1997,12 +1997,15 @@ OnAhkCall(guiObj, action, value) {
 
         ; Delete the temporary .update.js file now that the worker is finished
         updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
-        if FileExist(updateJsPath) {
-            try {
-                FileDelete(updateJsPath)
-            } catch {
+        DelayedDelete() {
+            if FileExist(updateJsPath) {
+                try {
+                    FileDelete(updateJsPath)
+                } catch {
+                }
             }
         }
+        SetTimer(DelayedDelete, -5000)
 
         if (guiObj.FsmMemory.Has("ActiveRetext") && guiObj.FsmMemory["ActiveRetext"]) {
             guiObj.FsmMemory["ActiveRetext"] := false
@@ -2303,6 +2306,9 @@ WatchFile(guiObj) {
                         guiObj.wb.document.parentWindow.eval(jsCode)
                         guiObj.FsmMemory["LastJsMTime"] := jsMTime
                         WinRedraw("ahk_id " hwnd)
+                        if (RegExMatch(jsCode, 'i)"stage"\s*:\s*"finished"')) {
+                            SetTimer(() => WinRedraw("ahk_id " hwnd), -500)
+                        }
                     } catch {
                     }
                 } else {
