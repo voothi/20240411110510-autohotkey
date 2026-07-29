@@ -2362,20 +2362,6 @@ WatchFile(guiObj, Folder := "", Changes := "") {
                         jsCode := FileRead(filePath, "UTF-8")
                         try {
                             guiObj.wb.document.parentWindow.eval(jsCode)
-                            if (RegExMatch(jsCode, 'i)"stage"\s*:\s*"finished"')) {
-                                DelayedRedraw() {
-                                    try {
-                                        if (wvcHwnd != 0)
-                                            WinRedraw("ahk_id " wvcHwnd)
-                                    } catch {
-                                    }
-                                    try {
-                                        WinRedraw("ahk_id " hwnd)
-                                    } catch {
-                                    }
-                                }
-                                SetTimer(DelayedRedraw, -500)
-                            }
                         } catch {
                         }
                     }
