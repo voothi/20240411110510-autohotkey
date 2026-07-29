@@ -353,7 +353,7 @@ ActionRenderDoneIO(guiObj, payload) {
                 } catch {
                 }
             }
-            guiObj.TimerFn := WatchFile.Bind(guiObj)
+            guiObj.TimerFn := (folder, changes) => WatchFile(guiObj, folder, changes)
             WatchFolder(updatesDir, guiObj.TimerFn)
             WatchFile(guiObj)
         }
