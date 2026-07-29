@@ -2308,13 +2308,10 @@ WatchFile(guiObj) {
                 }
                 
                 if (!guiObj.FsmMemory["IsLazy"]) {
-                    DelayedBatchRedraw() {
-                        try {
-                            WinRedraw("ahk_id " hwnd)
-                        } catch {
-                        }
+                    try {
+                        WinRedraw("ahk_id " hwnd)
+                    } catch {
                     }
-                    SetTimer(DelayedBatchRedraw, -50)
                 }
 
                 try {
