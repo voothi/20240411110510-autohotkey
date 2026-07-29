@@ -4,6 +4,7 @@
 ; Test Modes and Includes
 ; ===================================================================================
 global G_FsmTestMode := true
+global G_HoverHighlightMvpRainbow := 1
 
 #Include "..\..\Lib\B64Util.ahk"
 #Include "..\kardenwort-window.ahk"
@@ -36,8 +37,11 @@ class MockGui {
     SendBtn := MockControl()
     DeleteBtn := MockControl()
     ReprocBtn := MockControl()
+    RetextBtn := MockControl()
+    PointerBtn := MockControl()
     StatusTxt := MockControl()
 
+    GetClientPos(x?, y?, &w := 800, &h := 600) => 0
     Destroy() => 0
 }
 
@@ -55,16 +59,16 @@ Assert(condition, message) {
     global totalTests, failedTests
     totalTests += 1
     if (condition) {
-        FileAppend("SUCCESS: " message "`n", "test_results.txt")
+        FileAppend("SUCCESS: " message "`n", A_ScriptDir "\test_results.txt")
     } else {
         failedTests += 1
-        FileAppend("FAILURE: " message "`n", "test_results.txt")
+        FileAppend("FAILURE: " message "`n", A_ScriptDir "\test_results.txt")
     }
 }
 
 ; Clear/Init results file
 try {
-    FileDelete("test_results.txt")
+    FileDelete(A_ScriptDir "\test_results.txt")
 } catch {
 }
 
@@ -153,7 +157,9 @@ g.FsmMemory["PendingUpdate"] := false
 g.FsmMemory["IsDirty"] := true
 g.TsvPath := "dummy.tsv"
 FsmDispatch(g, EV_SAVE_SUCCESS)
-Assert(g.FsmState == FSM_IDLE, "Transitions to IDLE on save success")
+Assert(g.FsmState == FSM_RELOADING, "Transitions to RELOADING after save success triggers auto-reload")
+FsmDispatch(g, EV_RELOAD_DONE)
+Assert(g.FsmState == FSM_IDLE, "Transitions to IDLE after reload completes")
 Assert(g.FsmMemory["IsDirty"] == false, "IsDirty is cleared")
 
 ; Test 10: EXPORTING + EV_FILE_CHANGED ignored
@@ -273,15 +279,45 @@ InjectHoverHighlightMvp(g_mvp, 5)
 Assert(g_mvp.wb.document.parentWindow.__mvpBookmarks == 5,
     "InjectHoverHighlightMvp set parentWindow.__mvpBookmarks correctly.")
 
-; Test 17: OnAhkCall with 'play' action
-g_play := MockGui()
+; Test 18: IDLE + EV_SAVE_CLICK transitions to SAVING when dirty
+g := MakeMockGui()
+g.FsmState := FSM_IDLE
+g.FsmMemory["IsDirty"] := true
+FsmDispatch(g, EV_SAVE_CLICK)
+Assert(g.FsmState == FSM_SAVING, "Save click when dirty transitions to SAVING state")
+
+; Test 19: IDLE with PendingUpdate + EV_UPDATE_CLICK transitions to RELOADING
+g := MakeMockGui()
+g.FsmState := FSM_IDLE
+g.FsmMemory["PendingUpdate"] := true
+FsmDispatch(g, EV_UPDATE_CLICK)
+Assert(g.FsmState == FSM_RELOADING, "Update click in IDLE state transitions to RELOADING, actual: " g.FsmState)
+
+; Test 20: OnAhkCall with 'finished' action
+g_fin := MakeMockGui()
 try {
-    OnAhkCall(g_play, "play", "python_dummy`ncli_dummy`nen`nhello_dummy")
-    Assert(true, "OnAhkCall 'play' action handled successfully without throwing error")
+    OnAhkCall(g_fin, "finished", "")
+    Assert(true, "OnAhkCall 'finished' action handled successfully without throwing error")
 } catch as err {
-    Assert(false, "OnAhkCall 'play' action threw an error: " err.Message)
+    Assert(false, "OnAhkCall 'finished' action threw an error: " err.Message)
 }
 
+; Test 21: Compound flow - Re-text (FSM_RETEXTING -> FSM_IDLE)
+g := MakeMockGui()
+g.FsmState := FSM_IDLE
+g.FsmMemory["IsDirty"] := false
+FsmDispatch(g, EV_RETEXT_CLICK, "")
+Assert(g.FsmState == FSM_RETEXTING, "Transitions to RETEXTING when Re-text clicked")
+
+FsmDispatch(g, EV_RETEXT_DONE, Map("status", "success", "message", "Text re-translated"))
+Assert(g.FsmState == FSM_IDLE, "Transitions back to IDLE after Re-text completes successfully")
+
+; Test 22: Re-text failure flow (FSM_RETEXTING -> FSM_IDLE on failure)
+g := MakeMockGui()
+g.FsmState := FSM_RETEXTING
+FsmDispatch(g, EV_RETEXT_FAILED, "API error")
+Assert(g.FsmState == FSM_IDLE, "Transitions back to IDLE after Re-text fails")
+
 ; Write summary
-FileAppend("`nSummary: " (totalTests - failedTests) "/" totalTests " tests passed.`n", "test_results.txt")
+FileAppend("`nSummary: " (totalTests - failedTests) "/" totalTests " tests passed.`n", A_ScriptDir "\test_results.txt")
 ExitApp()

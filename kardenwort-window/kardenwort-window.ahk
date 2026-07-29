@@ -609,6 +609,9 @@ ActionUpdateClickApply(guiObj, payload) {
     return FSM_RELOADING
 }
 ActionUpdateClickIO(guiObj, payload) {
+    if (G_FsmTestMode) {
+        return
+    }
     UpdateStatus(guiObj, "Reloading...")
 
     selectedRowsJSON := "[]"
