@@ -2039,6 +2039,14 @@ OnAhkCall(guiObj, action, value) {
             }
             UpdateButtonState(guiObj)
         }
+
+        ; Force repaint of both the Shell.Explorer control and the outer window
+        ; to flush the MSHTML compositing surface after the COM dispatch
+        try {
+            WinRedraw(guiObj.wvc.Hwnd)
+            WinRedraw(guiObj.Hwnd)
+        } catch {
+        }
     }
 }
 
