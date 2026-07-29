@@ -853,7 +853,15 @@ ActionReprocessStartIO(guiObj, payload) {
     }
 
     if (exitCode == 0) {
-        FsmDispatch(guiObj, EV_REPROCESS_DONE, errJSON)
+        statusStr := ""
+        if RegExMatch(outStr, '"status":\s*"([^"]+)"', &match) {
+            statusStr := match[1]
+        }
+        msgStr := ""
+        if RegExMatch(outStr, '"message":\s*"([^"]+)"', &match) {
+            msgStr := StrReplace(match[1], "\\", "\")
+        }
+        FsmDispatch(guiObj, EV_REPROCESS_DONE, Map("status", statusStr, "message", msgStr))
     } else {
         FsmDispatch(guiObj, EV_REPROCESS_FAILED, errJSON)
     }
@@ -969,7 +977,15 @@ ActionRetextStartIO(guiObj, payload) {
     }
 
     if (exitCode == 0) {
-        FsmDispatch(guiObj, EV_RETEXT_DONE, errJSON)
+        statusStr := ""
+        if RegExMatch(outStr, '"status":\s*"([^"]+)"', &match) {
+            statusStr := match[1]
+        }
+        msgStr := ""
+        if RegExMatch(outStr, '"message":\s*"([^"]+)"', &match) {
+            msgStr := StrReplace(match[1], "\\", "\")
+        }
+        FsmDispatch(guiObj, EV_RETEXT_DONE, Map("status", statusStr, "message", msgStr))
     } else {
         FsmDispatch(guiObj, EV_RETEXT_FAILED, errJSON)
     }
