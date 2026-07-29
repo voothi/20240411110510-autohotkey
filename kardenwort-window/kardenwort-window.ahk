@@ -1,6 +1,7 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Off
 #NoTrayIcon
+#Include <WatchFolder>
 
 existingHwnd := 0
 ow := A_DetectHiddenWindows
@@ -345,8 +346,12 @@ ActionRenderDoneIO(guiObj, payload) {
         }
 
         if (G_FileWatcherIntervalMs > 0) {
+            updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
+            if (!DirExist(updatesDir)) {
+                try { DirCreate(updatesDir) } catch {}
+            }
             guiObj.TimerFn := WatchFile.Bind(guiObj)
-            SetTimer(guiObj.TimerFn, G_FileWatcherIntervalMs)
+            WatchFolder(updatesDir, guiObj.TimerFn)
         }
         if (guiObj.FsmMemory["IsLazy"]) {
             UpdateStatus(guiObj, "Lazy mode active. Select and Re-process.")
@@ -1135,7 +1140,10 @@ ActionCloseIO(guiObj, payload) {
     }
 
     if (guiObj.HasOwnProp("TimerFn")) {
-        SetTimer(guiObj.TimerFn, 0)
+        updatesDir := StrReplace(guiObj.TsvPath, ".tsv", ".updates")
+        if (DirExist(updatesDir)) {
+            try { WatchFolder(updatesDir, "**END") } catch {}
+        }
     }
     if (guiObj.HasOwnProp("TsvPath") && guiObj.TsvPath != "") {
         updatesDir := StrReplace(guiObj.TsvPath, ".tsv", ".updates")
@@ -2238,7 +2246,7 @@ PerformReload(guiObj, &outB64, &errJSON) {
     return exitCode
 }
 
-WatchFile(guiObj) {
+WatchFile(guiObj, Folder := "", Changes := "") {
     if (guiObj.FsmState != FSM_IDLE) {
         return
     }
@@ -2250,7 +2258,10 @@ WatchFile(guiObj) {
     }
     if (hwnd == 0 || !WinExist("ahk_id " hwnd) || !guiObj.HasProp("wb") || !IsObject(guiObj.wb)) {
         if (guiObj.HasProp("TimerFn")) {
-            SetTimer(guiObj.TimerFn, 0)
+            updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
+            if (DirExist(updatesDir)) {
+                try { WatchFolder(updatesDir, "**END") } catch {}
+            }
         }
         return
     }
