@@ -556,17 +556,20 @@ ActionFileChangedGuard(guiObj, payload) {
 
     if (!guiObj.FsmMemory["IsLazy"]) {
         if (hasUpdatesDir) {
+            if (!guiObj.HasOwnProp("TimerClearStatus")) {
+                guiObj.TimerClearStatus := UpdateButtonState.Bind(guiObj)
+            }
             if (guiObj.FsmMemory["IsProgressive"]) {
                 guiObj.FsmMemory["LastMTime"] := currentMTime
                 guiObj.FsmMemory["AutoInjectRetries"] := 0
                 UpdateStatus(guiObj, "Progressive data injected automatically.")
-                SetTimer(UpdateButtonState.Bind(guiObj), -2500)
+                SetTimer(guiObj.TimerClearStatus, -2500)
                 return false
             } else {
                 guiObj.FsmMemory["LastMTime"] := currentMTime
                 guiObj.FsmMemory["AutoInjectRetries"] := 0
                 UpdateStatus(guiObj, "Data injected automatically.")
-                SetTimer(UpdateButtonState.Bind(guiObj), -2500)
+                SetTimer(guiObj.TimerClearStatus, -2500)
                 return false
             }
         }
