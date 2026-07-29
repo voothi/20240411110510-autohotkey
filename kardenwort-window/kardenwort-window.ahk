@@ -2302,6 +2302,11 @@ WatchFile(guiObj, Folder := "", Changes := "") {
     } catch {
         hwnd := 0
     }
+    wvcHwnd := 0
+    try {
+        wvcHwnd := guiObj.wvc.Hwnd
+    } catch {
+    }
     if (hwnd == 0 || !WinExist("ahk_id " hwnd) || !guiObj.HasProp("wb") || !IsObject(guiObj.wb)) {
         if (guiObj.HasProp("TimerFn")) {
             updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
@@ -2352,6 +2357,11 @@ WatchFile(guiObj, Folder := "", Changes := "") {
                             if (RegExMatch(jsCode, 'i)"stage"\s*:\s*"finished"')) {
                                 DelayedRedraw() {
                                     try {
+                                        if (wvcHwnd != 0)
+                                            WinRedraw("ahk_id " wvcHwnd)
+                                    } catch {
+                                    }
+                                    try {
                                         WinRedraw("ahk_id " hwnd)
                                     } catch {
                                     }
@@ -2369,6 +2379,11 @@ WatchFile(guiObj, Folder := "", Changes := "") {
                 
                 if (!guiObj.FsmMemory["IsLazy"]) {
                     DelayedBatchRedraw() {
+                        try {
+                            if (wvcHwnd != 0)
+                                WinRedraw("ahk_id " wvcHwnd)
+                        } catch {
+                        }
                         try {
                             WinRedraw("ahk_id " hwnd)
                         } catch {
