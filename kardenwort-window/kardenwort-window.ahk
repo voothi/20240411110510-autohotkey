@@ -2352,10 +2352,13 @@ WatchFile(guiObj, Folder := "", Changes := "") {
                 }
                 
                 if (!guiObj.FsmMemory["IsLazy"]) {
-                    try {
-                        WinRedraw("ahk_id " hwnd)
-                    } catch {
+                    DelayedBatchRedraw() {
+                        try {
+                            WinRedraw("ahk_id " hwnd)
+                        } catch {
+                        }
                     }
+                    SetTimer(DelayedBatchRedraw, -150)
                 }
 
                 try {
