@@ -1,7 +1,7 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Off
 #NoTrayIcon
-#Include <WatchFolder>
+#Include ..\Lib\WatchFolder.ahk
 
 existingHwnd := 0
 ow := A_DetectHiddenWindows
@@ -348,7 +348,10 @@ ActionRenderDoneIO(guiObj, payload) {
         if (G_FileWatcherIntervalMs > 0) {
             updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
             if (!DirExist(updatesDir)) {
-                try { DirCreate(updatesDir) } catch {}
+                try {
+                    DirCreate(updatesDir)
+                } catch {
+                }
             }
             guiObj.TimerFn := WatchFile.Bind(guiObj)
             WatchFolder(updatesDir, guiObj.TimerFn)
@@ -1142,7 +1145,10 @@ ActionCloseIO(guiObj, payload) {
     if (guiObj.HasOwnProp("TimerFn")) {
         updatesDir := StrReplace(guiObj.TsvPath, ".tsv", ".updates")
         if (DirExist(updatesDir)) {
-            try { WatchFolder(updatesDir, "**END") } catch {}
+            try {
+                WatchFolder(updatesDir, "**END")
+            } catch {
+            }
         }
     }
     if (guiObj.HasOwnProp("TsvPath") && guiObj.TsvPath != "") {
@@ -2260,7 +2266,10 @@ WatchFile(guiObj, Folder := "", Changes := "") {
         if (guiObj.HasProp("TimerFn")) {
             updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
             if (DirExist(updatesDir)) {
-                try { WatchFolder(updatesDir, "**END") } catch {}
+                try {
+                    WatchFolder(updatesDir, "**END")
+                } catch {
+                }
             }
         }
         return
