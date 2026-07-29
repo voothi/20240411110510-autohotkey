@@ -345,6 +345,12 @@ ActionRenderDoneIO(guiObj, payload) {
             guiObj.FsmMemory["LastMTime"] := ""
         }
 
+        if (guiObj.FsmMemory["IsLazy"]) {
+            UpdateStatus(guiObj, "Lazy mode active. Select and Re-process.")
+        } else {
+            UpdateStatus(guiObj, "Analysis loaded successfully")
+        }
+
         if (G_FileWatcherIntervalMs > 0) {
             updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
             if (!DirExist(updatesDir)) {
@@ -356,11 +362,6 @@ ActionRenderDoneIO(guiObj, payload) {
             guiObj.TimerFn := (folder, changes) => WatchFile(guiObj, folder, changes)
             WatchFolder(updatesDir, guiObj.TimerFn)
             WatchFile(guiObj)
-        }
-        if (guiObj.FsmMemory["IsLazy"]) {
-            UpdateStatus(guiObj, "Lazy mode active. Select and Re-process.")
-        } else {
-            UpdateStatus(guiObj, "Analysis loaded successfully")
         }
     } catch as e {
         UpdateStatus(guiObj, "Metadata binding failed: " e.Message)
