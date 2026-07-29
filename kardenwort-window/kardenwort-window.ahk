@@ -539,57 +539,25 @@ ActionFileChangedGuard(guiObj, payload) {
     }
 
     currentJsMTime := ""
-    updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
+    hasUpdatesDir := false
+    updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
 
-    if (FileExist(updateJsPath)) {
-        currentJsMTime := FileGetTime(updateJsPath)
-
-        ; If we haven't parsed this JS payload yet, read it to look for the finish signal
-        if (currentJsMTime != guiObj.FsmMemory.Get("LastParsedJsMTime", "")) {
-            guiObj.FsmMemory["LastParsedJsMTime"] := currentJsMTime
-            jsCode := ""
-            try {
-                jsCode := FileRead(updateJsPath)
-            } catch {
-            }
-
-            ; Instantly drop shields if the asynchronous background worker signals it is finished
-            if (jsCode != "" && RegExMatch(jsCode, 'i)"stage"\s*:\s*"finished"')) {
-                guiObj.FsmMemory["IsProgressive"] := false
-                if (guiObj.FsmMemory.Has("ActiveReprocess")) {
-                    guiObj.FsmMemory["ActiveReprocess"] := false
-                }
-                if (guiObj.FsmMemory.Has("ActiveRetext")) {
-                    guiObj.FsmMemory["ActiveRetext"] := false
-                }
-                if (guiObj.FsmState == FSM_RETEXTING) {
-                    FsmDispatch(guiObj, EV_RETEXT_DONE, "")
-                } else if (guiObj.FsmState == FSM_REPROCESSING) {
-                    FsmDispatch(guiObj, EV_REPROCESS_DONE, "")
-                } else {
-                    UpdateStatus(guiObj, "Ready")
-                    UpdateButtonState(guiObj)
-                }
-            }
-        }
+    if (DirExist(updatesDir)) {
+        hasUpdatesDir := true
     }
 
     if (!guiObj.FsmMemory["IsLazy"]) {
-        if (currentJsMTime != "") {
-            if (Abs(DateDiff(currentMTime, currentJsMTime, "Seconds")) <= G_AutoInjectMaxFileAgeDiffSec) {
-                guiObj.FsmMemory["LastMTime"] := currentMTime
-                guiObj.FsmMemory["AutoInjectRetries"] := 0
-                UpdateStatus(guiObj, "Data injected automatically.")
-                SetTimer(UpdateButtonState.Bind(guiObj), -2500)
-                return false
-            }
-            ; In progressive mode the update.js may be older than the timestamp window
-            ; (e.g. lemma chunks ran for a long time) but the data was still injected via eval.
-            ; Skip the reload as long as an update.js is present.
+        if (hasUpdatesDir) {
             if (guiObj.FsmMemory["IsProgressive"]) {
                 guiObj.FsmMemory["LastMTime"] := currentMTime
                 guiObj.FsmMemory["AutoInjectRetries"] := 0
                 UpdateStatus(guiObj, "Progressive data injected automatically.")
+                SetTimer(UpdateButtonState.Bind(guiObj), -2500)
+                return false
+            } else {
+                guiObj.FsmMemory["LastMTime"] := currentMTime
+                guiObj.FsmMemory["AutoInjectRetries"] := 0
+                UpdateStatus(guiObj, "Data injected automatically.")
                 SetTimer(UpdateButtonState.Bind(guiObj), -2500)
                 return false
             }
@@ -779,9 +747,9 @@ ActionReloadDoneIO(guiObj, payload) {
     }
     guiObj.FsmMemory["PendingUpdate"] := false
     try {
-        updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
-        if FileExist(updateJsPath) {
-            FileDelete(updateJsPath)
+        updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
+        if DirExist(updatesDir) {
+            DirDelete(updatesDir, 1)
         }
     } catch {
     }
@@ -822,10 +790,10 @@ ActionReprocessStartIO(guiObj, payload) {
     guiObj.FsmMemory["ActiveReprocess"] := true
     guiObj.FsmMemory["PendingUpdate"] := false
     UpdateStatus(guiObj, "Preparing re-process...")
-    updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
-    if FileExist(updateJsPath) {
+    updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
+    if DirExist(updatesDir) {
         try {
-            FileDelete(updateJsPath)
+            DirDelete(updatesDir, 1)
         } catch {
         }
     }
@@ -932,10 +900,10 @@ ActionRetextStartIO(guiObj, payload) {
 
     guiObj.FsmMemory["PendingUpdate"] := false
     UpdateStatus(guiObj, "Preparing re-text...")
-    updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
-    if FileExist(updateJsPath) {
+    updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
+    if DirExist(updatesDir) {
         try {
-            FileDelete(updateJsPath)
+            DirDelete(updatesDir, 1)
         } catch {
         }
     }
@@ -1170,10 +1138,10 @@ ActionCloseIO(guiObj, payload) {
         SetTimer(guiObj.TimerFn, 0)
     }
     if (guiObj.HasOwnProp("TsvPath") && guiObj.TsvPath != "") {
-        updateJsPath := StrReplace(guiObj.TsvPath, ".tsv", ".update.js")
-        if FileExist(updateJsPath) {
+        updatesDir := StrReplace(guiObj.TsvPath, ".tsv", ".updates")
+        if DirExist(updatesDir) {
             try {
-                FileDelete(updateJsPath)
+                DirDelete(updatesDir, 1)
             } catch {
             }
         }
@@ -1996,11 +1964,11 @@ OnAhkCall(guiObj, action, value) {
         guiObj.FsmMemory["PendingUpdate"] := false
 
         ; Delete the temporary .update.js file now that the worker is finished
-        updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
+        updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
         DelayedDelete() {
-            if FileExist(updateJsPath) {
+            if DirExist(updatesDir) {
                 try {
-                    FileDelete(updateJsPath)
+                    DirDelete(updatesDir, 1)
                 } catch {
                 }
             }
@@ -2296,38 +2264,54 @@ WatchFile(guiObj) {
     }
 
     try {
-        updateJsPath := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".update.js")
-        if FileExist(updateJsPath) {
-            jsMTime := FileGetTime(updateJsPath)
-            if (!guiObj.FsmMemory.Has("LastJsMTime") || guiObj.FsmMemory["LastJsMTime"] != jsMTime) {
-                if (!guiObj.FsmMemory["IsLazy"]) {
-                    jsCode := FileRead(updateJsPath, "UTF-8")
-                    try {
-                        guiObj.wb.document.parentWindow.eval(jsCode)
-                        guiObj.FsmMemory["LastJsMTime"] := jsMTime
-                        WinRedraw("ahk_id " hwnd)
-                        if (RegExMatch(jsCode, 'i)"stage"\s*:\s*"finished"')) {
-                            DelayedRedraw() {
-                                try {
-                                    WinRedraw("ahk_id " hwnd)
-                                } catch {
+        updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
+        if DirExist(updatesDir) {
+            jsFiles := []
+            Loop Files, updatesDir "\*.js"
+            {
+                jsFiles.Push(A_LoopFileFullPath)
+            }
+            
+            if (jsFiles.Length > 0) {
+                SortedFiles := ""
+                for index, filePath in jsFiles {
+                    SortedFiles .= filePath "`n"
+                }
+                SortedFiles := Sort(RTrim(SortedFiles, "`n"))
+                jsFiles := StrSplit(SortedFiles, "`n")
+                
+                for index, filePath in jsFiles {
+                    if (filePath == "") {
+                        continue
+                    }
+                    if (!guiObj.FsmMemory["IsLazy"]) {
+                        jsCode := FileRead(filePath, "UTF-8")
+                        try {
+                            guiObj.wb.document.parentWindow.eval(jsCode)
+                            if (RegExMatch(jsCode, 'i)"stage"\s*:\s*"finished"')) {
+                                DelayedRedraw() {
+                                    try {
+                                        WinRedraw("ahk_id " hwnd)
+                                    } catch {
+                                    }
                                 }
+                                SetTimer(DelayedRedraw, -500)
                             }
-                            SetTimer(DelayedRedraw, -500)
+                        } catch {
                         }
+                    }
+                    try {
+                        FileDelete(filePath)
                     } catch {
                     }
-                } else {
-                    guiObj.FsmMemory["LastJsMTime"] := jsMTime
+                }
+                if (!guiObj.FsmMemory["IsLazy"]) {
+                    WinRedraw("ahk_id " hwnd)
                 }
                 try {
                     currentMTime := FileGetTime(guiObj.TsvPath)
                 } catch {
                 }
-            }
-        } else {
-            if (guiObj.FsmMemory.Has("LastJsMTime")) {
-                guiObj.FsmMemory.Delete("LastJsMTime")
             }
         }
     } catch {
@@ -2358,6 +2342,15 @@ GuiClose(thisGui) {
     }
     if (thisGui.HasProp("SessionID") && G_ActiveWindows.Has(thisGui.SessionID)) {
         G_ActiveWindows.Delete(thisGui.SessionID)
+    }
+    if (thisGui.HasProp("TsvPath") && thisGui.TsvPath != "") {
+        updatesDir := RegExReplace(thisGui.TsvPath, "(?i)\.tsv$", ".updates")
+        if DirExist(updatesDir) {
+            try {
+                DirDelete(updatesDir, 1)
+            } catch {
+            }
+        }
     }
     FsmDispatch(thisGui, EV_CLOSE)
     return 1
