@@ -2299,11 +2299,6 @@ WatchFile(guiObj, Folder := "", Changes := "") {
     } catch {
         hwnd := 0
     }
-    wvcHwnd := 0
-    try {
-        wvcHwnd := guiObj.wvc.Hwnd
-    } catch {
-    }
     if (hwnd == 0 || !WinExist("ahk_id " hwnd) || !guiObj.HasProp("wb") || !IsObject(guiObj.wb)) {
         if (guiObj.HasProp("TimerFn")) {
             updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
