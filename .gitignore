@@ -106,3 +106,4 @@ kardenwort-window/watcher.log
 kardenwort-window/tests/test_results.txt
 kardenwort-window/tests/ahk_out.txt
 kardenwort-window/tests/ahk_err.txt
+kardenwort-window/tests/test_fsm_headless_results.txt

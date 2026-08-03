@@ -44,14 +44,14 @@ class MockGui {
     StatusLog := []
     selectableTextMode := false
 
-    SaveBtn    := MockControl()
-    UpdateBtn  := MockControl()
-    SendBtn    := MockControl()
-    DeleteBtn  := MockControl()
-    ReprocBtn  := MockControl()
-    RetextBtn  := MockControl()
+    SaveBtn := MockControl()
+    UpdateBtn := MockControl()
+    SendBtn := MockControl()
+    DeleteBtn := MockControl()
+    ReprocBtn := MockControl()
+    RetextBtn := MockControl()
     PointerBtn := MockControl()
-    StatusTxt  := MockControl()
+    StatusTxt := MockControl()
 
     GetClientPos(x?, y?, &w := 800, &h := 600) => 0
     Destroy() => 0
@@ -67,7 +67,7 @@ MakeMockGui() {
 ; Assertion Framework
 ; ===================================================================================
 
-global _TotalTests  := 0
+global _TotalTests := 0
 global _FailedTests := 0
 global _ResultsFile := A_ScriptDir "\test_fsm_headless_results.txt"
 
@@ -96,8 +96,8 @@ g := MakeMockGui()
 g.FsmState := FSM_IDLE
 g.FsmMemory["IsDirty"] := false
 FsmDispatch(g, EV_DIRTY)
-_Assert(g.FsmState == FSM_IDLE,   "S1.1: IDLE + EV_DIRTY stays in IDLE")
-_Assert(g.FsmMemory["IsDirty"],   "S1.1: IDLE + EV_DIRTY sets IsDirty=true")
+_Assert(g.FsmState == FSM_IDLE, "S1.1: IDLE + EV_DIRTY stays in IDLE")
+_Assert(g.FsmMemory["IsDirty"], "S1.1: IDLE + EV_DIRTY sets IsDirty=true")
 
 ; S1.2: Multiple EV_DIRTY events do not stack-overflow or deadlock
 g := MakeMockGui()
@@ -106,8 +106,8 @@ g.FsmMemory["IsDirty"] := false
 FsmDispatch(g, EV_DIRTY)
 FsmDispatch(g, EV_DIRTY)
 FsmDispatch(g, EV_DIRTY)
-_Assert(g.FsmState == FSM_IDLE,   "S1.2: Three EV_DIRTY events leave state as IDLE (no deadlock)")
-_Assert(g.FsmMemory["IsDirty"],   "S1.2: IsDirty remains true after repeated EV_DIRTY")
+_Assert(g.FsmState == FSM_IDLE, "S1.2: Three EV_DIRTY events leave state as IDLE (no deadlock)")
+_Assert(g.FsmMemory["IsDirty"], "S1.2: IsDirty remains true after repeated EV_DIRTY")
 
 ; S1.3: EV_DIRTY is silently dropped in SAVING state (guard prevents transition)
 g := MakeMockGui()
@@ -130,7 +130,7 @@ g := MakeMockGui()
 g.FsmState := FSM_IDLE
 g.FsmMemory["IsDirty"] := false
 FsmDispatch(g, EV_SAVE_CLICK)
-_Assert(g.FsmState == FSM_IDLE,   "S2.1: EV_SAVE_CLICK when not dirty stays in IDLE")
+_Assert(g.FsmState == FSM_IDLE, "S2.1: EV_SAVE_CLICK when not dirty stays in IDLE")
 
 ; S2.2: IDLE + EV_SAVE_CLICK when dirty transitions to SAVING
 g := MakeMockGui()
@@ -148,14 +148,14 @@ g.TsvPath := "dummy.tsv"
 FsmDispatch(g, EV_SAVE_SUCCESS)
 _Assert(g.FsmState == FSM_RELOADING, "S2.3a: EV_SAVE_SUCCESS transitions to RELOADING")
 FsmDispatch(g, EV_RELOAD_DONE)
-_Assert(g.FsmState == FSM_IDLE,      "S2.3b: EV_RELOAD_DONE transitions to IDLE")
-_Assert(!g.FsmMemory["IsDirty"],     "S2.3c: IsDirty cleared after save+reload cycle")
+_Assert(g.FsmState == FSM_IDLE, "S2.3b: EV_RELOAD_DONE transitions to IDLE")
+_Assert(!g.FsmMemory["IsDirty"], "S2.3c: IsDirty cleared after save+reload cycle")
 
 ; S2.4: SAVING + EV_SAVE_FAILED returns to IDLE (error recovery, no deadlock)
 g := MakeMockGui()
 g.FsmState := FSM_SAVING
 FsmDispatch(g, EV_SAVE_FAILED)
-_Assert(g.FsmState == FSM_IDLE,   "S2.4: EV_SAVE_FAILED recovers to IDLE (no orphaned SAVING state)")
+_Assert(g.FsmState == FSM_IDLE, "S2.4: EV_SAVE_FAILED recovers to IDLE (no orphaned SAVING state)")
 
 ; ===================================================================================
 ; Scenario Group 3: EV_RETEXT_DONE — Re-text success and failure paths
@@ -168,7 +168,7 @@ g.FsmMemory["IsDirty"] := false
 FsmDispatch(g, EV_RETEXT_CLICK, "")
 _Assert(g.FsmState == FSM_RETEXTING, "S3.1a: EV_RETEXT_CLICK transitions to RETEXTING")
 FsmDispatch(g, EV_RETEXT_DONE, Map("status", "success", "message", "Re-text complete"))
-_Assert(g.FsmState == FSM_IDLE,      "S3.1b: EV_RETEXT_DONE (success) resolves to IDLE")
+_Assert(g.FsmState == FSM_IDLE, "S3.1b: EV_RETEXT_DONE (success) resolves to IDLE")
 
 ; S3.2: FSM_RETEXTING + EV_RETEXT_DONE when already in IDLE (stale event) — ignored
 g := MakeMockGui()
@@ -187,11 +187,11 @@ g := MakeMockGui()
 g.FsmState := FSM_IDLE
 FsmDispatch(g, EV_RETEXT_CLICK, "")
 FsmDispatch(g, EV_RETEXT_FAILED, "network error")
-_Assert(g.FsmState == FSM_IDLE,      "S3.4a: RETEXTING -> IDLE after failure")
+_Assert(g.FsmState == FSM_IDLE, "S3.4a: RETEXTING -> IDLE after failure")
 FsmDispatch(g, EV_RETEXT_CLICK, "")
 _Assert(g.FsmState == FSM_RETEXTING, "S3.4b: Second RETEXT_CLICK accepted from IDLE (no deadlock)")
 FsmDispatch(g, EV_RETEXT_DONE, Map("status", "success"))
-_Assert(g.FsmState == FSM_IDLE,      "S3.4c: Second RETEXT_DONE resolves cleanly to IDLE")
+_Assert(g.FsmState == FSM_IDLE, "S3.4c: Second RETEXT_DONE resolves cleanly to IDLE")
 
 ; ===================================================================================
 ; Scenario Group 4: EV_EXPORT_FAILED — Export failure edge cases
@@ -226,7 +226,7 @@ _Assert(g.FsmState == FSM_EXPORTING, "S4.4: EV_FILE_CHANGED during EXPORTING is 
 g := MakeMockGui()
 g.FsmState := FSM_EXPORTING
 FsmDispatch(g, EV_EXPORT_FAILED)
-_Assert(g.FsmState == FSM_IDLE,  "S4.5a: Post-export-failure state is IDLE")
+_Assert(g.FsmState == FSM_IDLE, "S4.5a: Post-export-failure state is IDLE")
 g.FsmMemory["IsDirty"] := true
 FsmDispatch(g, EV_SAVE_CLICK)
 _Assert(g.FsmState == FSM_SAVING, "S4.5b: Save workflow resumes correctly after export failure recovery")
@@ -250,12 +250,12 @@ g.FsmState := FSM_IDLE
 g.FsmMemory["IsDirty"] := true
 selPayload := '[{"id": 99}]'
 FsmDispatch(g, EV_REPROCESS_CLICK, selPayload)
-_Assert(g.FsmState == FSM_SAVING,           "S5.2a: REPROCESS while dirty first saves (SAVING state)")
-_Assert(g.FsmMemory["PendingReprocess"],    "S5.2b: PendingReprocess flag set")
+_Assert(g.FsmState == FSM_SAVING, "S5.2a: REPROCESS while dirty first saves (SAVING state)")
+_Assert(g.FsmMemory["PendingReprocess"], "S5.2b: PendingReprocess flag set")
 FsmDispatch(g, EV_SAVE_SUCCESS)
-_Assert(g.FsmState == FSM_REPROCESSING,     "S5.2c: After save, transitions to REPROCESSING")
+_Assert(g.FsmState == FSM_REPROCESSING, "S5.2c: After save, transitions to REPROCESSING")
 FsmDispatch(g, EV_REPROCESS_DONE)
-_Assert(g.FsmState == FSM_IDLE,             "S5.2d: REPROCESS_DONE resolves to IDLE (no deadlock)")
+_Assert(g.FsmState == FSM_IDLE, "S5.2d: REPROCESS_DONE resolves to IDLE (no deadlock)")
 
 ; S5.3: CLOSING state locks out all standard workflow events
 g := MakeMockGui()
@@ -274,21 +274,21 @@ g := MakeMockGui()
 g.FsmState := FSM_IDLE
 g.FsmMemory["IsDirty"] := false
 FsmDispatch(g, EV_DIRTY)
-_Assert(g.FsmMemory["IsDirty"],        "S5.4a: EV_DIRTY sets IsDirty")
+_Assert(g.FsmMemory["IsDirty"], "S5.4a: EV_DIRTY sets IsDirty")
 FsmDispatch(g, EV_SAVE_CLICK)
-_Assert(g.FsmState == FSM_SAVING,      "S5.4b: Save click transitions to SAVING")
+_Assert(g.FsmState == FSM_SAVING, "S5.4b: Save click transitions to SAVING")
 FsmDispatch(g, EV_SAVE_SUCCESS)
-_Assert(g.FsmState == FSM_RELOADING,   "S5.4c: Save success transitions to RELOADING")
+_Assert(g.FsmState == FSM_RELOADING, "S5.4c: Save success transitions to RELOADING")
 FsmDispatch(g, EV_RELOAD_DONE)
-_Assert(g.FsmState == FSM_IDLE,        "S5.4d: Reload done resolves to IDLE")
-_Assert(!g.FsmMemory["IsDirty"],       "S5.4e: IsDirty cleared after full save+reload")
+_Assert(g.FsmState == FSM_IDLE, "S5.4d: Reload done resolves to IDLE")
+_Assert(!g.FsmMemory["IsDirty"], "S5.4e: IsDirty cleared after full save+reload")
 
 ; ===================================================================================
 ; Summary
 ; ===================================================================================
 
 summary := "`n=== Headless FSM Regression Runner ===" . "`n"
-       . "Tests Passed: " . (_TotalTests - _FailedTests) . "/" . _TotalTests . "`n"
+    . "Tests Passed: " . (_TotalTests - _FailedTests) . "/" . _TotalTests . "`n"
 if (_FailedTests > 0) {
     summary .= "FAILURES: " . _FailedTests . " test(s) FAILED`n"
 } else {
