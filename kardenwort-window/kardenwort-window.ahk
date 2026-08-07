@@ -1681,7 +1681,14 @@ LaunchDesk(filePath, textMode) {
     UpdateTrayMenu()
     UpdateTrayIcon()
 
-    LaunchKardenwortWindow(sourceText, textMode)
+    global G_OverrideZID
+    presetZID := ""
+    if (IsSet(G_OverrideZID) && G_OverrideZID != "") {
+        presetZID := G_OverrideZID
+        G_OverrideZID := "" ; Reset after use
+    }
+
+    LaunchKardenwortWindow(sourceText, textMode, presetZID)
 }
 
 if (A_ScriptFullPath = A_LineFile) {
@@ -1724,6 +1731,9 @@ ProcessArgs(argsArray) {
             arg := argsArray[i]
             if (arg == "--seq-num") {
                 global G_OverrideSeqNum := argsArray[i + 1]
+                i += 2
+            } else if (arg == "--zid") {
+                global G_OverrideZID := argsArray[i + 1]
                 i += 2
             } else if (arg == "--restore") {
                 LaunchRestore(argsArray[i + 1])
