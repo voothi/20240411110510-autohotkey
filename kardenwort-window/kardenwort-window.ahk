@@ -1769,8 +1769,8 @@ ProcessArgs(argsArray) {
 ; Execution Utilities
 ; ===================================================================================
 RunSilent(cmd, &stdout := "", &stderr := "") {
-    tmpOut := A_Temp "\karden_out_" A_Now "_" A_TickCount "_" A_AhkPID ".txt"
-    tmpErr := A_Temp "\karden_err_" A_Now "_" A_TickCount "_" A_AhkPID ".txt"
+    tmpOut := A_Temp "\karden_out_" A_Now "_" A_TickCount "_" ProcessExist() ".txt"
+    tmpErr := A_Temp "\karden_err_" A_Now "_" A_TickCount "_" ProcessExist() ".txt"
 
     fullCmd := 'cmd.exe /c "' cmd ' > "' tmpOut '" 2> "' tmpErr '"'
 
