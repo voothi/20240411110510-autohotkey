@@ -1298,6 +1298,13 @@ global langInfo := Map()
 
 LoadConfig() {
     configPath := A_ScriptDir "\config.ini"
+    loop A_Args.Length {
+        if (A_Args[A_Index] == "--config" && A_Index < A_Args.Length) {
+            configPath := A_Args[A_Index + 1]
+            break
+        }
+    }
+    
     if !FileExist(configPath) {
         KardenMsgBox("Configuration file not found: " configPath, "Kardenwort Error", 16)
         ExitApp()
@@ -1672,9 +1679,13 @@ LaunchDesk(filePath, textMode) {
 
     SplitPath(filePath, &fileName)
     lang := G_DefaultLanguage
-    RegExMatch(fileName, "\.([a-z]{2})\.(txt|srt)$", &mLang)
-    if (mLang) {
-        lang := mLang[1]
+    if (IsSet(G_OverrideLanguage) && G_OverrideLanguage != "") {
+        lang := G_OverrideLanguage
+    } else {
+        RegExMatch(fileName, "\.([a-z]{2})\.(txt|srt)$", &mLang)
+        if (mLang) {
+            lang := mLang[1]
+        }
     }
 
     global G_CurrentLang := lang
@@ -1734,6 +1745,9 @@ ProcessArgs(argsArray) {
                 i += 2
             } else if (arg == "--zid") {
                 global G_OverrideZID := argsArray[i + 1]
+                i += 2
+            } else if (arg == "--language") {
+                global G_OverrideLanguage := argsArray[i + 1]
                 i += 2
             } else if (arg == "--restore") {
                 LaunchRestore(argsArray[i + 1])
