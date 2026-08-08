@@ -345,6 +345,10 @@ ActionRenderDoneIO(guiObj, payload) {
             UpdateStatus(guiObj, "Lazy mode active. Select and Re-process.")
         } else {
             UpdateStatus(guiObj, "Analysis loaded successfully")
+            if (!guiObj.HasOwnProp("TimerClearStatus")) {
+                guiObj.TimerClearStatus := UpdateButtonState.Bind(guiObj)
+            }
+            SetTimer(guiObj.TimerClearStatus, -2500)
         }
 
         if (G_FileWatcherIntervalMs > 0) {
