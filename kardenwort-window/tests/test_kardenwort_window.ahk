@@ -9,47 +9,7 @@ global G_HoverHighlightMvpRainbow := 1
 #Include "..\..\Lib\B64Util.ahk"
 #Include "..\kardenwort-window.ahk"
 
-; ===================================================================================
-; Mock Setup for FSM tests
-; ===================================================================================
-
-class MockControl {
-    Enabled := false
-    Visible := false
-    Text := ""
-    Move(x?, y?, w?, h?) => 0
-    Redraw() => 0
-}
-
-class MockGui {
-    FsmState := ""
-    FsmMemory := Map()
-    ZID := "20260701120000"
-    Lang := "en"
-    TsvPath := "dummy.tsv"
-    SourceText := "mock source text"
-    TextMode := "single"
-    StatusLog := []
-    selectableTextMode := false
-
-    SaveBtn := MockControl()
-    UpdateBtn := MockControl()
-    SendBtn := MockControl()
-    DeleteBtn := MockControl()
-    ReprocBtn := MockControl()
-    RetextBtn := MockControl()
-    PointerBtn := MockControl()
-    StatusTxt := MockControl()
-
-    GetClientPos(x?, y?, &w := 800, &h := 600) => 0
-    Destroy() => 0
-}
-
-MakeMockGui() {
-    g := MockGui()
-    FsmInit(g)
-    return g
-}
+#Include "mock_gui.ahk"
 
 ; Success/Failure counter
 global totalTests := 0
