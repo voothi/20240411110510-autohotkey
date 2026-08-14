@@ -1590,6 +1590,7 @@ StartServerProcess() {
 
 RestartServerProcess() {
     global G_ServerEnabled, G_ServerHost, G_ServerPort, G_ServerApiKey, G_ServerPID, G_ServerStatus
+    LoadServerConfig()
     if (!G_ServerEnabled) {
         MsgBox("HTTP Server is disabled in Kardenwort Desk config.ini", "Kardenwort Desk", "Iconi")
         return
