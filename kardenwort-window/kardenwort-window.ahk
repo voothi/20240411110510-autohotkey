@@ -1350,6 +1350,7 @@ LoadConfig() {
         KardenMsgBox("Desk script not found: " G_DeskScriptPath, "Kardenwort Error", 16)
         ExitApp()
     }
+    LoadServerConfig()
 }
 
 RegisterPointerToggleHotkeys() {
@@ -1498,11 +1499,160 @@ InitializeTrayMenu() {
     UpdateTrayIcon()
 }
 
+global G_ServerEnabled := false
+global G_ServerHost := "127.0.0.1"
+global G_ServerPort := 18335
+global G_ServerApiKey := ""
+global G_ServerPID := 0
+global G_ServerStatus := "Disabled"
+
+LoadServerConfig() {
+    global G_DeskScriptPath, G_ServerEnabled, G_ServerHost, G_ServerPort, G_ServerApiKey, G_ServerStatus
+    if (G_DeskScriptPath == "")
+        return
+    deskDir := RegExReplace(G_DeskScriptPath, "\\[^\\]+$")
+    deskConfigPath := deskDir . "\config.ini"
+
+    if FileExist(deskConfigPath) {
+        enabledStr := StrLower(IniRead(deskConfigPath, "server", "enabled", "false"))
+        G_ServerEnabled := (enabledStr == "true" || enabledStr == "1")
+        G_ServerHost := IniRead(deskConfigPath, "server", "host", "127.0.0.1")
+        G_ServerPort := IniRead(deskConfigPath, "server", "port", 18335)
+        G_ServerApiKey := IniRead(deskConfigPath, "server", "api_key", "")
+    }
+
+    if (!G_ServerEnabled) {
+        G_ServerStatus := "Disabled"
+    } else {
+        G_ServerStatus := "Offline"
+    }
+}
+
+CheckServerHealth(host, port) {
+    try {
+        http := ComObject("WinHttp.WinHttpRequest.5.1")
+        http.Open("GET", "http://" . host . ":" . port . "/api/v1/health", false)
+        http.SetTimeouts(1000, 1000, 1000, 1000)
+        http.Send()
+        if (http.Status == 200) {
+            return InStr(http.ResponseText, '"ok":true') || InStr(http.ResponseText, '"ok": true')
+        }
+    } catch {
+        return false
+    }
+    return false
+}
+
+ShutdownServerHttp(host, port, apiKey) {
+    try {
+        http := ComObject("WinHttp.WinHttpRequest.5.1")
+        http.Open("POST", "http://" . host . ":" . port . "/api/v1/shutdown", false)
+        http.SetTimeouts(1000, 1000, 2000, 2000)
+        if (apiKey != "") {
+            http.SetRequestHeader("X-API-Token", apiKey)
+        }
+        http.SetRequestHeader("Content-Type", "application/json")
+        http.Send("{}")
+        return (http.Status == 200)
+    } catch {
+        return false
+    }
+}
+
+StartServerProcess() {
+    global G_ServerEnabled, G_DeskPythonPath, G_DeskScriptPath, G_ServerPID, G_ServerHost, G_ServerPort, G_ServerStatus
+    if (!G_ServerEnabled)
+        return
+
+    deskDir := RegExReplace(G_DeskScriptPath, "\\[^\\]+$")
+    cmd := '"' . G_DeskPythonPath . '" "' . G_DeskScriptPath . '" server'
+
+    try {
+        Run(cmd, deskDir, "Hide", &pid)
+        G_ServerPID := pid
+    } catch as e {
+        G_ServerStatus := "Failed to Start"
+        return
+    }
+
+    ; Bounded readiness polling (10 x 300ms)
+    loop 10 {
+        Sleep(300)
+        if CheckServerHealth(G_ServerHost, G_ServerPort) {
+            G_ServerStatus := "Running"
+            UpdateTrayMenu()
+            return
+        }
+    }
+    G_ServerStatus := "Running (Unconfirmed)"
+    UpdateTrayMenu()
+}
+
+RestartServerProcess() {
+    global G_ServerEnabled, G_ServerHost, G_ServerPort, G_ServerApiKey, G_ServerPID, G_ServerStatus
+    if (!G_ServerEnabled) {
+        MsgBox("HTTP Server is disabled in Kardenwort Desk config.ini", "Kardenwort Desk", "Iconi")
+        return
+    }
+
+    ; Graceful HTTP shutdown
+    if (!ShutdownServerHttp(G_ServerHost, G_ServerPort, G_ServerApiKey)) {
+        if (G_ServerPID) {
+            try Run('taskkill /F /PID ' . G_ServerPID, , "Hide")
+        }
+    }
+
+    G_ServerPID := 0
+    G_ServerStatus := "Restarting..."
+    UpdateTrayMenu()
+
+    ; Wait for port release (up to 30s)
+    loop 30 {
+        Sleep(1000)
+        if !CheckServerHealth(G_ServerHost, G_ServerPort)
+            break
+    }
+
+    StartServerProcess()
+}
+
+OpenServerLogsDir() {
+    global G_DeskScriptPath
+    if (G_DeskScriptPath != "") {
+        deskDir := RegExReplace(G_DeskScriptPath, "\\[^\\]+$")
+        resultsDir := deskDir . "\results"
+        if FileExist(resultsDir) {
+            Run('explorer.exe "' . resultsDir . '"')
+        } else {
+            Run('explorer.exe "' . deskDir . '"')
+        }
+    }
+}
+
+OnScriptExit(ExitReason, ExitCode) {
+    global G_ServerEnabled, G_ServerHost, G_ServerPort, G_ServerApiKey, G_ServerPID
+    if (G_ServerEnabled) {
+        if (!ShutdownServerHttp(G_ServerHost, G_ServerPort, G_ServerApiKey)) {
+            if (G_ServerPID) {
+                try Run('taskkill /F /PID ' . G_ServerPID, , "Hide")
+            }
+        }
+    }
+}
+
 UpdateTrayMenu() {
-    global G_CurrentLang, langNames, langCodes
+    global G_CurrentLang, langNames, langCodes, G_ServerEnabled, G_ServerStatus
     A_TrayMenu.Delete()
     A_TrayMenu.Add("Current Language: " . G_CurrentLang, (*) => 0)
     A_TrayMenu.Disable("1&")
+    A_TrayMenu.Add("HTTP Server: " . G_ServerStatus, (*) => 0)
+    A_TrayMenu.Disable("2&")
+
+    if (G_ServerEnabled) {
+        A_TrayMenu.Add("Restart HTTP Server", (*) => RestartServerProcess())
+        A_TrayMenu.Add("View Desk Logs", (*) => OpenServerLogsDir())
+    }
+
     A_TrayMenu.Add() ; Separator
 
     for code in langCodes {
@@ -1711,6 +1861,8 @@ if (A_ScriptFullPath = A_LineFile) {
     LoadConfig()
     RegisterPointerToggleHotkeys()
     InitializeTrayMenu()
+    OnExit(OnScriptExit)
+    StartServerProcess()
 
     global G_Initialized := true
 
