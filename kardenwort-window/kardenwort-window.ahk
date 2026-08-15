@@ -2057,9 +2057,12 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
         }
     }
 
+    activeWindows := GetActiveKardenwortWindows()
+    global G_WindowCount
+    G_WindowCount := activeWindows.Length
+
     ; Pre-Flight Concurrent Session Guard (only for fresh text captures, not for restore / child sessions)
     if (tsvPath == "") {
-        activeWindows := GetActiveKardenwortWindows()
         if (activeWindows.Length > 0) {
             global G_AutoCloseOnNewLaunch
             if (G_AutoCloseOnNewLaunch == 1 || G_AutoCloseOnNewLaunch == "1") {
@@ -3780,7 +3783,7 @@ GetSequenceNumber() {
     local lastTime := RegRead("HKEY_CURRENT_USER\Software\Kardenwort", "LastLaunchTime", 0)
 
     ; If last launch was more than 5 seconds ago, and no windows exist, reset to 1
-    local hwnds := WinGetList("ahk_class AutoHotkeyGUI ahk_exe AutoHotkey64.exe")
+    local hwnds := WinGetList("ahk_class AutoHotkeyGUI ahk_pid " ProcessExist())
     local actualCount := 0
     for index, hwnd in hwnds {
         try {
