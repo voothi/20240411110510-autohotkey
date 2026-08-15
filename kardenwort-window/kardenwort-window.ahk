@@ -382,8 +382,11 @@ ActionRenderFailedIO(guiObj, payload) {
     }
     UpdateStatus(guiObj, "Analysis failed")
     KardenMsgBox("Kardenwort Analysis failed:`n" payload, "Kardenwort Error", 16)
-    global G_WindowCount
+    global G_WindowCount, G_ActiveWindows
     G_WindowCount := Max(0, G_WindowCount - 1)
+    if (guiObj.HasProp("SessionID") && G_ActiveWindows.Has(guiObj.SessionID)) {
+        G_ActiveWindows.Delete(guiObj.SessionID)
+    }
     guiObj.Destroy()
 }
 
@@ -2242,8 +2245,12 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
             SetLanguage(detectedLang)
             global G_WindowCount
             G_WindowCount := Max(0, G_WindowCount - 1)
+            if (G_ActiveWindows.Has(sessionID)) {
+                G_ActiveWindows.Delete(sessionID)
+            }
             MyGui.Destroy()
-            LaunchKardenwortWindow(sourceText, textMode, ZID, tsvPath)
+            Sleep(50)
+            LaunchKardenwortWindow(sourceText, textMode, presetZID, tsvPath)
             return
         } else if (choice == "No") {
             cmdBypass := BuildRenderCmd(true)
@@ -2256,6 +2263,9 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
             try FileDelete(tmpTextFile)
             global G_WindowCount
             G_WindowCount := Max(0, G_WindowCount - 1)
+            if (G_ActiveWindows.Has(sessionID)) {
+                G_ActiveWindows.Delete(sessionID)
+            }
             MyGui.Destroy()
             return
         }
@@ -2275,7 +2285,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
 
 OnAhkCall(guiObj, action, value) {
     if (action == "close") {
-        guiObj.Destroy()
+        GuiClose(guiObj)
         return
     }
     if (action == "play") {
