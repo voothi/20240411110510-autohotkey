@@ -2128,19 +2128,24 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
         return
     }
 
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' lang ' --zid ' ZID ' --text-mode ' textMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' --split-gap-limit ' G_SplitGapLimit ' --seq-num ' seqNum ' < "' tmpTextFile '"'
-    if (tsvPath != "") {
-        cmd := cmd ' --tsv "' tsvPath '"'
+    BuildRenderCmd(isBypass := false) {
+        c := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' lang ' --zid ' ZID ' --text-mode ' textMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' --split-gap-limit ' G_SplitGapLimit ' --seq-num ' seqNum
+        if (tsvPath != "") {
+            c .= ' --tsv "' tsvPath '"'
+        }
+        if (isBypass) {
+            c .= ' --bypass-lang-check'
+        }
+        c .= ' < "' tmpTextFile '"'
+        return c
     }
+
+    cmd := BuildRenderCmd(false)
     exitCode := 1
     try {
         exitCode := RunSilent(cmd, &outB64, &errJSON)
     } catch as e {
         errJSON := "RunSilent threw an exception: " e.Message
-    }
-    try {
-        FileDelete(tmpTextFile)
-    } catch {
     }
 
     if (exitCode != 0 && InStr(errJSON, "LANGUAGE_MISMATCH")) {
@@ -2159,6 +2164,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
         
         choice := KardenMsgBox(promptMsg, "Language Verification", "YesNoCancel")
         if (choice == "Yes" && detectedLang != "") {
+            try FileDelete(tmpTextFile)
             SetLanguage(detectedLang)
             global G_WindowCount
             G_WindowCount := Max(0, G_WindowCount - 1)
@@ -2166,21 +2172,24 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
             LaunchKardenwortWindow(sourceText, textMode, ZID, tsvPath)
             return
         } else if (choice == "No") {
-            tmpTextFile := A_Temp "\karden_input_" ZID "_" A_TickCount ".txt"
+            cmdBypass := BuildRenderCmd(true)
             try {
-                FileAppend(sourceText, tmpTextFile, "UTF-8-RAW")
-                cmdBypass := cmd " --bypass-lang-check"
                 exitCode := RunSilent(cmdBypass, &outB64, &errJSON)
-                FileDelete(tmpTextFile)
             } catch as e {
                 errJSON := "Bypass execution failed: " e.Message
             }
         } else {
+            try FileDelete(tmpTextFile)
             global G_WindowCount
             G_WindowCount := Max(0, G_WindowCount - 1)
             MyGui.Destroy()
             return
         }
+    }
+
+    try {
+        FileDelete(tmpTextFile)
+    } catch {
     }
 
     if (exitCode != 0) {
