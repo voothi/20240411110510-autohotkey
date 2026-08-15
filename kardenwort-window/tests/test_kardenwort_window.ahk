@@ -321,7 +321,7 @@ G_ActiveWindows["dead_1"] := 999903
 G_ActiveWindows["live_1"] := testDummyGui.Hwnd
 m1_3 := GetActiveKardenwortWindows()
 Assert(m1_3.Length == 1 && m1_3[1].sessionID == "live_1" && !G_ActiveWindows.Has("dead_1"),
-    "Matrix 1.3: Mixed dead/live HWNDs filtered to live only")
+"Matrix 1.3: Mixed dead/live HWNDs filtered to live only")
 testDummyGui.Destroy()
 G_ActiveWindows.Clear()
 
