@@ -313,16 +313,17 @@ G_ActiveWindows["dead_2"] := 999902
 m1_2 := GetActiveKardenwortWindows()
 Assert(m1_2.Length == 0 && G_ActiveWindows.Count == 0, "Matrix 1.2: Dead HWNDs pruned completely")
 
-taskbarHwnd := WinExist("ahk_class Shell_TrayWnd")
-if (taskbarHwnd) {
-    G_ActiveWindows.Clear()
-    G_ActiveWindows["dead_1"] := 999903
-    G_ActiveWindows["live_1"] := taskbarHwnd
-    m1_3 := GetActiveKardenwortWindows()
-    Assert(m1_3.Length == 1 && m1_3[1].sessionID == "live_1" && !G_ActiveWindows.Has("dead_1"),
+; Matrix 1.3: Mixed live and dead handles
+testDummyGui := Gui("+AlwaysOnTop", "KardenwortTestDummy")
+testDummyGui.Show("w100 h100")
+G_ActiveWindows.Clear()
+G_ActiveWindows["dead_1"] := 999903
+G_ActiveWindows["live_1"] := testDummyGui.Hwnd
+m1_3 := GetActiveKardenwortWindows()
+Assert(m1_3.Length == 1 && m1_3[1].sessionID == "live_1" && !G_ActiveWindows.Has("dead_1"),
     "Matrix 1.3: Mixed dead/live HWNDs filtered to live only")
-    G_ActiveWindows.Clear()
-}
+testDummyGui.Destroy()
+G_ActiveWindows.Clear()
 
 ; Matrix 2: Session Close & Teardown Verification Matrix (M2.1 - M2.3)
 G_ActiveWindows.Clear()
@@ -338,12 +339,17 @@ m2_2 := CloseAllActiveWindows()
 Assert(m2_2 == true && G_ActiveWindows.Count == 0 && G_WindowCount == 0,
     "Matrix 2.2: CloseAll with dead handles succeeds and cleans map")
 
-if (taskbarHwnd) {
-    G_ActiveWindows["uncloseable"] := taskbarHwnd
-    m2_3 := CloseAllActiveWindows()
-    Assert(m2_3 == false, "Matrix 2.3: CloseAll returns false when an active window remains unclosed")
-    G_ActiveWindows.Clear()
-}
+; Matrix 2.3: CloseAllActiveWindows when a window rejects close
+testDummyUncloseable := Gui("+AlwaysOnTop", "KardenwortTestDummyUncloseable")
+testDummyUncloseable.Show("w100 h100")
+FsmInit(testDummyUncloseable)
+testDummyUncloseable.FsmMemory["IsDirty"] := true
+G_AutoSaveOnClose := 0
+G_ActiveWindows["uncloseable"] := testDummyUncloseable.Hwnd
+m2_3 := CloseAllActiveWindows()
+Assert(m2_3 == false, "Matrix 2.3: CloseAll returns false when an active window remains unclosed")
+testDummyUncloseable.Destroy()
+G_ActiveWindows.Clear()
 
 ; Matrix 3: Session Guard Pre-Flight Decision Matrix
 SimulateSessionGuard(activeCount, autoClose, userChoice) {
