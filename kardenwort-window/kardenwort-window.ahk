@@ -2028,6 +2028,19 @@ CloseAllActiveWindows() {
 ; GUI & Watcher Implementation
 ; ===================================================================================
 LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
+    static isLaunching := false
+    if (isLaunching) {
+        return
+    }
+    isLaunching := true
+    try {
+        _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID, tsvPath)
+    } finally {
+        isLaunching := false
+    }
+}
+
+_LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath := "") {
     if (textMode == "single") {
         sourceText := CleanClipboardText(sourceText)
     }
@@ -2087,9 +2100,93 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
         seqNum := GetSequenceNumber()
     }
 
+    ; Fetch HTML from Python core BEFORE allocating or displaying any GUI
+    tmpTextFile := A_Temp "\karden_input_" ZID "_" A_TickCount ".txt"
+    try {
+        FileDelete(tmpTextFile)
+    } catch {
+    }
+    try {
+        FileAppend(sourceText, tmpTextFile, "UTF-8-RAW")
+    } catch as e {
+        KardenMsgBox("Failed to write temporary text input:`n" e.Message, "Kardenwort Error", 16)
+        return
+    }
+
+    BuildRenderCmd(targetLang, isBypass := false) {
+        c := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' targetLang ' --zid ' ZID ' --text-mode ' textMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' --split-gap-limit ' G_SplitGapLimit ' --seq-num ' seqNum
+        if (tsvPath != "") {
+            c .= ' --tsv "' tsvPath '"'
+        }
+        if (isBypass) {
+            c .= ' --bypass-lang-check'
+        }
+        c .= ' < "' tmpTextFile '"'
+        return c
+    }
+
+    cmd := BuildRenderCmd(lang, false)
+    exitCode := 1
+    outB64 := ""
+    errJSON := ""
+    try {
+        exitCode := RunSilent(cmd, &outB64, &errJSON)
+    } catch as e {
+        errJSON := "RunSilent threw an exception: " e.Message
+    }
+
+    if (exitCode != 0 && InStr(errJSON, "LANGUAGE_MISMATCH")) {
+        detectedLang := ""
+        expectedLang := lang
+        if RegExMatch(errJSON, '"detected_language":\s*"([^"]+)"', &mDet)
+            detectedLang := mDet[1]
+        if RegExMatch(errJSON, '"expected_language":\s*"([^"]+)"', &mExp)
+            expectedLang := mExp[1]
+        
+        detLabel := langNames.Has(detectedLang) ? langNames[detectedLang] " (" detectedLang ")" : detectedLang
+        expLabel := langNames.Has(expectedLang) ? langNames[expectedLang] " (" expectedLang ")" : expectedLang
+        detName := langNames.Has(detectedLang) ? langNames[detectedLang] : detectedLang
+
+        promptMsg := "The text appears to be " detLabel ", but the active profile is " expLabel ".`n`nSwitch language to " detName "?"
+        
+        choice := KardenMsgBox(promptMsg, "Language Verification", "YesNoCancel")
+        if (choice == "Yes" && detectedLang != "") {
+            SetLanguage(detectedLang)
+            lang := detectedLang
+            cmd := BuildRenderCmd(lang, false)
+            try {
+                exitCode := RunSilent(cmd, &outB64, &errJSON)
+            } catch as e {
+                errJSON := "Execution failed: " e.Message
+            }
+        } else if (choice == "No") {
+            cmdBypass := BuildRenderCmd(lang, true)
+            try {
+                exitCode := RunSilent(cmdBypass, &outB64, &errJSON)
+            } catch as e {
+                errJSON := "Bypass execution failed: " e.Message
+            }
+        } else {
+            try FileDelete(tmpTextFile)
+            return
+        }
+    }
+
+    try {
+        FileDelete(tmpTextFile)
+    } catch {
+    }
+
+    if (exitCode != 0) {
+        KardenMsgBox("Kardenwort Analysis failed:`n" errJSON, "Kardenwort Error", 16)
+        return
+    }
+
+    ; ==============================================================================
+    ; Analysis Succeeded — Allocate and Display GUI Immediately
+    ; ==============================================================================
     guiTitle := "[" seqNum "] Kardenwort - " lang " (" textMode ")"
 
-    ; Create GUI
     DllCall("shell32\SetCurrentProcessExplicitAppUserModelID", "WStr", "Kardenwort.Window." seqNum)
     local iconPath := A_ScriptDir "\..\assets\numbers\" seqNum ".ico"
     MyGui := Gui("+Resize +MinSize400x300", guiTitle)
@@ -2111,8 +2208,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     wb := wvc.Value
 
     ; Native Footer Buttons
-    SaveBtn := MyGui.Add("Text", "x15 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor " Disabled", "Save (Ctrl+S)"
-    )
+    SaveBtn := MyGui.Add("Text", "x15 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor " Disabled", "Save (Ctrl+S)")
     UpdateBtn := MyGui.Add("Text", "x114 y615 w100 h30 Center +Border +0x200 +Hidden " G_GuiTextColor, "⟳ Update")
     RetextBtn := MyGui.Add("Text", "x224 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Re-text")
     ReprocBtn := MyGui.Add("Text", "x323 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Re-word")
@@ -2189,98 +2285,7 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
 
     G_ActiveWindows[sessionID] := MyGui.Hwnd
 
-    ; Fetch HTML from Python core
-    UpdateStatus(MyGui, "Invoking backend analysis...")
-
-    tmpTextFile := A_Temp "\karden_input_" ZID "_" A_TickCount ".txt"
-    try {
-        FileDelete(tmpTextFile)
-    } catch {
-    }
-    try {
-        FileAppend(sourceText, tmpTextFile, "UTF-8-RAW")
-    } catch as e {
-        UpdateStatus(MyGui, "Input write failed")
-        KardenMsgBox("Failed to write temporary text input:`n" e.Message, "Kardenwort Error", 16)
-        return
-    }
-
-    BuildRenderCmd(isBypass := false) {
-        c := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' lang ' --zid ' ZID ' --text-mode ' textMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' --split-gap-limit ' G_SplitGapLimit ' --seq-num ' seqNum
-        if (tsvPath != "") {
-            c .= ' --tsv "' tsvPath '"'
-        }
-        if (isBypass) {
-            c .= ' --bypass-lang-check'
-        }
-        c .= ' < "' tmpTextFile '"'
-        return c
-    }
-
-    cmd := BuildRenderCmd(false)
-    exitCode := 1
-    try {
-        exitCode := RunSilent(cmd, &outB64, &errJSON)
-    } catch as e {
-        errJSON := "RunSilent threw an exception: " e.Message
-    }
-
-    if (exitCode != 0 && InStr(errJSON, "LANGUAGE_MISMATCH")) {
-        detectedLang := ""
-        expectedLang := lang
-        if RegExMatch(errJSON, '"detected_language":\s*"([^"]+)"', &mDet)
-            detectedLang := mDet[1]
-        if RegExMatch(errJSON, '"expected_language":\s*"([^"]+)"', &mExp)
-            expectedLang := mExp[1]
-        
-        detLabel := langNames.Has(detectedLang) ? langNames[detectedLang] " (" detectedLang ")" : detectedLang
-        expLabel := langNames.Has(expectedLang) ? langNames[expectedLang] " (" expectedLang ")" : expectedLang
-        detName := langNames.Has(detectedLang) ? langNames[detectedLang] : detectedLang
-
-        promptMsg := "The text appears to be " detLabel ", but the active profile is " expLabel ".`n`nSwitch language to " detName "?"
-        
-        choice := KardenMsgBox(promptMsg, "Language Verification", "YesNoCancel")
-        if (choice == "Yes" && detectedLang != "") {
-            try FileDelete(tmpTextFile)
-            SetLanguage(detectedLang)
-            global G_WindowCount
-            G_WindowCount := Max(0, G_WindowCount - 1)
-            if (G_ActiveWindows.Has(sessionID)) {
-                G_ActiveWindows.Delete(sessionID)
-            }
-            MyGui.Destroy()
-            Sleep(50)
-            LaunchKardenwortWindow(sourceText, textMode, presetZID, tsvPath)
-            return
-        } else if (choice == "No") {
-            cmdBypass := BuildRenderCmd(true)
-            try {
-                exitCode := RunSilent(cmdBypass, &outB64, &errJSON)
-            } catch as e {
-                errJSON := "Bypass execution failed: " e.Message
-            }
-        } else {
-            try FileDelete(tmpTextFile)
-            global G_WindowCount
-            G_WindowCount := Max(0, G_WindowCount - 1)
-            if (G_ActiveWindows.Has(sessionID)) {
-                G_ActiveWindows.Delete(sessionID)
-            }
-            MyGui.Destroy()
-            return
-        }
-    }
-
-    try {
-        FileDelete(tmpTextFile)
-    } catch {
-    }
-
-    if (exitCode != 0) {
-        FsmDispatch(MyGui, EV_RENDER_FAILED, errJSON)
-    } else {
-        FsmDispatch(MyGui, EV_RENDER_DONE, { outB64: outB64 })
-    }
+    FsmDispatch(MyGui, EV_RENDER_DONE, { outB64: outB64 })
 }
 
 OnAhkCall(guiObj, action, value) {
