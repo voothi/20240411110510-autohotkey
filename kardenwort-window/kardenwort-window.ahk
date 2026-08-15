@@ -2007,9 +2007,16 @@ CloseAllActiveWindows() {
         } catch {
         }
     }
+
+    remaining := GetActiveKardenwortWindows()
+    if (remaining.Length > 0) {
+        return false
+    }
+
     G_ActiveWindows.Clear()
     G_WindowCount := 0
     G_CascadeIndex := 0
+    return true
 }
 
 ; ===================================================================================
@@ -2038,12 +2045,16 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     if (activeWindows.Length > 0) {
         global G_AutoCloseOnNewLaunch
         if (G_AutoCloseOnNewLaunch == 1 || G_AutoCloseOnNewLaunch == "1") {
-            CloseAllActiveWindows()
+            if (!CloseAllActiveWindows()) {
+                return
+            }
         } else {
             promptMsg := "An active Kardenwort session is already open.`n`nClose the current window to analyze the new text?"
             choice := KardenMsgBox(promptMsg, "Kardenwort Session", "YesNoCancel")
             if (choice == "Yes") {
-                CloseAllActiveWindows()
+                if (!CloseAllActiveWindows()) {
+                    return
+                }
             } else if (choice == "No") {
                 firstHwnd := activeWindows[1].hwnd
                 if WinExist("ahk_id " firstHwnd) {
@@ -3778,7 +3789,16 @@ GetSequenceNumber() {
 ; ===================================================================================
 KardenMsgBox(Text, Title := "Kardenwort", Options := "") {
     local result := "OK"
-    local mGui := Gui("+AlwaysOnTop -MinimizeBox -MaximizeBox +Owner" . (IsSet(MyGui) ? MyGui.Hwnd : ""), Title)
+    local ownerOpt := ""
+    if (IsSet(MyGui)) {
+        try {
+            if (MyGui.Hwnd)
+                ownerOpt := " +Owner" . MyGui.Hwnd
+        } catch {
+            ownerOpt := ""
+        }
+    }
+    local mGui := Gui("+AlwaysOnTop -MinimizeBox -MaximizeBox" . ownerOpt, Title)
 
     if (IsSet(G_GuiBgColor))
         mGui.BackColor := G_GuiBgColor
