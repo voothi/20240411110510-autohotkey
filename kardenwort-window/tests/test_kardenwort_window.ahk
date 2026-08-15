@@ -370,27 +370,25 @@ SimulateSessionGuard(activeCount, autoClose, userChoice, isRestore := false) {
 
 matrixCombinations := [
     ; Fresh capture (isRestore = false)
-    { count: 0, auto: 0, choice: "Yes", restore: false, expected: "DIRECT_LAUNCH" },
-    { count: 0, auto: 0, choice: "No", restore: false, expected: "DIRECT_LAUNCH" },
-    { count: 0, auto: 0, choice: "Cancel", restore: false, expected: "DIRECT_LAUNCH" },
-    { count: 0, auto: 1, choice: "Yes", restore: false, expected: "DIRECT_LAUNCH" },
-    { count: 0, auto: 1, choice: "No", restore: false, expected: "DIRECT_LAUNCH" },
-    { count: 0, auto: 1, choice: "Cancel", restore: false, expected: "DIRECT_LAUNCH" },
-    { count: 1, auto: 1, choice: "Yes", restore: false, expected: "CLOSE_AND_LAUNCH" },
-    { count: 1, auto: 1, choice: "No", restore: false, expected: "CLOSE_AND_LAUNCH" },
-    { count: 1, auto: 1, choice: "Cancel", restore: false, expected: "CLOSE_AND_LAUNCH" },
-    { count: 1, auto: 0, choice: "Yes", restore: false, expected: "CLOSE_AND_LAUNCH" },
-    { count: 1, auto: 0, choice: "No", restore: false, expected: "FOCUS_EXISTING" },
-    { count: 1, auto: 0, choice: "Cancel", restore: false, expected: "ABORT" },
-    { count: 2, auto: 0, choice: "Yes", restore: false, expected: "CLOSE_AND_LAUNCH" },
-    { count: 2, auto: 0, choice: "No", restore: false, expected: "FOCUS_EXISTING" },
-    { count: 2, auto: 0, choice: "Cancel", restore: false, expected: "ABORT" },
-    ; Restore / Child window spawn (isRestore = true) -> always DIRECT_LAUNCH
-    { count: 1, auto: 0, choice: "Yes", restore: true, expected: "DIRECT_LAUNCH" },
-    { count: 1, auto: 0, choice: "No", restore: true, expected: "DIRECT_LAUNCH" },
-    { count: 1, auto: 0, choice: "Cancel", restore: true, expected: "DIRECT_LAUNCH" },
-    { count: 1, auto: 1, choice: "Yes", restore: true, expected: "DIRECT_LAUNCH" },
-    { count: 2, auto: 0, choice: "Cancel", restore: true, expected: "DIRECT_LAUNCH" }
+    { count: 0, auto: 0, choice: "Yes", restore: false, expected: "DIRECT_LAUNCH" }, { count: 0, auto: 0, choice: "No",
+        restore: false, expected: "DIRECT_LAUNCH" }, { count: 0, auto: 0, choice: "Cancel", restore: false, expected: "DIRECT_LAUNCH" }, { count: 0,
+            auto: 1, choice: "Yes", restore: false, expected: "DIRECT_LAUNCH" }, { count: 0, auto: 1, choice: "No",
+                restore: false, expected: "DIRECT_LAUNCH" }, { count: 0, auto: 1, choice: "Cancel", restore: false,
+                    expected: "DIRECT_LAUNCH" }, { count: 1, auto: 1, choice: "Yes", restore: false, expected: "CLOSE_AND_LAUNCH" }, { count: 1,
+                        auto: 1, choice: "No", restore: false, expected: "CLOSE_AND_LAUNCH" }, { count: 1, auto: 1,
+                            choice: "Cancel", restore: false, expected: "CLOSE_AND_LAUNCH" }, { count: 1, auto: 0,
+                                choice: "Yes", restore: false, expected: "CLOSE_AND_LAUNCH" }, { count: 1, auto: 0,
+                                    choice: "No", restore: false, expected: "FOCUS_EXISTING" }, { count: 1, auto: 0,
+                                        choice: "Cancel", restore: false, expected: "ABORT" }, { count: 2, auto: 0,
+                                            choice: "Yes", restore: false, expected: "CLOSE_AND_LAUNCH" }, { count: 2,
+                                                auto: 0, choice: "No", restore: false, expected: "FOCUS_EXISTING" }, { count: 2,
+                                                    auto: 0, choice: "Cancel", restore: false, expected: "ABORT" },
+                                                ; Restore / Child window spawn (isRestore = true) -> always DIRECT_LAUNCH
+                                                { count: 1, auto: 0, choice: "Yes", restore: true, expected: "DIRECT_LAUNCH" }, { count: 1,
+                                                    auto: 0, choice: "No", restore: true, expected: "DIRECT_LAUNCH" }, { count: 1,
+                                                        auto: 0, choice: "Cancel", restore: true, expected: "DIRECT_LAUNCH" }, { count: 1,
+                                                            auto: 1, choice: "Yes", restore: true, expected: "DIRECT_LAUNCH" }, { count: 2,
+                                                                auto: 0, choice: "Cancel", restore: true, expected: "DIRECT_LAUNCH" }
 ]
 
 allMatrix3Passed := true
