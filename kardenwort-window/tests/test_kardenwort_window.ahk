@@ -352,8 +352,8 @@ testDummyUncloseable.Destroy()
 G_ActiveWindows.Clear()
 
 ; Matrix 3: Session Guard Pre-Flight Decision Matrix
-SimulateSessionGuard(activeCount, autoClose, userChoice) {
-    if (activeCount == 0) {
+SimulateSessionGuard(activeCount, autoClose, userChoice, isRestore := false) {
+    if (isRestore || activeCount == 0) {
         return "DIRECT_LAUNCH"
     }
     if (autoClose == 1) {
@@ -368,25 +368,39 @@ SimulateSessionGuard(activeCount, autoClose, userChoice) {
     }
 }
 
-matrixCombinations := [{ count: 0, auto: 0, choice: "Yes", expected: "DIRECT_LAUNCH" }, { count: 0, auto: 0, choice: "No",
-    expected: "DIRECT_LAUNCH" }, { count: 0, auto: 0, choice: "Cancel", expected: "DIRECT_LAUNCH" }, { count: 0, auto: 1,
-        choice: "Yes", expected: "DIRECT_LAUNCH" }, { count: 0, auto: 1, choice: "No", expected: "DIRECT_LAUNCH" }, { count: 0,
-            auto: 1, choice: "Cancel", expected: "DIRECT_LAUNCH" }, { count: 1, auto: 1, choice: "Yes", expected: "CLOSE_AND_LAUNCH" }, { count: 1,
-                auto: 1, choice: "No", expected: "CLOSE_AND_LAUNCH" }, { count: 1, auto: 1, choice: "Cancel", expected: "CLOSE_AND_LAUNCH" }, { count: 1,
-                    auto: 0, choice: "Yes", expected: "CLOSE_AND_LAUNCH" }, { count: 1, auto: 0, choice: "No", expected: "FOCUS_EXISTING" }, { count: 1,
-                        auto: 0, choice: "Cancel", expected: "ABORT" }, { count: 2, auto: 0, choice: "Yes", expected: "CLOSE_AND_LAUNCH" }, { count: 2,
-                            auto: 0, choice: "No", expected: "FOCUS_EXISTING" }, { count: 2, auto: 0, choice: "Cancel",
-                                expected: "ABORT" }
+matrixCombinations := [
+    ; Fresh capture (isRestore = false)
+    { count: 0, auto: 0, choice: "Yes", restore: false, expected: "DIRECT_LAUNCH" },
+    { count: 0, auto: 0, choice: "No", restore: false, expected: "DIRECT_LAUNCH" },
+    { count: 0, auto: 0, choice: "Cancel", restore: false, expected: "DIRECT_LAUNCH" },
+    { count: 0, auto: 1, choice: "Yes", restore: false, expected: "DIRECT_LAUNCH" },
+    { count: 0, auto: 1, choice: "No", restore: false, expected: "DIRECT_LAUNCH" },
+    { count: 0, auto: 1, choice: "Cancel", restore: false, expected: "DIRECT_LAUNCH" },
+    { count: 1, auto: 1, choice: "Yes", restore: false, expected: "CLOSE_AND_LAUNCH" },
+    { count: 1, auto: 1, choice: "No", restore: false, expected: "CLOSE_AND_LAUNCH" },
+    { count: 1, auto: 1, choice: "Cancel", restore: false, expected: "CLOSE_AND_LAUNCH" },
+    { count: 1, auto: 0, choice: "Yes", restore: false, expected: "CLOSE_AND_LAUNCH" },
+    { count: 1, auto: 0, choice: "No", restore: false, expected: "FOCUS_EXISTING" },
+    { count: 1, auto: 0, choice: "Cancel", restore: false, expected: "ABORT" },
+    { count: 2, auto: 0, choice: "Yes", restore: false, expected: "CLOSE_AND_LAUNCH" },
+    { count: 2, auto: 0, choice: "No", restore: false, expected: "FOCUS_EXISTING" },
+    { count: 2, auto: 0, choice: "Cancel", restore: false, expected: "ABORT" },
+    ; Restore / Child window spawn (isRestore = true) -> always DIRECT_LAUNCH
+    { count: 1, auto: 0, choice: "Yes", restore: true, expected: "DIRECT_LAUNCH" },
+    { count: 1, auto: 0, choice: "No", restore: true, expected: "DIRECT_LAUNCH" },
+    { count: 1, auto: 0, choice: "Cancel", restore: true, expected: "DIRECT_LAUNCH" },
+    { count: 1, auto: 1, choice: "Yes", restore: true, expected: "DIRECT_LAUNCH" },
+    { count: 2, auto: 0, choice: "Cancel", restore: true, expected: "DIRECT_LAUNCH" }
 ]
 
 allMatrix3Passed := true
 for entry in matrixCombinations {
-    act := SimulateSessionGuard(entry.count, entry.auto, entry.choice)
+    act := SimulateSessionGuard(entry.count, entry.auto, entry.choice, entry.restore)
     if (act != entry.expected) {
         allMatrix3Passed := false
     }
 }
-Assert(allMatrix3Passed, "Matrix 3: All 15 session guard pre-flight decision matrix branches resolved correctly")
+Assert(allMatrix3Passed, "Matrix 3: All 20 session guard pre-flight decision matrix branches resolved correctly")
 
 ; Matrix 4: Language Verification Decision Matrix
 SimulateLangVerify(isMismatch, userChoice) {

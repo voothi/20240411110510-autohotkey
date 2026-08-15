@@ -1772,22 +1772,19 @@ LaunchRestore(filePath) {
     ZID := mZid[1]
 
     siblingTxt := ""
-    txtPattern := fileDir "\" ZID "-*.txt"
-    loop files, txtPattern {
-        if RegExMatch(A_LoopFileName, "i)\.[a-z]{2,3}\.txt$") {
-            continue
+    if (SubStr(filePath, -4) == ".txt") {
+        siblingTxt := filePath
+    } else {
+        altPath := RegExReplace(filePath, "\.tsv$", ".txt")
+        if FileExist(altPath) {
+            siblingTxt := altPath
         }
-        siblingTxt := A_LoopFilePath
-        break
     }
     if (siblingTxt == "") {
-        if (SubStr(filePath, -4) == ".txt") {
-            siblingTxt := filePath
-        } else {
-            altPath := RegExReplace(filePath, "\.tsv$", ".txt")
-            if FileExist(altPath) {
-                siblingTxt := altPath
-            }
+        txtPattern := fileDir "\" ZID "-*.txt"
+        loop files, txtPattern {
+            siblingTxt := A_LoopFilePath
+            break
         }
     }
 
@@ -2039,16 +2036,7 @@ CloseAllActiveWindows() {
 ; GUI & Watcher Implementation
 ; ===================================================================================
 LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
-    static isLaunching := false
-    if (isLaunching) {
-        return
-    }
-    isLaunching := true
-    try {
-        _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID, tsvPath)
-    } finally {
-        isLaunching := false
-    }
+    _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID, tsvPath)
 }
 
 _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath := "") {
@@ -2069,29 +2057,31 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
         }
     }
 
-    ; Pre-Flight Concurrent Session Guard
-    activeWindows := GetActiveKardenwortWindows()
-    if (activeWindows.Length > 0) {
-        global G_AutoCloseOnNewLaunch
-        if (G_AutoCloseOnNewLaunch == 1 || G_AutoCloseOnNewLaunch == "1") {
-            if (!CloseAllActiveWindows()) {
-                return
-            }
-        } else {
-            promptMsg := "An active Kardenwort session is already open.`n`nClose the current window to analyze the new text?"
-            choice := KardenMsgBox(promptMsg, "Kardenwort Session", "YesNoCancel")
-            if (choice == "Yes") {
+    ; Pre-Flight Concurrent Session Guard (only for fresh text captures, not for restore / child sessions)
+    if (tsvPath == "") {
+        activeWindows := GetActiveKardenwortWindows()
+        if (activeWindows.Length > 0) {
+            global G_AutoCloseOnNewLaunch
+            if (G_AutoCloseOnNewLaunch == 1 || G_AutoCloseOnNewLaunch == "1") {
                 if (!CloseAllActiveWindows()) {
                     return
                 }
-            } else if (choice == "No") {
-                firstHwnd := activeWindows[1].hwnd
-                if WinExist("ahk_id " firstHwnd) {
-                    WinActivate("ahk_id " firstHwnd)
-                }
-                return
             } else {
-                return
+                promptMsg := "An active Kardenwort session is already open.`n`nClose the current window to analyze the new text?"
+                choice := KardenMsgBox(promptMsg, "Kardenwort Session", "YesNoCancel")
+                if (choice == "Yes") {
+                    if (!CloseAllActiveWindows()) {
+                        return
+                    }
+                } else if (choice == "No") {
+                    firstHwnd := activeWindows[1].hwnd
+                    if WinExist("ahk_id " firstHwnd) {
+                        WinActivate("ahk_id " firstHwnd)
+                    }
+                    return
+                } else {
+                    return
+                }
             }
         }
     }
