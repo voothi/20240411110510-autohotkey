@@ -3,45 +3,47 @@
 #NoTrayIcon
 #Include ..\Lib\WatchFolder.ahk
 
-existingHwnd := 0
-ow := A_DetectHiddenWindows
-DetectHiddenWindows True
-for win in WinGetList("ahk_class AutoHotkey") {
-    try {
-        if InStr(WinGetTitle(win), A_ScriptFullPath) {
-            if (win != A_ScriptHwnd) {
-                existingHwnd := win
-                break
+if (A_ScriptFullPath = A_LineFile && !IsSet(G_FsmTestMode)) {
+    existingHwnd := 0
+    ow := A_DetectHiddenWindows
+    DetectHiddenWindows True
+    for win in WinGetList("ahk_class AutoHotkey") {
+        try {
+            if InStr(WinGetTitle(win), A_ScriptFullPath) {
+                if (win != A_ScriptHwnd) {
+                    existingHwnd := win
+                    break
+                }
+            }
+        } catch Any {
+            continue
+        }
+    }
+    DetectHiddenWindows ow
+
+    if (existingHwnd) {
+        if (A_Args.Length > 0) {
+            payload := ""
+            for arg in A_Args {
+                payload .= arg "`n"
+            }
+            CopyDataStruct := Buffer(3 * A_PtrSize)
+            strBuf := Buffer(StrPut(payload, "UTF-16"))
+            StrPut(payload, strBuf, "UTF-16")
+            NumPut("Ptr", 1, CopyDataStruct, 0)
+            NumPut("UInt", strBuf.Size, CopyDataStruct, A_PtrSize)
+            NumPut("Ptr", strBuf.Ptr, CopyDataStruct, 2 * A_PtrSize)
+
+            DetectHiddenWindows True
+            try {
+                SendMessage(0x004A, 0, CopyDataStruct.Ptr, , "ahk_id " existingHwnd, , , , 15000)
+            } catch Error as err {
+                KardenMsgBox("Failed to send arguments to existing instance (timeout/error):`n" err.Message,
+                    "Kardenwort SendMessage Error", 16)
             }
         }
-    } catch Any {
-        continue
+        ExitApp()
     }
-}
-DetectHiddenWindows ow
-
-if (existingHwnd) {
-    if (A_Args.Length > 0) {
-        payload := ""
-        for arg in A_Args {
-            payload .= arg "`n"
-        }
-        CopyDataStruct := Buffer(3 * A_PtrSize)
-        strBuf := Buffer(StrPut(payload, "UTF-16"))
-        StrPut(payload, strBuf, "UTF-16")
-        NumPut("Ptr", 1, CopyDataStruct, 0)
-        NumPut("UInt", strBuf.Size, CopyDataStruct, A_PtrSize)
-        NumPut("Ptr", strBuf.Ptr, CopyDataStruct, 2 * A_PtrSize)
-
-        DetectHiddenWindows True
-        try {
-            SendMessage(0x004A, 0, CopyDataStruct.Ptr, , "ahk_id " existingHwnd, , , , 15000)
-        } catch Error as err {
-            KardenMsgBox("Failed to send arguments to existing instance (timeout/error):`n" err.Message,
-                "Kardenwort SendMessage Error", 16)
-        }
-    }
-    ExitApp()
 }
 
 global G_Initialized := false

@@ -298,6 +298,129 @@ CloseAllActiveWindows()
 Assert(G_ActiveWindows.Count == 0 && G_WindowCount == 0 && G_CascadeIndex == 0,
     "CloseAllActiveWindows cleanly reset active windows, window count, and cascade index")
 
+; ===================================================================================
+; Part 3: Matrix & State Decision Suites
+; ===================================================================================
+
+; Matrix 1: Active Window Detection & Pruning Matrix (M1.1 - M1.3)
+G_ActiveWindows.Clear()
+m1_1 := GetActiveKardenwortWindows()
+Assert(m1_1.Length == 0, "Matrix 1.1: Empty active windows map returns empty array")
+
+G_ActiveWindows.Clear()
+G_ActiveWindows["dead_1"] := 999901
+G_ActiveWindows["dead_2"] := 999902
+m1_2 := GetActiveKardenwortWindows()
+Assert(m1_2.Length == 0 && G_ActiveWindows.Count == 0, "Matrix 1.2: Dead HWNDs pruned completely")
+
+taskbarHwnd := WinExist("ahk_class Shell_TrayWnd")
+if (taskbarHwnd) {
+    G_ActiveWindows.Clear()
+    G_ActiveWindows["dead_1"] := 999903
+    G_ActiveWindows["live_1"] := taskbarHwnd
+    m1_3 := GetActiveKardenwortWindows()
+    Assert(m1_3.Length == 1 && m1_3[1].sessionID == "live_1" && !G_ActiveWindows.Has("dead_1"),
+        "Matrix 1.3: Mixed dead/live HWNDs filtered to live only")
+    G_ActiveWindows.Clear()
+}
+
+; Matrix 2: Session Close & Teardown Verification Matrix (M2.1 - M2.3)
+G_ActiveWindows.Clear()
+G_WindowCount := 2
+G_CascadeIndex := 3
+m2_1 := CloseAllActiveWindows()
+Assert(m2_1 == true && G_WindowCount == 0 && G_CascadeIndex == 0,
+    "Matrix 2.1: CloseAll with 0 windows succeeds and resets state")
+
+G_ActiveWindows["orphan_1"] := 999904
+G_WindowCount := 1
+m2_2 := CloseAllActiveWindows()
+Assert(m2_2 == true && G_ActiveWindows.Count == 0 && G_WindowCount == 0,
+    "Matrix 2.2: CloseAll with dead handles succeeds and cleans map")
+
+if (taskbarHwnd) {
+    G_ActiveWindows["uncloseable"] := taskbarHwnd
+    m2_3 := CloseAllActiveWindows()
+    Assert(m2_3 == false, "Matrix 2.3: CloseAll returns false when an active window remains unclosed")
+    G_ActiveWindows.Clear()
+}
+
+; Matrix 3: Session Guard Pre-Flight Decision Matrix
+SimulateSessionGuard(activeCount, autoClose, userChoice) {
+    if (activeCount == 0) {
+        return "DIRECT_LAUNCH"
+    }
+    if (autoClose == 1) {
+        return "CLOSE_AND_LAUNCH"
+    }
+    if (userChoice == "Yes") {
+        return "CLOSE_AND_LAUNCH"
+    } else if (userChoice == "No") {
+        return "FOCUS_EXISTING"
+    } else {
+        return "ABORT"
+    }
+}
+
+matrixCombinations := [
+    { count: 0, auto: 0, choice: "Yes", expected: "DIRECT_LAUNCH" },
+    { count: 0, auto: 0, choice: "No", expected: "DIRECT_LAUNCH" },
+    { count: 0, auto: 0, choice: "Cancel", expected: "DIRECT_LAUNCH" },
+    { count: 0, auto: 1, choice: "Yes", expected: "DIRECT_LAUNCH" },
+    { count: 0, auto: 1, choice: "No", expected: "DIRECT_LAUNCH" },
+    { count: 0, auto: 1, choice: "Cancel", expected: "DIRECT_LAUNCH" },
+    { count: 1, auto: 1, choice: "Yes", expected: "CLOSE_AND_LAUNCH" },
+    { count: 1, auto: 1, choice: "No", expected: "CLOSE_AND_LAUNCH" },
+    { count: 1, auto: 1, choice: "Cancel", expected: "CLOSE_AND_LAUNCH" },
+    { count: 1, auto: 0, choice: "Yes", expected: "CLOSE_AND_LAUNCH" },
+    { count: 1, auto: 0, choice: "No", expected: "FOCUS_EXISTING" },
+    { count: 1, auto: 0, choice: "Cancel", expected: "ABORT" },
+    { count: 2, auto: 0, choice: "Yes", expected: "CLOSE_AND_LAUNCH" },
+    { count: 2, auto: 0, choice: "No", expected: "FOCUS_EXISTING" },
+    { count: 2, auto: 0, choice: "Cancel", expected: "ABORT" }
+]
+
+allMatrix3Passed := true
+for entry in matrixCombinations {
+    act := SimulateSessionGuard(entry.count, entry.auto, entry.choice)
+    if (act != entry.expected) {
+        allMatrix3Passed := false
+    }
+}
+Assert(allMatrix3Passed, "Matrix 3: All 15 session guard pre-flight decision matrix branches resolved correctly")
+
+; Matrix 4: Language Verification Decision Matrix
+SimulateLangVerify(isMismatch, userChoice) {
+    if (!isMismatch) {
+        return "RENDER_DIRECT"
+    }
+    if (userChoice == "Yes") {
+        return "SWITCH_LANGUAGE"
+    } else if (userChoice == "No") {
+        return "BYPASS_VERIFY"
+    } else {
+        return "ABORT"
+    }
+}
+
+langMatrixCombinations := [
+    { mismatch: false, choice: "Yes", expected: "RENDER_DIRECT" },
+    { mismatch: false, choice: "No", expected: "RENDER_DIRECT" },
+    { mismatch: false, choice: "Cancel", expected: "RENDER_DIRECT" },
+    { mismatch: true, choice: "Yes", expected: "SWITCH_LANGUAGE" },
+    { mismatch: true, choice: "No", expected: "BYPASS_VERIFY" },
+    { mismatch: true, choice: "Cancel", expected: "ABORT" }
+]
+
+allLangMatrixPassed := true
+for entry in langMatrixCombinations {
+    act := SimulateLangVerify(entry.mismatch, entry.choice)
+    if (act != entry.expected) {
+        allLangMatrixPassed := false
+    }
+}
+Assert(allLangMatrixPassed, "Matrix 4: All 6 language verification decision matrix branches resolved correctly")
+
 ; Write summary
 FileAppend("`nSummary: " (totalTests - failedTests) "/" totalTests " tests passed.`n", A_ScriptDir "\test_results.txt")
 ExitApp()

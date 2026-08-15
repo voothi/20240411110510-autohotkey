@@ -1,5 +1,4 @@
 #Requires AutoHotkey v2.0
-#Include "..\kardenwort-window.ahk"
 
 class MockControl {
     Enabled := false
