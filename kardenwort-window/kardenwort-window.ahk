@@ -2013,6 +2013,13 @@ CloseAllActiveWindows() {
         }
     }
 
+    loop 10 {
+        remaining := GetActiveKardenwortWindows()
+        if (remaining.Length == 0)
+            break
+        Sleep(50)
+    }
+
     remaining := GetActiveKardenwortWindows()
     if (remaining.Length > 0) {
         return false
@@ -2021,6 +2028,10 @@ CloseAllActiveWindows() {
     G_ActiveWindows.Clear()
     G_WindowCount := 0
     G_CascadeIndex := 0
+    try {
+        RegWrite(0, "REG_DWORD", "HKEY_CURRENT_USER\Software\Kardenwort", "WindowCount")
+    } catch {
+    }
     return true
 }
 
@@ -3788,7 +3799,7 @@ GetSequenceNumber() {
         }
     }
 
-    if (actualCount == 0 && A_TickCount - lastTime > 5000) {
+    if (actualCount == 0) {
         count := 0
     }
 
