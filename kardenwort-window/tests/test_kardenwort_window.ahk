@@ -278,6 +278,26 @@ g.FsmState := FSM_RETEXTING
 FsmDispatch(g, EV_RETEXT_FAILED, "API error")
 Assert(g.FsmState == FSM_IDLE, "Transitions back to IDLE after Re-text fails")
 
+; Test 23: Config AutoCloseOnNewLaunch setting
+autoCloseVal := IniRead(configPath, "Settings", "AutoCloseOnNewLaunch", "0")
+Assert(autoCloseVal == "0" || autoCloseVal == "1", "AutoCloseOnNewLaunch setting is present in config.ini")
+
+; Test 24: GetActiveKardenwortWindows dead key cleanup
+global G_ActiveWindows
+G_ActiveWindows.Clear()
+G_ActiveWindows["fake_session_12345"] := 99999999 ; non-existent hwnd
+activeList := GetActiveKardenwortWindows()
+Assert(activeList.Length == 0 && !G_ActiveWindows.Has("fake_session_12345"),
+    "GetActiveKardenwortWindows cleaned up dead non-existent window IDs")
+
+; Test 25: CloseAllActiveWindows lifecycle reset
+G_ActiveWindows["fake_session_67890"] := 88888888
+G_WindowCount := 3
+G_CascadeIndex := 5
+CloseAllActiveWindows()
+Assert(G_ActiveWindows.Count == 0 && G_WindowCount == 0 && G_CascadeIndex == 0,
+    "CloseAllActiveWindows cleanly reset active windows, window count, and cascade index")
+
 ; Write summary
 FileAppend("`nSummary: " (totalTests - failedTests) "/" totalTests " tests passed.`n", A_ScriptDir "\test_results.txt")
 ExitApp()

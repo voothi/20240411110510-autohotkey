@@ -1287,6 +1287,7 @@ global G_HoverHighlightMvpRainbow := "0"
 global G_KeyTogglePointer := "Alt"
 global G_SplitGapLimit := "60"
 global G_CloseDescendantsOnParentClose := 1
+global G_AutoCloseOnNewLaunch := 0
 global G_OverrideSeqNum := ""
 
 global G_PressCount := 0
@@ -1341,6 +1342,7 @@ LoadConfig() {
     global G_KeyTogglePointer := IniRead(configPath, "Hotkey", "key_toggle_pointer", "Alt")
     global G_SplitGapLimit := IniRead(configPath, "Settings", "SplitGapLimit", "60")
     global G_CloseDescendantsOnParentClose := IniRead(configPath, "Settings", "CloseDescendantsOnParentClose", 1)
+    global G_AutoCloseOnNewLaunch := IniRead(configPath, "Settings", "AutoCloseOnNewLaunch", 0)
 
     if (G_DeskPythonPath == "" || !FileExist(G_DeskPythonPath)) {
         KardenMsgBox("Python interpreter not found: " G_DeskPythonPath, "Kardenwort Error", 16)
@@ -1974,6 +1976,42 @@ ApplyZoom(wb) {
     }
 }
 
+GetActiveKardenwortWindows() {
+    global G_ActiveWindows
+    active := []
+    deadKeys := []
+    for sessionID, hwnd in G_ActiveWindows {
+        if WinExist("ahk_id " hwnd) {
+            active.Push({ sessionID: sessionID, hwnd: hwnd })
+        } else {
+            deadKeys.Push(sessionID)
+        }
+    }
+    for k in deadKeys {
+        G_ActiveWindows.Delete(k)
+    }
+    return active
+}
+
+CloseAllActiveWindows() {
+    global G_ActiveWindows, G_WindowCount, G_CascadeIndex
+    activeList := GetActiveKardenwortWindows()
+    for item in activeList {
+        try {
+            g := GuiFromHwnd(item.hwnd)
+            if (g) {
+                GuiClose(g)
+            } else {
+                WinClose("ahk_id " item.hwnd)
+            }
+        } catch {
+        }
+    }
+    G_ActiveWindows.Clear()
+    G_WindowCount := 0
+    G_CascadeIndex := 0
+}
+
 ; ===================================================================================
 ; GUI & Watcher Implementation
 ; ===================================================================================
@@ -1992,6 +2030,29 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
             return
         } else {
             G_ActiveWindows.Delete(sessionID)
+        }
+    }
+
+    ; Pre-Flight Concurrent Session Guard
+    activeWindows := GetActiveKardenwortWindows()
+    if (activeWindows.Length > 0) {
+        global G_AutoCloseOnNewLaunch
+        if (G_AutoCloseOnNewLaunch == 1 || G_AutoCloseOnNewLaunch == "1") {
+            CloseAllActiveWindows()
+        } else {
+            promptMsg := "An active Kardenwort session is already open.`n`nClose the current window to analyze the new text?"
+            choice := KardenMsgBox(promptMsg, "Kardenwort Session", "YesNoCancel")
+            if (choice == "Yes") {
+                CloseAllActiveWindows()
+            } else if (choice == "No") {
+                firstHwnd := activeWindows[1].hwnd
+                if WinExist("ahk_id " firstHwnd) {
+                    WinActivate("ahk_id " firstHwnd)
+                }
+                return
+            } else {
+                return
+            }
         }
     }
 
