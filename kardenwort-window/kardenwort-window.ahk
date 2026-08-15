@@ -2151,13 +2151,13 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
         if RegExMatch(errJSON, '"expected_language":\s*"([^"]+)"', &mExp)
             expectedLang := mExp[1]
         
-        promptMsg := "Language mismatch detected:`n`n"
-            . "Input text appears to be '" detectedLang "', but the active profile is '" expectedLang "'.`n`n"
-            . "• Click YES to switch to '" detectedLang "' and analyze.`n"
-            . "• Click NO to analyze as '" expectedLang "' anyway.`n"
-            . "• Click CANCEL to abort."
+        detLabel := langNames.Has(detectedLang) ? langNames[detectedLang] " (" detectedLang ")" : detectedLang
+        expLabel := langNames.Has(expectedLang) ? langNames[expectedLang] " (" expectedLang ")" : expectedLang
+        detName := langNames.Has(detectedLang) ? langNames[detectedLang] : detectedLang
+
+        promptMsg := "The text appears to be " detLabel ", but the active profile is " expLabel ".`n`nSwitch language to " detName "?"
         
-        choice := KardenMsgBox(promptMsg, "Kardenwort Language Check", "YesNoCancel")
+        choice := KardenMsgBox(promptMsg, "Language Verification", "YesNoCancel")
         if (choice == "Yes" && detectedLang != "") {
             SetLanguage(detectedLang)
             global G_WindowCount
@@ -3724,18 +3724,18 @@ KardenMsgBox(Text, Title := "Kardenwort", Options := "") {
     local hasYesNoCancel := InStr(String(Options), "YesNoCancel")
 
     ; Fixed dimensions to unify size
-    local boxW := hasYesNoCancel ? 420 : 350
-    local boxH := hasYesNoCancel ? 210 : 150
+    local boxW := hasYesNoCancel ? 380 : 350
+    local boxH := hasYesNoCancel ? 160 : 140
 
     mGui.MarginX := 20
     mGui.MarginY := 20
 
     ; Add a text control with Center and Wrap
-    mGui.Add("Text", "w" . (boxW - 40) . " h" . (boxH - 80) . " Center " . textColor, Text)
+    mGui.Add("Text", "w" . (boxW - 40) . " h" . (boxH - 70) . " Center " . textColor, Text)
 
     local btnW := 80
     local btnH := 30
-    local btnY := boxH - 50
+    local btnY := boxH - 45
 
     local btnOpts := "Center +Border +0x200 " . textColor
 
