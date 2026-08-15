@@ -2143,6 +2143,46 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     } catch {
     }
 
+    if (exitCode != 0 && InStr(errJSON, "LANGUAGE_MISMATCH")) {
+        detectedLang := ""
+        expectedLang := lang
+        if RegExMatch(errJSON, '"detected_language":\s*"([^"]+)"', &mDet)
+            detectedLang := mDet[1]
+        if RegExMatch(errJSON, '"expected_language":\s*"([^"]+)"', &mExp)
+            expectedLang := mExp[1]
+        
+        promptMsg := "Language mismatch detected:`n`n"
+            . "Input text appears to be '" detectedLang "', but the active profile is '" expectedLang "'.`n`n"
+            . "• Click YES to switch to '" detectedLang "' and analyze.`n"
+            . "• Click NO to analyze as '" expectedLang "' anyway.`n"
+            . "• Click CANCEL to abort."
+        
+        choice := KardenMsgBox(promptMsg, "Kardenwort Language Check", "YesNoCancel")
+        if (choice == "Yes" && detectedLang != "") {
+            SetLanguage(detectedLang)
+            global G_WindowCount
+            G_WindowCount := Max(0, G_WindowCount - 1)
+            MyGui.Destroy()
+            LaunchKardenwortWindow(sourceText, textMode, ZID, tsvPath)
+            return
+        } else if (choice == "No") {
+            tmpTextFile := A_Temp "\karden_input_" ZID "_" A_TickCount ".txt"
+            try {
+                FileAppend(sourceText, tmpTextFile, "UTF-8-RAW")
+                cmdBypass := cmd " --bypass-lang-check"
+                exitCode := RunSilent(cmdBypass, &outB64, &errJSON)
+                FileDelete(tmpTextFile)
+            } catch as e {
+                errJSON := "Bypass execution failed: " e.Message
+            }
+        } else {
+            global G_WindowCount
+            G_WindowCount := Max(0, G_WindowCount - 1)
+            MyGui.Destroy()
+            return
+        }
+    }
+
     if (exitCode != 0) {
         FsmDispatch(MyGui, EV_RENDER_FAILED, errJSON)
     } else {
@@ -3684,8 +3724,8 @@ KardenMsgBox(Text, Title := "Kardenwort", Options := "") {
     local hasYesNoCancel := InStr(String(Options), "YesNoCancel")
 
     ; Fixed dimensions to unify size
-    local boxW := 350
-    local boxH := 150
+    local boxW := hasYesNoCancel ? 420 : 350
+    local boxH := hasYesNoCancel ? 210 : 150
 
     mGui.MarginX := 20
     mGui.MarginY := 20
