@@ -288,7 +288,7 @@ G_ActiveWindows.Clear()
 G_ActiveWindows["fake_session_12345"] := 99999999 ; non-existent hwnd
 activeList := GetActiveKardenwortWindows()
 Assert(activeList.Length == 0 && !G_ActiveWindows.Has("fake_session_12345"),
-    "GetActiveKardenwortWindows cleaned up dead non-existent window IDs")
+"GetActiveKardenwortWindows cleaned up dead non-existent window IDs")
 
 ; Test 25: CloseAllActiveWindows lifecycle reset
 G_ActiveWindows["fake_session_67890"] := 88888888
@@ -320,7 +320,7 @@ if (taskbarHwnd) {
     G_ActiveWindows["live_1"] := taskbarHwnd
     m1_3 := GetActiveKardenwortWindows()
     Assert(m1_3.Length == 1 && m1_3[1].sessionID == "live_1" && !G_ActiveWindows.Has("dead_1"),
-        "Matrix 1.3: Mixed dead/live HWNDs filtered to live only")
+    "Matrix 1.3: Mixed dead/live HWNDs filtered to live only")
     G_ActiveWindows.Clear()
 }
 
@@ -362,22 +362,15 @@ SimulateSessionGuard(activeCount, autoClose, userChoice) {
     }
 }
 
-matrixCombinations := [
-    { count: 0, auto: 0, choice: "Yes", expected: "DIRECT_LAUNCH" },
-    { count: 0, auto: 0, choice: "No", expected: "DIRECT_LAUNCH" },
-    { count: 0, auto: 0, choice: "Cancel", expected: "DIRECT_LAUNCH" },
-    { count: 0, auto: 1, choice: "Yes", expected: "DIRECT_LAUNCH" },
-    { count: 0, auto: 1, choice: "No", expected: "DIRECT_LAUNCH" },
-    { count: 0, auto: 1, choice: "Cancel", expected: "DIRECT_LAUNCH" },
-    { count: 1, auto: 1, choice: "Yes", expected: "CLOSE_AND_LAUNCH" },
-    { count: 1, auto: 1, choice: "No", expected: "CLOSE_AND_LAUNCH" },
-    { count: 1, auto: 1, choice: "Cancel", expected: "CLOSE_AND_LAUNCH" },
-    { count: 1, auto: 0, choice: "Yes", expected: "CLOSE_AND_LAUNCH" },
-    { count: 1, auto: 0, choice: "No", expected: "FOCUS_EXISTING" },
-    { count: 1, auto: 0, choice: "Cancel", expected: "ABORT" },
-    { count: 2, auto: 0, choice: "Yes", expected: "CLOSE_AND_LAUNCH" },
-    { count: 2, auto: 0, choice: "No", expected: "FOCUS_EXISTING" },
-    { count: 2, auto: 0, choice: "Cancel", expected: "ABORT" }
+matrixCombinations := [{ count: 0, auto: 0, choice: "Yes", expected: "DIRECT_LAUNCH" }, { count: 0, auto: 0, choice: "No",
+    expected: "DIRECT_LAUNCH" }, { count: 0, auto: 0, choice: "Cancel", expected: "DIRECT_LAUNCH" }, { count: 0, auto: 1,
+        choice: "Yes", expected: "DIRECT_LAUNCH" }, { count: 0, auto: 1, choice: "No", expected: "DIRECT_LAUNCH" }, { count: 0,
+            auto: 1, choice: "Cancel", expected: "DIRECT_LAUNCH" }, { count: 1, auto: 1, choice: "Yes", expected: "CLOSE_AND_LAUNCH" }, { count: 1,
+                auto: 1, choice: "No", expected: "CLOSE_AND_LAUNCH" }, { count: 1, auto: 1, choice: "Cancel", expected: "CLOSE_AND_LAUNCH" }, { count: 1,
+                    auto: 0, choice: "Yes", expected: "CLOSE_AND_LAUNCH" }, { count: 1, auto: 0, choice: "No", expected: "FOCUS_EXISTING" }, { count: 1,
+                        auto: 0, choice: "Cancel", expected: "ABORT" }, { count: 2, auto: 0, choice: "Yes", expected: "CLOSE_AND_LAUNCH" }, { count: 2,
+                            auto: 0, choice: "No", expected: "FOCUS_EXISTING" }, { count: 2, auto: 0, choice: "Cancel",
+                                expected: "ABORT" }
 ]
 
 allMatrix3Passed := true
@@ -403,13 +396,10 @@ SimulateLangVerify(isMismatch, userChoice) {
     }
 }
 
-langMatrixCombinations := [
-    { mismatch: false, choice: "Yes", expected: "RENDER_DIRECT" },
-    { mismatch: false, choice: "No", expected: "RENDER_DIRECT" },
-    { mismatch: false, choice: "Cancel", expected: "RENDER_DIRECT" },
-    { mismatch: true, choice: "Yes", expected: "SWITCH_LANGUAGE" },
-    { mismatch: true, choice: "No", expected: "BYPASS_VERIFY" },
-    { mismatch: true, choice: "Cancel", expected: "ABORT" }
+langMatrixCombinations := [{ mismatch: false, choice: "Yes", expected: "RENDER_DIRECT" }, { mismatch: false, choice: "No",
+    expected: "RENDER_DIRECT" }, { mismatch: false, choice: "Cancel", expected: "RENDER_DIRECT" }, { mismatch: true,
+        choice: "Yes", expected: "SWITCH_LANGUAGE" }, { mismatch: true, choice: "No", expected: "BYPASS_VERIFY" }, { mismatch: true,
+            choice: "Cancel", expected: "ABORT" }
 ]
 
 allLangMatrixPassed := true
