@@ -314,14 +314,14 @@ m1_2 := GetActiveKardenwortWindows()
 Assert(m1_2.Length == 0 && G_ActiveWindows.Count == 0, "Matrix 1.2: Dead HWNDs pruned completely")
 
 ; Matrix 1.3: Mixed live and dead handles
-testDummyGui := Gui("+AlwaysOnTop", "KardenwortTestDummy")
-testDummyGui.Show("w100 h100")
+testDummyGui := Gui("+AlwaysOnTop -Caption +ToolWindow", "KardenwortTestDummy")
+testDummyGui.Show("x-9999 y-9999 w10 h10 NoActivate")
 G_ActiveWindows.Clear()
 G_ActiveWindows["dead_1"] := 999903
 G_ActiveWindows["live_1"] := testDummyGui.Hwnd
 m1_3 := GetActiveKardenwortWindows()
 Assert(m1_3.Length == 1 && m1_3[1].sessionID == "live_1" && !G_ActiveWindows.Has("dead_1"),
-"Matrix 1.3: Mixed dead/live HWNDs filtered to live only")
+    "Matrix 1.3: Mixed dead/live HWNDs filtered to live only")
 testDummyGui.Destroy()
 G_ActiveWindows.Clear()
 
@@ -340,8 +340,8 @@ Assert(m2_2 == true && G_ActiveWindows.Count == 0 && G_WindowCount == 0,
     "Matrix 2.2: CloseAll with dead handles succeeds and cleans map")
 
 ; Matrix 2.3: CloseAllActiveWindows when a window rejects close
-testDummyUncloseable := Gui("+AlwaysOnTop", "KardenwortTestDummyUncloseable")
-testDummyUncloseable.Show("w100 h100")
+testDummyUncloseable := Gui("+AlwaysOnTop -Caption +ToolWindow", "KardenwortTestDummyUncloseable")
+testDummyUncloseable.Show("x-9999 y-9999 w10 h10 NoActivate")
 FsmInit(testDummyUncloseable)
 testDummyUncloseable.FsmMemory["IsDirty"] := true
 G_AutoSaveOnClose := 0
