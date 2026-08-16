@@ -1963,10 +1963,51 @@ RunSilent(cmd, &stdout := "", &stderr := "") {
     return exitCode
 }
 
-GetCascadeCoords(&x, &y) {
+GetTargetMonitorWorkArea(x := "", y := "", &wl := 0, &wt := 0, &wr := 0, &wb := 0) {
+    try {
+        monCount := MonitorGetCount()
+        targetMon := MonitorGetPrimary()
+        if (monCount > 1 && x !== "" && y !== "") {
+            loop monCount {
+                MonitorGet(A_Index, &mL, &mT, &mR, &mB)
+                if (x >= mL && x < mR && y >= mT && y < mB) {
+                    targetMon := A_Index
+                    break
+                }
+            }
+        }
+        MonitorGetWorkArea(targetMon, &wl, &wt, &wr, &wb)
+    } catch {
+        wl := 0
+        wt := 0
+        wr := A_ScreenWidth
+        wb := A_ScreenHeight
+    }
+}
+
+GetCascadeCoords(&x, &y, w := 1143, h := 957, baseX := "", baseY := "") {
     global G_CascadeIndex
-    x := 50 + Mod(G_CascadeIndex, 15) * 30
-    y := 50 + Mod(G_CascadeIndex, 15) * 30
+    GetTargetMonitorWorkArea(baseX, baseY, &wl, &wt, &wr, &wb)
+    
+    startX := (baseX !== "") ? baseX : (wl + 50)
+    startY := (baseY !== "") ? baseY : (wt + 50)
+    
+    startX := Max(wl, Min(startX, wr - w))
+    startY := Max(wt, Min(startY, wb - h))
+    
+    step := 30
+    maxOffsetX := Max(0, (wr - w) - startX)
+    maxOffsetY := Max(0, (wb - h) - startY)
+    
+    maxStepsX := (step > 0 && maxOffsetX >= step) ? Floor(maxOffsetX / step) + 1 : 1
+    maxStepsY := (step > 0 && maxOffsetY >= step) ? Floor(maxOffsetY / step) + 1 : 1
+    maxSteps := Min(15, Min(maxStepsX, maxStepsY))
+    if (maxSteps < 1)
+        maxSteps := 1
+        
+    stepIdx := Mod(G_CascadeIndex, maxSteps)
+    x := startX + stepIdx * step
+    y := startY + stepIdx * step
 }
 
 ApplyZoom(wb) {
@@ -2125,6 +2166,9 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
 
     ; ActiveX Explorer
     wvc := MyGui.Add("ActiveX", "x10 y10 w800 h600 +Hidden -E0x200", "Shell.Explorer")
+    try {
+        DllCall("uxtheme\SetWindowTheme", "Ptr", wvc.Hwnd, "WStr", "DarkMode_Explorer", "Ptr", 0)
+    }
     wb := wvc.Value
 
     ; Native Footer Buttons
@@ -2168,26 +2212,36 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
     configPath := A_ScriptDir "\config.ini"
     initX := Trim(StrSplit(IniRead(configPath, "Window", "X", ""), ";")[1])
     initY := Trim(StrSplit(IniRead(configPath, "Window", "Y", ""), ";")[1])
-    initW := Trim(StrSplit(IniRead(configPath, "Window", "Width", "1143"), ";")[1])
-    initH := Trim(StrSplit(IniRead(configPath, "Window", "Height", "957"), ";")[1])
+    rawW := Trim(StrSplit(IniRead(configPath, "Window", "Width", "1143"), ";")[1])
+    rawH := Trim(StrSplit(IniRead(configPath, "Window", "Height", "957"), ";")[1])
+    initW := (rawW != "" && IsNumber(rawW)) ? Integer(rawW) : 1143
+    initH := (rawH != "" && IsNumber(rawH)) ? Integer(rawH) : 957
 
     global G_WindowCount, G_CascadeIndex, G_BaseX, G_BaseY
+    GetTargetMonitorWorkArea(G_BaseX !== "" ? G_BaseX : initX, G_BaseY !== "" ? G_BaseY : initY, &wl, &wt, &wr, &wb)
+    availW := wr - wl
+    availH := wb - wt
+    if (availW > 100 && initW > availW)
+        initW := availW
+    if (availH > 100 && initH > availH)
+        initH := availH
+
     if (G_WindowCount == 0) {
         G_CascadeIndex := 0
         if (initX == "" || initY == "") {
-            GetCascadeCoords(&x, &y)
+            GetCascadeCoords(&x, &y, initW, initH)
             showStr := "x" x " y" y " w" initW " h" initH
         } else {
-            showStr := "x" initX " y" initY " w" initW " h" initH
+            x := Max(wl, Min(Integer(initX), wr - initW))
+            y := Max(wt, Min(Integer(initY), wb - initH))
+            showStr := "x" x " y" y " w" initW " h" initH
         }
     } else {
         if (G_BaseX !== "" && G_BaseY !== "") {
-            cascadeOffset := Mod(G_CascadeIndex, 15) * 30
-            x := G_BaseX + cascadeOffset
-            y := G_BaseY + cascadeOffset
+            GetCascadeCoords(&x, &y, initW, initH, G_BaseX, G_BaseY)
             showStr := "x" x " y" y " w" initW " h" initH
         } else {
-            GetCascadeCoords(&x, &y)
+            GetCascadeCoords(&x, &y, initW, initH)
             showStr := "x" x " y" y " w" initW " h" initH
         }
     }
