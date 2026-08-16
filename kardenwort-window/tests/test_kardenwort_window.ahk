@@ -44,27 +44,20 @@ Assert(decoded == text, "Base64 encoding/decoding matched original text.")
 
 ; Test 2: Cascade layout coords offset calculation
 G_CascadeIndex := 0
-GetCascadeCoords(&x1, &y1, 400, 300)
+GetCascadeCoords(&x1, &y1)
 G_CascadeIndex := 1
-GetCascadeCoords(&x2, &y2, 400, 300)
+GetCascadeCoords(&x2, &y2)
 G_CascadeIndex := 2
-GetCascadeCoords(&x3, &y3, 400, 300)
+GetCascadeCoords(&x3, &y3)
 Assert(x1 == 50 && y1 == 50 && x2 == 80 && y2 == 80 && x3 == 110 && y3 == 110,
     "Cascading coordinates incremented correctly.")
 
-; Test 3: Cascade wrap-around behavior within work area
-GetTargetMonitorWorkArea("", "", &wl, &wt, &wr, &wb)
-maxStepsY := Floor(Max(0, (wb - 300) - (wt + 50)) / 30) + 1
-maxStepsX := Floor(Max(0, (wr - 400) - (wl + 50)) / 30) + 1
-expectedMaxSteps := Min(15, Min(maxStepsX, maxStepsY))
-if (expectedMaxSteps < 1)
-    expectedMaxSteps := 1
-
-G_CascadeIndex := 0
-GetCascadeCoords(&x0, &y0, 400, 300)
-G_CascadeIndex := expectedMaxSteps
-GetCascadeCoords(&xWrap, &yWrap, 400, 300)
-Assert(x0 == xWrap && y0 == yWrap, "Coordinate wrap-around reset after maxSteps within work area.")
+; Test 3: Cascade wrap-around behavior
+G_CascadeIndex := 14
+GetCascadeCoords(&x14, &y14)
+G_CascadeIndex := 15
+GetCascadeCoords(&x15, &y15) ; should wrap to 0 (50, 50)
+Assert(x14 == 470 && x15 == 50, "Coordinate wrap-around reset after 15 windows.")
 
 ; Test 4: Verify config file existence and format
 configPath := "..\config.ini"
