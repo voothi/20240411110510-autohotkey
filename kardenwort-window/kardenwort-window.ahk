@@ -1967,7 +1967,7 @@ GetTargetMonitorWorkArea(x := "", y := "", &wl := 0, &wt := 0, &wr := 0, &wb := 
     try {
         monCount := MonitorGetCount()
         targetMon := MonitorGetPrimary()
-        if (monCount > 1 && x !== "" && y !== "") {
+        if (monCount > 1 && x !== "" && y !== "" && IsNumber(x) && IsNumber(y)) {
             loop monCount {
                 MonitorGet(A_Index, &mL, &mT, &mR, &mB)
                 if (x >= mL && x < mR && y >= mT && y < mB) {
@@ -1989,8 +1989,8 @@ GetCascadeCoords(&x, &y, w := 1143, h := 957, baseX := "", baseY := "") {
     global G_CascadeIndex
     GetTargetMonitorWorkArea(baseX, baseY, &wl, &wt, &wr, &wb)
     
-    startX := (baseX !== "") ? baseX : (wl + 50)
-    startY := (baseY !== "") ? baseY : (wt + 50)
+    startX := (baseX !== "" && IsNumber(baseX)) ? Integer(baseX) : (wl + 50)
+    startY := (baseY !== "" && IsNumber(baseY)) ? Integer(baseY) : (wt + 50)
     
     startX := Max(wl, Min(startX, wr - w))
     startY := Max(wt, Min(startY, wb - h))
@@ -2228,12 +2228,25 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
 
     if (G_WindowCount == 0) {
         G_CascadeIndex := 0
-        if (initX == "" || initY == "") {
+        if (initX == "" && initY == "") {
             GetCascadeCoords(&x, &y, initW, initH)
             showStr := "x" x " y" y " w" initW " h" initH
         } else {
-            x := Max(wl, Min(Integer(initX), wr - initW))
-            y := Max(wt, Min(Integer(initY), wb - initH))
+            if (initX = "Center" || initX = "") {
+                x := wl + Max(0, Floor((availW - initW) / 2))
+            } else if (IsNumber(initX)) {
+                x := Max(wl, Min(Integer(initX), wr - initW))
+            } else {
+                x := wl + 50
+            }
+
+            if (initY = "Center" || initY = "") {
+                y := wt + Max(0, Floor((availH - initH) / 2))
+            } else if (IsNumber(initY)) {
+                y := Max(wt, Min(Integer(initY), wb - initH))
+            } else {
+                y := wt + 50
+            }
             showStr := "x" x " y" y " w" initW " h" initH
         }
     } else {
