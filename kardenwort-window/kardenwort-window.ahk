@@ -1145,13 +1145,78 @@ ActionExportStartIO(guiObj, payload) {
         if RegExMatch(outStr, '"message":\s*"([^"]+)"', &match) {
             msgStr := StrReplace(match[1], "\\", "\")
         }
+        pid := 0
+        if RegExMatch(outStr, '"pid":\s*(\d+)', &match) {
+            pid := Integer(match[1])
+        }
         isAsync := InStr(outStr, '"import_started": true') > 0
         showWindow := !(InStr(outStr, '"show_window": false') > 0)
-        FsmDispatch(guiObj, EV_EXPORT_DONE, { isAsync: isAsync, logPath: logPath, showWindow: showWindow, status: statusStr,
+        FsmDispatch(guiObj, EV_EXPORT_DONE, { isAsync: isAsync, logPath: logPath, pid: pid, showWindow: showWindow, status: statusStr,
             message: msgStr })
     } else {
         FsmDispatch(guiObj, EV_EXPORT_FAILED, errJSON)
     }
+}
+
+StartImportWatcher(guiObj, logPath, pid := 0) {
+    startTime := A_TickCount
+    watcherFn := ""
+    
+    CheckImport() {
+        if (!IsObject(guiObj) || !guiObj.HasProp("Hwnd")) {
+            if (watcherFn)
+                SetTimer(watcherFn, 0)
+            return
+        }
+        
+        elapsed := A_TickCount - startTime
+        
+        if (FileExist(logPath)) {
+            try {
+                content := FileRead(logPath, "UTF-8")
+                if (InStr(content, "ERR_ANKI_NOT_RUNNING") || InStr(content, "Cannot connect to AnkiConnect")) {
+                    SetTimer(watcherFn, 0)
+                    UpdateStatus(guiObj, "⚠️ Anki is closed")
+                    UpdateButtonState(guiObj)
+                    KardenMsgBox("⚠️ Anki is closed. Open Anki and click Send to Anki again.", "Kardenwort Import Warning", "Icon!")
+                    return
+                }
+                if (InStr(content, '"status": "success"') || InStr(content, '"status":"success"') || InStr(content, "[SUCCESS]")) {
+                    SetTimer(watcherFn, 0)
+                    cardCount := ""
+                    if RegExMatch(content, '"cards_imported":\s*(\d+)', &cMatch) {
+                        cardCount := cMatch[1]
+                    }
+                    statusText := cardCount != "" ? "Imported " cardCount " cards to Anki" : "Anki import complete"
+                    UpdateStatus(guiObj, statusText)
+                    UpdateButtonState(guiObj)
+                    return
+                }
+                if (InStr(content, "ERR_") || InStr(content, "[ERROR]")) {
+                    SetTimer(watcherFn, 0)
+                    errMsg := "Anki import failed."
+                    if RegExMatch(content, '"message":\s*"([^"]+)"', &mMatch) {
+                        errMsg := StrReplace(mMatch[1], "\\", "\")
+                    }
+                    UpdateStatus(guiObj, "Import failed")
+                    UpdateButtonState(guiObj)
+                    KardenMsgBox("⚠️ " errMsg, "Kardenwort Import", "Icon!")
+                    return
+                }
+            } catch {
+            }
+        }
+        
+        ; Stop watching after 20 seconds or if process died without output
+        if (elapsed > 20000 || (pid > 0 && elapsed > 2000 && !ProcessExist(pid))) {
+            SetTimer(watcherFn, 0)
+            UpdateStatus(guiObj, "Ready")
+            UpdateButtonState(guiObj)
+        }
+    }
+    
+    watcherFn := CheckImport
+    SetTimer(watcherFn, 400)
 }
 
 ActionExportDoneApply(guiObj, payload) {
@@ -1170,12 +1235,17 @@ ActionExportDoneIO(guiObj, payload) {
         KardenMsgBox(msg, "Kardenwort", "Iconi")
     } else {
         isAsync := payload.HasProp("isAsync") ? payload.isAsync : false
-        if (!isAsync) {
+        if (isAsync) {
+            UpdateStatus(guiObj, "Exporting to Anki in background...")
+            if (payload.HasProp("logPath") && payload.logPath != "") {
+                StartImportWatcher(guiObj, payload.logPath, payload.HasProp("pid") ? payload.pid : 0)
+            }
+        } else {
             if (G_ShowInfoWindows && showWindow) {
                 KardenMsgBox("Favorites exported.", "Kardenwort", "Iconi")
             }
+            UpdateStatus(guiObj, "Ready")
         }
-        UpdateStatus(guiObj, "Ready")
     }
     UpdateButtonState(guiObj)
 }
@@ -1189,7 +1259,11 @@ ActionExportFailedIO(guiObj, payload) {
     }
     UpdateStatus(guiObj, "Export failed")
     if (payload != "") {
-        KardenMsgBox("Failed to export favorites:`n" payload, "Kardenwort Error", 16)
+        if (InStr(payload, "ERR_ANKI_NOT_RUNNING") || InStr(payload, "Cannot connect to AnkiConnect")) {
+            KardenMsgBox("⚠️ Anki is closed. Open Anki and click Send to Anki again.", "Kardenwort Import Warning", "Icon!")
+        } else {
+            KardenMsgBox("Failed to export favorites:`n" payload, "Kardenwort Error", 16)
+        }
     }
     UpdateButtonState(guiObj)
 }
