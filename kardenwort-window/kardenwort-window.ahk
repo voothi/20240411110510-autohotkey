@@ -457,7 +457,8 @@ ActionSaveStartIO(guiObj, payload) {
         return
     }
 
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" edit-save --deltas "' tmpTextFile '" --zid ' guiObj.ZID ' --language ' guiObj
+    traceId := guiObj.ZID ":edit-save"
+    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" edit-save --deltas "' tmpTextFile '" --zid ' guiObj.ZID ' --trace-id ' traceId ' --language ' guiObj
         .Lang ' --tsv "' guiObj.TsvPath '"'
     try {
         exitCode := RunSilent(cmd, &outB64, &errJSON)
@@ -853,8 +854,9 @@ ActionReprocessStartIO(guiObj, payload) {
         return
     }
 
+    traceId := guiObj.ZID ":reprocess:selection"
     cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" reprocess --selection-manifest "' tmpManifestFile '" --language ' guiObj
-        .Lang
+        .Lang ' --zid ' guiObj.ZID ' --trace-id ' traceId
     try {
         exitCode := RunSilent(cmd, &outStr, &errJSON)
     } catch {
@@ -993,8 +995,9 @@ ActionRetextStartIO(guiObj, payload) {
         return
     }
 
+    traceId := guiObj.ZID ":retext:selection"
     cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" retext --selection-manifest "' tmpManifestFile '" --language ' guiObj
-        .Lang ' --text-mode ' guiObj.TextMode
+        .Lang ' --text-mode ' guiObj.TextMode ' --zid ' guiObj.ZID ' --trace-id ' traceId
     guiObj.FsmMemory["ActiveRetext"] := true
     ; Register safety watchdog timer (90 seconds)
     if (guiObj.HasProp("TimerWorkerWatchdog") && guiObj.TimerWorkerWatchdog) {
@@ -1115,8 +1118,9 @@ ActionExportStartIO(guiObj, payload) {
         return
     }
 
+    traceId := guiObj.ZID ":export:selection"
     cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" export --selection-manifest "' tmpManifestFile '" --language ' guiObj
-        .Lang
+        .Lang ' --zid ' guiObj.ZID ' --trace-id ' traceId
     try {
         exitCode := RunSilent(cmd, &outStr, &errJSON)
     } catch {
@@ -2282,7 +2286,7 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
     }
 
     BuildRenderCmd(targetLang, isBypass := false) {
-        c := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' targetLang ' --zid ' ZID ' --text-mode ' textMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' --split-gap-limit ' G_SplitGapLimit ' --seq-num ' seqNum
+        c := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' targetLang ' --zid ' ZID ' --trace-id ' ZID ':render:init' ' --text-mode ' textMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' --split-gap-limit ' G_SplitGapLimit ' --seq-num ' seqNum
         if (tsvPath != "") {
             c .= ' --tsv "' tsvPath '"'
         }
@@ -2668,7 +2672,7 @@ PerformReload(guiObj, &outB64, &errJSON) {
     } catch as e {
         return 1
     }
-    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' guiObj.Lang ' --zid ' guiObj.ZID ' --text-mode ' guiObj
+    cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' guiObj.Lang ' --zid ' guiObj.ZID ' --trace-id ' guiObj.ZID ':render:reload' ' --text-mode ' guiObj
         .TextMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' --split-gap-limit ' G_SplitGapLimit ' < "' tmpTextFile '"'
     if (guiObj.HasProp("TsvPath") && guiObj.TsvPath != "") {
         cmd := cmd ' --tsv "' guiObj.TsvPath '"'
