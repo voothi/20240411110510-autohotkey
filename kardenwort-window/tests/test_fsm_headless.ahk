@@ -267,7 +267,8 @@ g := MakeMockGui()
 g.FsmState := FSM_IDLE
 g.FsmMemory["LastError"] := "DeepL quota exceeded"
 UpdateButtonState(g)
-_Assert(InStr(g.CurrentStatusText, "⚠️ DeepL quota exceeded"), "S5.7a: UpdateButtonState displays LastError with ⚠️ icon")
+_Assert(InStr(g.CurrentStatusText, "⚠️ DeepL quota exceeded"),
+"S5.7a: UpdateButtonState displays LastError with ⚠️ icon")
 
 ; S5.8: ActiveRetext resets on failed state without deadlock
 g := MakeMockGui()
@@ -283,7 +284,8 @@ g.FsmState := FSM_IDLE
 g.FsmMemory["ActiveReprocess"] := false
 g.FsmMemory["LastError"] := "Re-word failed: OpenAI API rate limit exceeded (HTTP 429)"
 UpdateButtonState(g)
-_Assert(InStr(g.CurrentStatusText, "⚠️ Re-word failed: OpenAI API rate limit exceeded (HTTP 429)"), "S5.9a: UpdateButtonState displays Re-word failure warning")
+_Assert(InStr(g.CurrentStatusText, "⚠️ Re-word failed: OpenAI API rate limit exceeded (HTTP 429)"),
+"S5.9a: UpdateButtonState displays Re-word failure warning")
 _Assert(g.ReprocBtn.Enabled, "S5.9b: Reprocess button re-enabled on failure")
 
 ; ===================================================================================
