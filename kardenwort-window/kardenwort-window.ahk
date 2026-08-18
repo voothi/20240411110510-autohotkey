@@ -814,6 +814,16 @@ ActionReprocessStartIO(guiObj, payload) {
     guiObj.FsmMemory["ActiveReprocess"] := true
     guiObj.FsmMemory["PendingUpdate"] := false
     UpdateStatus(guiObj, "Preparing re-process...")
+    ; Register safety watchdog timer (90 seconds)
+    if (guiObj.HasProp("TimerWorkerWatchdog") && guiObj.TimerWorkerWatchdog) {
+        try {
+            SetTimer(guiObj.TimerWorkerWatchdog, 0)
+        } catch {
+        }
+    }
+    guiObj.TimerWorkerWatchdog := WorkerWatchdogTimeout.Bind(guiObj)
+    SetTimer(guiObj.TimerWorkerWatchdog, -90000)
+
     updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
     if DirExist(updatesDir) {
         Loop Files, updatesDir "\*.js"
@@ -892,6 +902,13 @@ ActionReprocessDoneIO(guiObj, payload) {
         UpdateStatus(guiObj, "Reprocess skipped")
         KardenMsgBox(msgStr, "Kardenwort", "Iconi")
         guiObj.FsmMemory["ActiveReprocess"] := false
+        if (guiObj.HasProp("TimerWorkerWatchdog") && guiObj.TimerWorkerWatchdog) {
+            try {
+                SetTimer(guiObj.TimerWorkerWatchdog, 0)
+                guiObj.TimerWorkerWatchdog := ""
+            } catch {
+            }
+        }
     } else {
         UpdateStatus(guiObj, "Re-processing started")
     }
@@ -903,6 +920,13 @@ ActionReprocessFailedApply(guiObj, payload) {
     return FSM_IDLE
 }
 ActionReprocessFailedIO(guiObj, payload) {
+    if (guiObj.HasProp("TimerWorkerWatchdog") && guiObj.TimerWorkerWatchdog) {
+        try {
+            SetTimer(guiObj.TimerWorkerWatchdog, 0)
+            guiObj.TimerWorkerWatchdog := ""
+        } catch {
+        }
+    }
     if (G_FsmTestMode) {
         return
     }
@@ -969,6 +993,15 @@ ActionRetextStartIO(guiObj, payload) {
     cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" retext --selection-manifest "' tmpManifestFile '" --language ' guiObj
         .Lang ' --text-mode ' guiObj.TextMode
     guiObj.FsmMemory["ActiveRetext"] := true
+    ; Register safety watchdog timer (90 seconds)
+    if (guiObj.HasProp("TimerWorkerWatchdog") && guiObj.TimerWorkerWatchdog) {
+        try {
+            SetTimer(guiObj.TimerWorkerWatchdog, 0)
+        } catch {
+        }
+    }
+    guiObj.TimerWorkerWatchdog := WorkerWatchdogTimeout.Bind(guiObj)
+    SetTimer(guiObj.TimerWorkerWatchdog, -90000)
     try {
         exitCode := RunSilent(cmd, &outStr, &errJSON)
     } catch {
@@ -1016,6 +1049,13 @@ ActionRetextDoneIO(guiObj, payload) {
         UpdateStatus(guiObj, "Retext skipped")
         KardenMsgBox(msgStr, "Kardenwort", "Iconi")
         guiObj.FsmMemory["ActiveRetext"] := false
+        if (guiObj.HasProp("TimerWorkerWatchdog") && guiObj.TimerWorkerWatchdog) {
+            try {
+                SetTimer(guiObj.TimerWorkerWatchdog, 0)
+                guiObj.TimerWorkerWatchdog := ""
+            } catch {
+            }
+        }
     } else {
         UpdateStatus(guiObj, "Re-text started")
     }
@@ -1027,6 +1067,13 @@ ActionRetextFailedApply(guiObj, payload) {
     return FSM_IDLE
 }
 ActionRetextFailedIO(guiObj, payload) {
+    if (guiObj.HasProp("TimerWorkerWatchdog") && guiObj.TimerWorkerWatchdog) {
+        try {
+            SetTimer(guiObj.TimerWorkerWatchdog, 0)
+            guiObj.TimerWorkerWatchdog := ""
+        } catch {
+        }
+    }
     if (G_FsmTestMode) {
         return
     }
@@ -1180,6 +1227,13 @@ ActionCloseIO(guiObj, payload) {
         return
     }
 
+    if (guiObj.HasProp("TimerWorkerWatchdog") && guiObj.TimerWorkerWatchdog) {
+        try {
+            SetTimer(guiObj.TimerWorkerWatchdog, 0)
+            guiObj.TimerWorkerWatchdog := ""
+        } catch {
+        }
+    }
     if (guiObj.HasOwnProp("TimerFn")) {
         updatesDir := StrReplace(guiObj.TsvPath, ".tsv", ".updates")
         if (DirExist(updatesDir)) {
@@ -2337,6 +2391,15 @@ OnAhkCall(guiObj, action, value) {
         guiObj.FsmMemory["PendingUpdate"] := false
         guiObj.FsmMemory["IsProgressive"] := false
 
+        ; Cancel watchdog timer if running
+        if (guiObj.HasProp("TimerWorkerWatchdog") && guiObj.TimerWorkerWatchdog) {
+            try {
+                SetTimer(guiObj.TimerWorkerWatchdog, 0)
+                guiObj.TimerWorkerWatchdog := ""
+            } catch {
+            }
+        }
+
         ; Delete the .updates directory now that the worker is finished
         updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
         DelayedDelete() {
@@ -2616,6 +2679,24 @@ PerformReload(guiObj, &outB64, &errJSON) {
     return exitCode
 }
 
+WorkerWatchdogTimeout(guiObj) {
+    if (!IsObject(guiObj) || !guiObj.HasProp("FsmMemory")) {
+        return
+    }
+    isActiveReprocess := guiObj.FsmMemory.Has("ActiveReprocess") && guiObj.FsmMemory["ActiveReprocess"]
+    isActiveRetext := guiObj.FsmMemory.Has("ActiveRetext") && guiObj.FsmMemory["ActiveRetext"]
+    if (isActiveReprocess || isActiveRetext) {
+        guiObj.FsmMemory["ActiveReprocess"] := false
+        guiObj.FsmMemory["ActiveRetext"] := false
+        guiObj.FsmMemory["PendingUpdate"] := false
+        if (guiObj.HasProp("TimerWorkerWatchdog")) {
+            guiObj.TimerWorkerWatchdog := ""
+        }
+        UpdateStatus(guiObj, "Operation timed out / completed")
+        UpdateButtonState(guiObj)
+    }
+}
+
 WatchFile(guiObj, Folder := "", Changes := "") {
     if (guiObj.FsmState != FSM_IDLE) {
         return
@@ -2665,12 +2746,23 @@ WatchFile(guiObj, Folder := "", Changes := "") {
                 SortedFiles := Sort(RTrim(SortedFiles, "`n"))
                 jsFiles := StrSplit(SortedFiles, "`n")
                 
+                terminalDetected := false
                 for index, filePath in jsFiles {
                     if (filePath == "") {
                         continue
                     }
-                    if (!guiObj.FsmMemory["IsLazy"]) {
+                    jsCode := ""
+                    try {
                         jsCode := FileRead(filePath, "UTF-8")
+                    } catch {
+                    }
+                    if (jsCode != "") {
+                        if (RegExMatch(jsCode, 'i)"stage"\s*:\s*"finished"')
+                            || RegExMatch(jsCode, 'i)"status"\s*:\s*"(failed|partial_persisted)"')) {
+                            terminalDetected := true
+                        }
+                    }
+                    if (!guiObj.FsmMemory["IsLazy"] && jsCode != "") {
                         try {
                             guiObj.wb.document.parentWindow.eval(jsCode)
                         } catch {
@@ -2681,6 +2773,35 @@ WatchFile(guiObj, Folder := "", Changes := "") {
                     } catch {
                     }
                 }
+
+                if (terminalDetected) {
+                    if (guiObj.HasProp("TimerWorkerWatchdog") && guiObj.TimerWorkerWatchdog) {
+                        try {
+                            SetTimer(guiObj.TimerWorkerWatchdog, 0)
+                            guiObj.TimerWorkerWatchdog := ""
+                        } catch {
+                        }
+                    }
+                    guiObj.FsmMemory["PendingUpdate"] := false
+                    guiObj.FsmMemory["IsProgressive"] := false
+
+                    if (guiObj.FsmMemory.Has("ActiveRetext") && guiObj.FsmMemory["ActiveRetext"]) {
+                        guiObj.FsmMemory["ActiveRetext"] := false
+                        FsmDispatch(guiObj, EV_UPDATE_CLICK)
+                    } else {
+                        if (guiObj.FsmMemory.Has("ActiveReprocess")) {
+                            guiObj.FsmMemory["ActiveReprocess"] := false
+                        }
+                        UpdateButtonState(guiObj)
+                    }
+                } else if (guiObj.HasProp("TimerWorkerWatchdog") && guiObj.TimerWorkerWatchdog) {
+                    ; Re-arm watchdog timer on receiving non-terminal progress deltas
+                    try {
+                        SetTimer(guiObj.TimerWorkerWatchdog, -90000)
+                    } catch {
+                    }
+                }
+
                 try {
                     currentMTime := FileGetTime(guiObj.TsvPath)
                 } catch {
@@ -2696,6 +2817,13 @@ WatchFile(guiObj, Folder := "", Changes := "") {
 GuiClose(thisGui) {
     global G_ActiveWindows
     global G_CloseDescendantsOnParentClose
+    if (thisGui.HasProp("TimerWorkerWatchdog") && thisGui.TimerWorkerWatchdog) {
+        try {
+            SetTimer(thisGui.TimerWorkerWatchdog, 0)
+            thisGui.TimerWorkerWatchdog := ""
+        } catch {
+        }
+    }
     if (G_CloseDescendantsOnParentClose && thisGui.HasProp("Children")) {
         for childSessionID in thisGui.Children {
             try {

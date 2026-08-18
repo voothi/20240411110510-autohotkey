@@ -429,6 +429,16 @@ for entry in langMatrixCombinations {
 }
 Assert(allLangMatrixPassed, "Matrix 4: All 6 language verification decision matrix branches resolved correctly")
 
+; Part 5: Watchdog and Reprocess Completion Tests
+gW := MakeMockGui()
+gW.FsmState := FSM_IDLE
+gW.FsmMemory["ActiveReprocess"] := true
+gW.FsmMemory["ActiveRetext"] := true
+gW.FsmMemory["PendingUpdate"] := true
+WorkerWatchdogTimeout(gW)
+Assert(!gW.FsmMemory["ActiveReprocess"] && !gW.FsmMemory["ActiveRetext"], "Watchdog timeout reset active reprocess and retext flags.")
+Assert(!gW.FsmMemory["PendingUpdate"], "Watchdog timeout reset pending update flag.")
+
 ; Write summary
 FileAppend("`nSummary: " (totalTests - failedTests) "/" totalTests " tests passed.`n", A_ScriptDir "\test_results.txt")
 ExitApp()

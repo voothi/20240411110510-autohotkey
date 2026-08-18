@@ -243,6 +243,25 @@ FsmDispatch(g, EV_RELOAD_DONE)
 _Assert(g.FsmState == FSM_IDLE, "S5.4d: Reload done resolves to IDLE")
 _Assert(!g.FsmMemory["IsDirty"], "S5.4e: IsDirty cleared after full save+reload")
 
+; S5.5: WorkerWatchdogTimeout resets ActiveReprocess and ActiveRetext to false
+g := MakeMockGui()
+g.FsmState := FSM_IDLE
+g.FsmMemory["ActiveReprocess"] := true
+g.FsmMemory["ActiveRetext"] := true
+g.FsmMemory["PendingUpdate"] := true
+WorkerWatchdogTimeout(g)
+_Assert(!g.FsmMemory["ActiveReprocess"], "S5.5a: Watchdog timeout clears ActiveReprocess")
+_Assert(!g.FsmMemory["ActiveRetext"], "S5.5b: Watchdog timeout clears ActiveRetext")
+_Assert(!g.FsmMemory["PendingUpdate"], "S5.5c: Watchdog timeout clears PendingUpdate")
+
+; S5.6: REPROCESS_DONE clears ActiveReprocess when skipped or finished
+g := MakeMockGui()
+g.FsmState := FSM_REPROCESSING
+g.FsmMemory["ActiveReprocess"] := true
+FsmDispatch(g, EV_REPROCESS_DONE, Map("status", "skipped", "message", "no words"))
+_Assert(g.FsmState == FSM_IDLE, "S5.6a: REPROCESS_DONE transitions to IDLE")
+_Assert(!g.FsmMemory["ActiveReprocess"], "S5.6b: REPROCESS_DONE clears ActiveReprocess")
+
 ; ===================================================================================
 ; Summary
 ; ===================================================================================
