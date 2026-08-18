@@ -2810,13 +2810,20 @@ WatchFile(guiObj, Folder := "", Changes := "") {
                     guiObj.FsmMemory["IsProgressive"] := false
 
                     if (failedDetected) {
+                        errMsg := ""
                         if (lastErrorMessage != "") {
-                            guiObj.FsmMemory["LastError"] := lastErrorMessage
+                            errMsg := lastErrorMessage
                         } else if (lastErrorCode != "") {
-                            guiObj.FsmMemory["LastError"] := lastErrorCode
+                            errMsg := lastErrorCode
                         } else {
-                            guiObj.FsmMemory["LastError"] := "Operation failed"
+                            errMsg := "Operation failed"
                         }
+                        if (guiObj.FsmMemory.Has("ActiveReprocess") && guiObj.FsmMemory["ActiveReprocess"]) {
+                            if (!InStr(errMsg, "Re-word failed")) {
+                                errMsg := "Re-word failed: " . errMsg
+                            }
+                        }
+                        guiObj.FsmMemory["LastError"] := errMsg
                     } else {
                         if (guiObj.FsmMemory.Has("LastError")) {
                             guiObj.FsmMemory.Delete("LastError")

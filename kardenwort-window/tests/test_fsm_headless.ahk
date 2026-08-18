@@ -277,6 +277,15 @@ g.FsmMemory["LastError"] := "Translation error"
 UpdateButtonState(g)
 _Assert(g.FsmState == FSM_IDLE, "S5.8a: Window remains in IDLE state on failure")
 
+; S5.9: ActiveReprocess resets on failed state and displays Re-word failed warning
+g := MakeMockGui()
+g.FsmState := FSM_IDLE
+g.FsmMemory["ActiveReprocess"] := false
+g.FsmMemory["LastError"] := "Re-word failed: OpenAI API rate limit exceeded (HTTP 429)"
+UpdateButtonState(g)
+_Assert(InStr(g.CurrentStatusText, "⚠️ Re-word failed: OpenAI API rate limit exceeded (HTTP 429)"), "S5.9a: UpdateButtonState displays Re-word failure warning")
+_Assert(g.ReprocBtn.Enabled, "S5.9b: Reprocess button re-enabled on failure")
+
 ; ===================================================================================
 ; Summary
 ; ===================================================================================
