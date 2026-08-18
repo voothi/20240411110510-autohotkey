@@ -436,7 +436,8 @@ gW.FsmMemory["ActiveReprocess"] := true
 gW.FsmMemory["ActiveRetext"] := true
 gW.FsmMemory["PendingUpdate"] := true
 WorkerWatchdogTimeout(gW)
-Assert(!gW.FsmMemory["ActiveReprocess"] && !gW.FsmMemory["ActiveRetext"], "Watchdog timeout reset active reprocess and retext flags.")
+Assert(!gW.FsmMemory["ActiveReprocess"] && !gW.FsmMemory["ActiveRetext"],
+    "Watchdog timeout reset active reprocess and retext flags.")
 Assert(!gW.FsmMemory["PendingUpdate"], "Watchdog timeout reset pending update flag.")
 
 ; Write summary

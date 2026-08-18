@@ -882,6 +882,9 @@ ActionReprocessStartIO(guiObj, payload) {
 }
 
 ActionReprocessDoneApply(guiObj, payload) {
+    if (Type(payload) == "Map" && payload.Has("status") && payload["status"] == "skipped") {
+        guiObj.FsmMemory["ActiveReprocess"] := false
+    }
     return FSM_IDLE
 }
 ActionReprocessDoneIO(guiObj, payload) {
@@ -1029,6 +1032,9 @@ ActionRetextStartIO(guiObj, payload) {
 }
 
 ActionRetextDoneApply(guiObj, payload) {
+    if (Type(payload) == "Map" && payload.Has("status") && payload["status"] == "skipped") {
+        guiObj.FsmMemory["ActiveRetext"] := false
+    }
     return FSM_IDLE
 }
 ActionRetextDoneIO(guiObj, payload) {
