@@ -2504,6 +2504,8 @@ UpdateButtonState(guiObj) {
         UpdateStatus(guiObj, "Re-processing...")
     } else if (guiObj.FsmMemory.Has("ActiveRetext") && guiObj.FsmMemory["ActiveRetext"]) {
         UpdateStatus(guiObj, "Re-texting...")
+    } else if (guiObj.FsmMemory.Has("LastError") && guiObj.FsmMemory["LastError"] != "") {
+        UpdateStatus(guiObj, "⚠️ " . guiObj.FsmMemory["LastError"])
     } else if (isDirty && pending) {
         UpdateStatus(guiObj, "Unsaved edits + update ready")
     } else if (isDirty && !pending) {
@@ -2757,6 +2759,9 @@ WatchFile(guiObj, Folder := "", Changes := "") {
                 jsFiles := StrSplit(SortedFiles, "`n")
                 
                 terminalDetected := false
+                failedDetected := false
+                lastErrorCode := ""
+                lastErrorMessage := ""
                 for index, filePath in jsFiles {
                     if (filePath == "") {
                         continue
@@ -2770,6 +2775,15 @@ WatchFile(guiObj, Folder := "", Changes := "") {
                         if (RegExMatch(jsCode, 'i)"stage"\s*:\s*"finished"')
                             || RegExMatch(jsCode, 'i)"status"\s*:\s*"(failed|partial_persisted)"')) {
                             terminalDetected := true
+                        }
+                        if (RegExMatch(jsCode, 'i)"status"\s*:\s*"failed"')) {
+                            failedDetected := true
+                            if (RegExMatch(jsCode, 'i)"code"\s*:\s*"([^"]+)"', &mCode)) {
+                                lastErrorCode := mCode[1]
+                            }
+                            if (RegExMatch(jsCode, 'i)"message"\s*:\s*"([^"]+)"', &mMsg)) {
+                                lastErrorMessage := mMsg[1]
+                            }
                         }
                     }
                     if (!guiObj.FsmMemory["IsLazy"] && jsCode != "") {
@@ -2795,9 +2809,27 @@ WatchFile(guiObj, Folder := "", Changes := "") {
                     guiObj.FsmMemory["PendingUpdate"] := false
                     guiObj.FsmMemory["IsProgressive"] := false
 
+                    if (failedDetected) {
+                        if (lastErrorMessage != "") {
+                            guiObj.FsmMemory["LastError"] := lastErrorMessage
+                        } else if (lastErrorCode != "") {
+                            guiObj.FsmMemory["LastError"] := lastErrorCode
+                        } else {
+                            guiObj.FsmMemory["LastError"] := "Operation failed"
+                        }
+                    } else {
+                        if (guiObj.FsmMemory.Has("LastError")) {
+                            guiObj.FsmMemory.Delete("LastError")
+                        }
+                    }
+
                     if (guiObj.FsmMemory.Has("ActiveRetext") && guiObj.FsmMemory["ActiveRetext"]) {
                         guiObj.FsmMemory["ActiveRetext"] := false
-                        FsmDispatch(guiObj, EV_UPDATE_CLICK)
+                        if (!failedDetected) {
+                            FsmDispatch(guiObj, EV_UPDATE_CLICK)
+                        } else {
+                            UpdateButtonState(guiObj)
+                        }
                     } else {
                         if (guiObj.FsmMemory.Has("ActiveReprocess")) {
                             guiObj.FsmMemory["ActiveReprocess"] := false

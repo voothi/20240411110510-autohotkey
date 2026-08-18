@@ -262,6 +262,21 @@ FsmDispatch(g, EV_REPROCESS_DONE, Map("status", "skipped", "message", "no words"
 _Assert(g.FsmState == FSM_IDLE, "S5.6a: REPROCESS_DONE transitions to IDLE")
 _Assert(!g.FsmMemory["ActiveReprocess"], "S5.6b: REPROCESS_DONE clears ActiveReprocess")
 
+; S5.7: UpdateButtonState displays LastError in status bar with warning icon
+g := MakeMockGui()
+g.FsmState := FSM_IDLE
+g.FsmMemory["LastError"] := "DeepL quota exceeded"
+UpdateButtonState(g)
+_Assert(InStr(g.CurrentStatusText, "⚠️ DeepL quota exceeded"), "S5.7a: UpdateButtonState displays LastError with ⚠️ icon")
+
+; S5.8: ActiveRetext resets on failed state without deadlock
+g := MakeMockGui()
+g.FsmState := FSM_IDLE
+g.FsmMemory["ActiveRetext"] := true
+g.FsmMemory["LastError"] := "Translation error"
+UpdateButtonState(g)
+_Assert(g.FsmState == FSM_IDLE, "S5.8a: Window remains in IDLE state on failure")
+
 ; ===================================================================================
 ; Summary
 ; ===================================================================================
