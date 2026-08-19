@@ -1,5 +1,5 @@
 [Paths]
-DeskPythonPath = ../20250825231214-spacy-env/Scripts/python.exe
+DeskPythonPath = ../20260629183335-kardenwort-desk/venv/Scripts/python.exe
 DeskScriptPath = ../20260629183335-kardenwort-desk/kardenwort_desk.py
 
 [Settings]
