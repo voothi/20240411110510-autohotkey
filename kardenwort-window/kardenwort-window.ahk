@@ -1748,6 +1748,16 @@ SendControllerRequest(endpoint, payloadJson, &responseJson, timeoutSec := 3) {
     return false
 }
 
+JSON_Stringify(val) {
+    str := String(val)
+    str := StrReplace(str, "\", "\\")
+    str := StrReplace(str, '"', '\"')
+    str := StrReplace(str, "`n", "\n")
+    str := StrReplace(str, "`r", "\r")
+    str := StrReplace(str, "`t", "\t")
+    return '"' str '"'
+}
+
 CheckServerHealth(host, port) {
     try {
         http := ComObject("WinHttp.WinHttpRequest.5.1")
@@ -2434,6 +2444,32 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
         return
     }
 
+    ; 1. Fast-Path: Dispatch to Central Controller Daemon
+    controllerSuccess := false
+    outB64 := ""
+    errJSON := ""
+
+    reqPayload := '{"text":' JSON_Stringify(sourceText) ', "language":"' lang '", "text_mode":"' textMode '", "theme":"' G_Theme '", "zoom":"' G_DefaultZoom '", "seq_num":' seqNum ', "zid":"' ZID '"}'
+    if (tsvPath != "") {
+        reqPayload := '{"text":' JSON_Stringify(sourceText) ', "language":"' lang '", "text_mode":"' textMode '", "theme":"' G_Theme '", "zoom":"' G_DefaultZoom '", "seq_num":' seqNum ', "zid":"' ZID '", "tsv_path":' JSON_Stringify(tsvPath) '}'
+    }
+
+    if (SendControllerRequest("/session/create", reqPayload, &respJson, 3)) {
+        if (RegExMatch(respJson, '"html_b64":\s*"([^"]+)"', &mB64)) {
+            outB64 := mB64[1]
+            controllerSuccess := true
+        }
+    }
+
+    if (controllerSuccess) {
+        try {
+            FileDelete(tmpTextFile)
+        } catch {
+        }
+        FsmDispatch(MyGui, EV_RENDER_DONE, { outB64: outB64 })
+        return
+    }
+
     BuildRenderCmd(targetLang, isBypass := false) {
         c := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' targetLang ' --zid ' ZID ' --trace-id ' ZID ':render:init' ' --text-mode ' textMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' --split-gap-limit ' G_SplitGapLimit ' --seq-num ' seqNum
         if (tsvPath != "") {
@@ -2448,8 +2484,6 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
 
     cmd := BuildRenderCmd(lang, false)
     exitCode := 1
-    outB64 := ""
-    errJSON := ""
     try {
         exitCode := RunSilent(cmd, &outB64, &errJSON)
     } catch as e {
@@ -2813,6 +2847,18 @@ UpdateWebViewMode(guiObj, state) {
 }
 
 PerformReload(guiObj, &outB64, &errJSON) {
+    reqPayload := '{"text":' JSON_Stringify(guiObj.SourceText) ', "language":"' guiObj.Lang '", "text_mode":"' guiObj.TextMode '", "theme":"' G_Theme '", "zoom":"' G_DefaultZoom '", "zid":"' guiObj.ZID '"}'
+    if (guiObj.HasProp("TsvPath") && guiObj.TsvPath != "") {
+        reqPayload := '{"text":' JSON_Stringify(guiObj.SourceText) ', "language":"' guiObj.Lang '", "text_mode":"' guiObj.TextMode '", "theme":"' G_Theme '", "zoom":"' G_DefaultZoom '", "zid":"' guiObj.ZID '", "tsv_path":' JSON_Stringify(guiObj.TsvPath) '}'
+    }
+
+    if (SendControllerRequest("/session/create", reqPayload, &respJson, 3)) {
+        if (RegExMatch(respJson, '"html_b64":\s*"([^"]+)"', &mB64)) {
+            outB64 := mB64[1]
+            return 0
+        }
+    }
+
     tmpTextFile := A_Temp "\karden_input_" guiObj.ZID "_" A_TickCount ".txt"
     try {
         FileDelete(tmpTextFile)
