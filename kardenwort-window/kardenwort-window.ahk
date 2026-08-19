@@ -458,6 +458,18 @@ ActionSaveStartIO(guiObj, payload) {
     }
 
     traceId := guiObj.ZID ":edit-save"
+
+    ; Try REST dispatch to Controller
+    savePayload := '{"session_zid": "' guiObj.ZID '", "deltas": ' deltasJSON ', "language": "' guiObj.Lang '"}'
+    if (SendControllerRequest("/session/save", savePayload, &resText, 2)) {
+        try {
+            FileDelete(tmpTextFile)
+        } catch {
+        }
+        FsmDispatch(guiObj, EV_SAVE_SUCCESS)
+        return
+    }
+
     cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" edit-save --deltas "' tmpTextFile '" --zid ' guiObj.ZID ' --trace-id ' traceId ' --language ' guiObj
         .Lang ' --tsv "' guiObj.TsvPath '"'
     try {
@@ -855,6 +867,18 @@ ActionReprocessStartIO(guiObj, payload) {
     }
 
     traceId := guiObj.ZID ":reprocess:selection"
+
+    ; Try REST dispatch to Controller
+    rewordPayload := '{"session_zid": "' guiObj.ZID '", "row_ids": ' jsonStr ', "language": "' guiObj.Lang '"}'
+    if (SendControllerRequest("/session/reword", rewordPayload, &resText, 2)) {
+        try {
+            FileDelete(tmpManifestFile)
+        } catch {
+        }
+        FsmDispatch(guiObj, EV_REPROCESS_DONE, Map("status", "success", "message", "Re-processing started"))
+        return
+    }
+
     cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" reprocess --selection-manifest "' tmpManifestFile '" --language ' guiObj
         .Lang ' --zid ' guiObj.ZID ' --trace-id ' traceId
     try {
@@ -996,6 +1020,18 @@ ActionRetextStartIO(guiObj, payload) {
     }
 
     traceId := guiObj.ZID ":retext:selection"
+
+    ; Try REST dispatch to Controller
+    retextPayload := '{"session_zid": "' guiObj.ZID '", "language": "' guiObj.Lang '", "text_mode": "' guiObj.TextMode '"}'
+    if (SendControllerRequest("/session/retext", retextPayload, &resText, 2)) {
+        try {
+            FileDelete(tmpManifestFile)
+        } catch {
+        }
+        FsmDispatch(guiObj, EV_RETEXT_DONE, Map("status", "success", "message", "Re-text started"))
+        return
+    }
+
     cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" retext --selection-manifest "' tmpManifestFile '" --language ' guiObj
         .Lang ' --text-mode ' guiObj.TextMode ' --zid ' guiObj.ZID ' --trace-id ' traceId
     guiObj.FsmMemory["ActiveRetext"] := true
@@ -1119,6 +1155,20 @@ ActionExportStartIO(guiObj, payload) {
     }
 
     traceId := guiObj.ZID ":export:selection"
+
+    ; Try REST dispatch to Controller
+    exportPayload := '{"session_zid": "' guiObj.ZID '", "selected_row_ids": ' jsonStr ', "language": "' guiObj.Lang '"}'
+    if (SendControllerRequest("/session/export", exportPayload, &resText, 3)) {
+        try {
+            FileDelete(tmpManifestFile)
+        } catch {
+        }
+        isAsync := InStr(resText, '"import_started": true') > 0
+        showWindow := !(InStr(resText, '"show_window": false') > 0)
+        FsmDispatch(guiObj, EV_EXPORT_DONE, { isAsync: isAsync, logPath: "", pid: 0, showWindow: showWindow, status: "success", message: "" })
+        return
+    }
+
     cmd := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" export --selection-manifest "' tmpManifestFile '" --language ' guiObj
         .Lang ' --zid ' guiObj.ZID ' --trace-id ' traceId
     try {
@@ -1647,12 +1697,13 @@ InitializeTrayMenu() {
 global G_ServerEnabled := false
 global G_ServerHost := "127.0.0.1"
 global G_ServerPort := 18335
+global G_ControllerPort := 8080
 global G_ServerApiKey := ""
 global G_ServerPID := 0
 global G_ServerStatus := "Disabled"
 
 LoadServerConfig() {
-    global G_DeskScriptPath, G_ServerEnabled, G_ServerHost, G_ServerPort, G_ServerApiKey, G_ServerStatus
+    global G_DeskScriptPath, G_ServerEnabled, G_ServerHost, G_ServerPort, G_ControllerPort, G_ServerApiKey, G_ServerStatus
     if (G_DeskScriptPath == "")
         return
     deskDir := RegExReplace(G_DeskScriptPath, "\\[^\\]+$")
@@ -1663,6 +1714,7 @@ LoadServerConfig() {
         G_ServerEnabled := (enabledStr == "true" || enabledStr == "1")
         G_ServerHost := IniRead(deskConfigPath, "server", "host", "127.0.0.1")
         G_ServerPort := IniRead(deskConfigPath, "server", "port", 18335)
+        G_ControllerPort := IniRead(deskConfigPath, "server", "controller_port", 8080)
         G_ServerApiKey := IniRead(deskConfigPath, "server", "api_key", "")
     }
 
@@ -1671,6 +1723,29 @@ LoadServerConfig() {
     } else {
         G_ServerStatus := "Offline"
     }
+}
+
+SendControllerRequest(endpoint, payloadJson, &responseJson, timeoutSec := 3) {
+    global G_ServerHost, G_ControllerPort, G_ServerApiKey
+    host := G_ServerHost ? G_ServerHost : "127.0.0.1"
+    port := G_ControllerPort ? G_ControllerPort : 8080
+    url := "http://" . host . ":" . port . endpoint
+    try {
+        http := ComObject("WinHttp.WinHttpRequest.5.1")
+        http.Open("POST", url, false)
+        http.SetTimeouts(1000, 1000, timeoutSec * 1000, timeoutSec * 1000)
+        if (G_ServerApiKey != "") {
+            http.SetRequestHeader("X-API-Token", G_ServerApiKey)
+        }
+        http.SetRequestHeader("Content-Type", "application/json; charset=utf-8")
+        http.Send(payloadJson)
+        if (http.Status == 200) {
+            responseJson := http.ResponseText
+            return true
+        }
+    } catch {
+    }
+    return false
 }
 
 CheckServerHealth(host, port) {
