@@ -288,6 +288,14 @@ _Assert(InStr(g.CurrentStatusText, "⚠️ Re-word failed: OpenAI API rate limit
 "S5.9a: UpdateButtonState displays Re-word failure warning")
 _Assert(g.ReprocBtn.Enabled, "S5.9b: Reprocess button re-enabled on failure")
 
+; S5.10: Smooth in-place Re-text completion via OnAhkCall 'finished'
+g := MakeMockGui()
+g.FsmState := FSM_IDLE
+g.FsmMemory["ActiveRetext"] := true
+OnAhkCall(g, "finished", "")
+_Assert(!g.FsmMemory["ActiveRetext"], "S5.10a: OnAhkCall finished clears ActiveRetext")
+_Assert(g.FsmState == FSM_IDLE, "S5.10b: OnAhkCall finished maintains IDLE state without reload dispatch")
+
 ; ===================================================================================
 ; Summary
 ; ===================================================================================

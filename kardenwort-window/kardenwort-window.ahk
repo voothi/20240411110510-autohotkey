@@ -2584,15 +2584,13 @@ OnAhkCall(guiObj, action, value) {
         }
         SetTimer(DelayedDelete, -5000)
 
-        if (guiObj.FsmMemory.Has("ActiveRetext") && guiObj.FsmMemory["ActiveRetext"]) {
+        if (guiObj.FsmMemory.Has("ActiveRetext")) {
             guiObj.FsmMemory["ActiveRetext"] := false
-            FsmDispatch(guiObj, EV_UPDATE_CLICK)
-        } else {
-            if (guiObj.FsmMemory.Has("ActiveReprocess")) {
-                guiObj.FsmMemory["ActiveReprocess"] := false
-            }
-            UpdateButtonState(guiObj)
         }
+        if (guiObj.FsmMemory.Has("ActiveReprocess")) {
+            guiObj.FsmMemory["ActiveReprocess"] := false
+        }
+        UpdateButtonState(guiObj)
 
 
     }
@@ -2989,19 +2987,13 @@ WatchFile(guiObj, Folder := "", Changes := "") {
                         }
                     }
 
-                    if (guiObj.FsmMemory.Has("ActiveRetext") && guiObj.FsmMemory["ActiveRetext"]) {
+                    if (guiObj.FsmMemory.Has("ActiveRetext")) {
                         guiObj.FsmMemory["ActiveRetext"] := false
-                        if (!failedDetected) {
-                            FsmDispatch(guiObj, EV_UPDATE_CLICK)
-                        } else {
-                            UpdateButtonState(guiObj)
-                        }
-                    } else {
-                        if (guiObj.FsmMemory.Has("ActiveReprocess")) {
-                            guiObj.FsmMemory["ActiveReprocess"] := false
-                        }
-                        UpdateButtonState(guiObj)
                     }
+                    if (guiObj.FsmMemory.Has("ActiveReprocess")) {
+                        guiObj.FsmMemory["ActiveReprocess"] := false
+                    }
+                    UpdateButtonState(guiObj)
                 } else if (guiObj.HasProp("TimerWorkerWatchdog") && guiObj.TimerWorkerWatchdog) {
                     ; Re-arm watchdog timer on receiving non-terminal progress deltas
                     try {

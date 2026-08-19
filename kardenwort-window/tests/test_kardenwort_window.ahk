@@ -255,9 +255,11 @@ Assert(g.FsmState == FSM_RELOADING, "Update click in IDLE state transitions to R
 
 ; Test 20: OnAhkCall with 'finished' action
 g_fin := MakeMockGui()
+g_fin.FsmState := FSM_IDLE
+g_fin.FsmMemory["ActiveRetext"] := true
 try {
     OnAhkCall(g_fin, "finished", "")
-    Assert(true, "OnAhkCall 'finished' action handled successfully without throwing error")
+    Assert(!g_fin.FsmMemory["ActiveRetext"] && g_fin.FsmState == FSM_IDLE, "OnAhkCall 'finished' action clears ActiveRetext and maintains IDLE state smoothly")
 } catch as err {
     Assert(false, "OnAhkCall 'finished' action threw an error: " err.Message)
 }
