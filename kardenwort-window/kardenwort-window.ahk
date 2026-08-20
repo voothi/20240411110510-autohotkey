@@ -1697,7 +1697,7 @@ InitializeTrayMenu() {
 global G_ServerEnabled := false
 global G_ServerHost := "127.0.0.1"
 global G_ServerPort := 18335
-global G_ControllerPort := 8080
+global G_ControllerPort := 18335
 global G_ServerApiKey := ""
 global G_ServerPID := 0
 global G_ServerStatus := "Disabled"
@@ -1714,7 +1714,7 @@ LoadServerConfig() {
         G_ServerEnabled := (enabledStr == "true" || enabledStr == "1")
         G_ServerHost := IniRead(deskConfigPath, "server", "host", "127.0.0.1")
         G_ServerPort := IniRead(deskConfigPath, "server", "port", 18335)
-        G_ControllerPort := IniRead(deskConfigPath, "server", "controller_port", 8080)
+        G_ControllerPort := IniRead(deskConfigPath, "server", "controller_port", G_ServerPort)
         G_ServerApiKey := IniRead(deskConfigPath, "server", "api_key", "")
     }
 
@@ -1726,9 +1726,9 @@ LoadServerConfig() {
 }
 
 SendControllerRequest(endpoint, payloadJson, &responseJson, timeoutSec := 3) {
-    global G_ServerHost, G_ControllerPort, G_ServerApiKey
+    global G_ServerHost, G_ServerPort, G_ControllerPort, G_ServerApiKey
     host := G_ServerHost ? G_ServerHost : "127.0.0.1"
-    port := G_ControllerPort ? G_ControllerPort : 8080
+    port := G_ControllerPort ? G_ControllerPort : (G_ServerPort ? G_ServerPort : 18335)
     url := "http://" . host . ":" . port . endpoint
     try {
         http := ComObject("WinHttp.WinHttpRequest.5.1")
