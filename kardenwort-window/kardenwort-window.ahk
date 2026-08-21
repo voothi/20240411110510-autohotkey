@@ -1795,7 +1795,7 @@ StartServerProcess() {
         return
 
     deskDir := RegExReplace(G_DeskScriptPath, "\\[^\\]+$")
-    cmd := '"' . G_DeskPythonPath . '" "' . G_DeskScriptPath . '" server'
+    cmd := '"' . G_DeskPythonPath . '" "' . G_DeskScriptPath . '" controller'
 
     try {
         Run(cmd, deskDir, "Hide", &pid)
@@ -1860,6 +1860,17 @@ OpenServerLogsDir() {
     }
 }
 
+OpenAdminPanel() {
+    global G_ServerHost, G_ServerPort, G_ServerApiKey
+    host := G_ServerHost ? G_ServerHost : "127.0.0.1"
+    port := G_ServerPort ? G_ServerPort : 18335
+    adminUrl := "http://" . host . ":" . port . "/admin"
+    if (G_ServerApiKey != "") {
+        adminUrl .= "?token=" . G_ServerApiKey
+    }
+    Run(adminUrl)
+}
+
 OnScriptExit(ExitReason, ExitCode) {
     global G_ServerEnabled, G_ServerHost, G_ServerPort, G_ServerApiKey, G_ServerPID
     if (G_ServerEnabled) {
@@ -1880,6 +1891,7 @@ UpdateTrayMenu() {
     A_TrayMenu.Disable("2&")
 
     if (G_ServerEnabled) {
+        A_TrayMenu.Add("Open Admin Panel", (*) => OpenAdminPanel())
         A_TrayMenu.Add("Restart HTTP Server", (*) => RestartServerProcess())
         A_TrayMenu.Add("View Desk Logs", (*) => OpenServerLogsDir())
     }
