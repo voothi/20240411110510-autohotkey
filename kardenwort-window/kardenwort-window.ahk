@@ -3111,6 +3111,9 @@ WatchFile(guiObj, Folder := "", Changes := "") {
                 }
             }
         }
+    } catch {
+    }
+
     try {
         if (guiObj.FsmMemory.Has("LastError") && guiObj.FsmMemory["LastError"] == "Anki is closed" && guiObj.HasProp("ZID") && guiObj.ZID != "") {
             favLogPath := ""
