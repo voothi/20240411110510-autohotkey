@@ -392,6 +392,7 @@ ActionRenderFailedIO(guiObj, payload) {
 
 ActionDirtyApply(guiObj, payload) {
     guiObj.FsmMemory["IsDirty"] := true
+    guiObj.CurrentStatusText := ""
     if (G_AutoSave) {
         guiObj.FsmMemory["AutoSavePending"] := true
     }
@@ -1140,9 +1141,21 @@ ActionExportStartIO(guiObj, payload) {
     if (guiObj.FsmMemory.Has("LastError")) {
         guiObj.FsmMemory.Delete("LastError")
     }
+    guiObj.CurrentStatusText := "Exporting favorites..."
     UpdateStatus(guiObj, "Exporting favorites...")
     jsonStr := guiObj.FsmMemory["ExportSelection"]
     guiObj.FsmMemory.Delete("ExportSelection")
+
+    ; Clean old favorites import log if present so watcher only tracks the new run
+    if (guiObj.HasProp("ZID") && guiObj.ZID != "") {
+        candFavLog := A_ScriptDir "\favorites\" guiObj.ZID "-import.log"
+        if (FileExist(candFavLog)) {
+            try {
+                FileDelete(candFavLog)
+            } catch {
+            }
+        }
+    }
 
     tsvPathStr := StrReplace(guiObj.TsvPath, "\", "\\")
     manifest := '{"selected_row_ids": ' jsonStr ', "zid": "' guiObj.ZID '", "tsv_path": "' tsvPathStr '"}'
@@ -1362,12 +1375,15 @@ ActionExportDoneIO(guiObj, payload) {
 
     if (payload.HasProp("status") && payload.status == "skipped") {
         msg := payload.HasProp("message") && payload.message != "" ? payload.message : "Export skipped."
+        guiObj.CurrentStatusText := "Export skipped"
         UpdateStatus(guiObj, "Export skipped")
         KardenMsgBox(msg, "Kardenwort", "Iconi")
     } else {
         isAsync := payload.HasProp("isAsync") ? payload.isAsync : false
         if (isAsync) {
-            UpdateStatus(guiObj, "Exporting to Anki in background...")
+            statusText := "Exporting to Anki in background..."
+            guiObj.CurrentStatusText := statusText
+            UpdateStatus(guiObj, statusText)
             if (payload.HasProp("logPath") && payload.logPath != "") {
                 StartImportWatcher(guiObj, payload.logPath, payload.HasProp("pid") ? payload.pid : 0)
             }
@@ -1375,6 +1391,7 @@ ActionExportDoneIO(guiObj, payload) {
             if (G_ShowInfoWindows && showWindow) {
                 KardenMsgBox("Favorites exported.", "Kardenwort", "Iconi")
             }
+            guiObj.CurrentStatusText := "Ready"
             UpdateStatus(guiObj, "Ready")
         }
     }
@@ -2764,14 +2781,14 @@ UpdateButtonState(guiObj) {
         UpdateStatus(guiObj, "Re-texting...")
     } else if (guiObj.FsmMemory.Has("LastError") && guiObj.FsmMemory["LastError"] != "") {
         UpdateStatus(guiObj, guiObj.FsmMemory["LastError"])
+    } else if (guiObj.HasProp("CurrentStatusText") && guiObj.CurrentStatusText != "" && guiObj.CurrentStatusText != "Ready") {
+        UpdateStatus(guiObj, guiObj.CurrentStatusText)
     } else if (isDirty && pending) {
         UpdateStatus(guiObj, "Unsaved edits + update ready")
     } else if (isDirty && !pending) {
         UpdateStatus(guiObj, "Unsaved edits")
     } else if (!isDirty && pending) {
         UpdateStatus(guiObj, "Data ready. Click Update to refresh.")
-    } else if (guiObj.HasProp("CurrentStatusText") && guiObj.CurrentStatusText != "" && guiObj.CurrentStatusText != "Ready") {
-        UpdateStatus(guiObj, guiObj.CurrentStatusText)
     } else {
         UpdateStatus(guiObj, "Ready")
     }
