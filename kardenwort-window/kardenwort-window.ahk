@@ -1236,7 +1236,6 @@ StartImportWatcher(guiObj, logPath, pid := 0) {
                     SetTimer(watcherFn, 0)
                     UpdateStatus(guiObj, "⚠️ Anki is closed")
                     UpdateButtonState(guiObj)
-                    KardenMsgBox("⚠️ Anki is closed. Open Anki and click Send to Anki again.", "Kardenwort Import Warning", "Icon!")
                     return
                 }
                 if (InStr(content, '"status": "success"') || InStr(content, '"status":"success"') || InStr(content, "[SUCCESS]")) {
@@ -1252,13 +1251,12 @@ StartImportWatcher(guiObj, logPath, pid := 0) {
                 }
                 if (InStr(content, "ERR_") || InStr(content, "[ERROR]")) {
                     SetTimer(watcherFn, 0)
-                    errMsg := "Anki import failed."
+                    errMsg := "Anki import failed"
                     if RegExMatch(content, '"message":\s*"([^"]+)"', &mMatch) {
                         errMsg := StrReplace(mMatch[1], "\\", "\")
                     }
-                    UpdateStatus(guiObj, "Import failed")
+                    UpdateStatus(guiObj, "⚠️ " errMsg)
                     UpdateButtonState(guiObj)
-                    KardenMsgBox("⚠️ " errMsg, "Kardenwort Import", "Icon!")
                     return
                 }
             } catch {
