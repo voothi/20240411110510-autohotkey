@@ -1165,7 +1165,15 @@ ActionExportStartIO(guiObj, payload) {
         }
         isAsync := InStr(resText, '"import_started": true') > 0
         showWindow := !(InStr(resText, '"show_window": false') > 0)
-        FsmDispatch(guiObj, EV_EXPORT_DONE, { isAsync: isAsync, logPath: "", pid: 0, showWindow: showWindow, status: "success", message: "" })
+        logPath := ""
+        if RegExMatch(resText, '"log":\s*"([^"]+)"', &match) {
+            logPath := StrReplace(match[1], "\\", "\")
+        }
+        pid := 0
+        if RegExMatch(resText, '"pid":\s*(\d+)', &match) {
+            pid := Integer(match[1])
+        }
+        FsmDispatch(guiObj, EV_EXPORT_DONE, { isAsync: isAsync, logPath: logPath, pid: pid, showWindow: showWindow, status: "success", message: "" })
         return
     }
 
