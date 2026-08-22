@@ -1993,18 +1993,35 @@ CycleLanguage() {
 }
 
 LaunchRestore(filePath) {
-    if !FileExist(filePath) {
-        KardenMsgBox("Restore target file not found: " filePath, "Kardenwort Error", 16)
-        ExitApp()
-    }
-
     SplitPath(filePath, &fileName, &fileDir)
-    RegExMatch(fileName, "^(\d{14})", &mZid)
+    targetName := fileName != "" ? fileName : filePath
+    RegExMatch(targetName, "(\d{14})", &mZid)
     if (!mZid) {
-        KardenMsgBox("No valid 14-digit ZID prefix in restore file: " fileName, "Kardenwort Error", 16)
+        if (!FileExist(filePath)) {
+            KardenMsgBox("Restore target file not found: " filePath, "Kardenwort Error", 16)
+            ExitApp()
+        }
+        KardenMsgBox("No valid 14-digit ZID prefix in restore file: " targetName, "Kardenwort Error", 16)
         ExitApp()
     }
     ZID := mZid[1]
+
+    lang := G_DefaultLanguage
+    RegExMatch(targetName, "\.([a-z]{2})\.(tsv|txt|srt)$", &mLang)
+    if (mLang) {
+        lang := mLang[1]
+    }
+
+    global G_CurrentLang := lang
+    UpdateTrayMenu()
+    UpdateTrayIcon()
+
+    if (!FileExist(filePath)) {
+        ; FS-Free SQLite mode: no physical file on disk.
+        ; Delegate directly to LaunchKardenwortWindow which renders from SQLite session ZID.
+        LaunchKardenwortWindow("", "single", ZID, filePath)
+        return
+    }
 
     siblingTxt := ""
     if (SubStr(filePath, -4) == ".txt") {
@@ -2026,11 +2043,8 @@ LaunchRestore(filePath) {
     sourceText := ""
     if (siblingTxt != "" && FileExist(siblingTxt)) {
         sourceText := FileRead(siblingTxt, "UTF-8")
-    } else {
-        KardenMsgBox("Warning: Sibling source text file not found.", "Kardenwort Warning", 48)
     }
 
-    lang := G_DefaultLanguage
     foundTsv := ""
     foundTsvPath := ""
     tsvPattern := fileDir "\" ZID "-*.tsv"
@@ -2040,27 +2054,21 @@ LaunchRestore(filePath) {
         break
     }
     if (foundTsv != "") {
-        RegExMatch(foundTsv, "\.([a-z]{2})\.tsv$", &mLang)
-        if (mLang) {
-            lang := mLang[1]
-        }
-    } else {
-        RegExMatch(fileName, "\.([a-z]{2})\.(tsv|txt|srt)$", &mLang)
-        if (mLang) {
-            lang := mLang[1]
+        RegExMatch(foundTsv, "\.([a-z]{2})\.tsv$", &mLangFound)
+        if (mLangFound) {
+            lang := mLangFound[1]
+            global G_CurrentLang := lang
+            UpdateTrayMenu()
+            UpdateTrayIcon()
         }
     }
-
-    global G_CurrentLang := lang
-    UpdateTrayMenu()
-    UpdateTrayIcon()
 
     inferredMode := "single"
     if (InStr(sourceText, "`n") || InStr(sourceText, "`r")) {
         inferredMode := "multi"
     }
 
-    LaunchKardenwortWindow(sourceText, inferredMode, ZID, foundTsvPath)
+    LaunchKardenwortWindow(sourceText, inferredMode, ZID, foundTsvPath != "" ? foundTsvPath : filePath)
 }
 
 LaunchDesk(filePath, textMode) {
