@@ -876,7 +876,17 @@ ActionReprocessStartIO(guiObj, payload) {
             FileDelete(tmpManifestFile)
         } catch {
         }
-        FsmDispatch(guiObj, EV_REPROCESS_DONE, Map("status", "success", "message", "Re-processing started"))
+        guiObj.FsmMemory["ActiveReprocess"] := false
+        if (guiObj.HasProp("TimerWorkerWatchdog") && guiObj.TimerWorkerWatchdog) {
+            try {
+                SetTimer(guiObj.TimerWorkerWatchdog, 0)
+                guiObj.TimerWorkerWatchdog := ""
+            } catch {
+            }
+        }
+        guiObj.CurrentStatusText := "Re-process complete"
+        UpdateStatus(guiObj, "Re-process complete")
+        FsmDispatch(guiObj, EV_REPROCESS_DONE, Map("status", "success", "message", "Re-process complete"))
         return
     }
 
@@ -909,8 +919,10 @@ ActionReprocessStartIO(guiObj, payload) {
 }
 
 ActionReprocessDoneApply(guiObj, payload) {
-    if (Type(payload) == "Map" && payload.Has("status") && payload["status"] == "skipped") {
-        guiObj.FsmMemory["ActiveReprocess"] := false
+    if (Type(payload) == "Map" && payload.Has("status")) {
+        if (payload["status"] == "skipped" || payload["status"] == "success" || payload["status"] == "completed") {
+            guiObj.FsmMemory["ActiveReprocess"] := false
+        }
     }
     return FSM_IDLE
 }
@@ -929,6 +941,7 @@ ActionReprocessDoneIO(guiObj, payload) {
     }
 
     if (statusStr == "skipped") {
+        guiObj.CurrentStatusText := "Reprocess skipped"
         UpdateStatus(guiObj, "Reprocess skipped")
         KardenMsgBox(msgStr, "Kardenwort", "Iconi")
         guiObj.FsmMemory["ActiveReprocess"] := false
@@ -939,7 +952,11 @@ ActionReprocessDoneIO(guiObj, payload) {
             } catch {
             }
         }
+    } else if (statusStr == "success" || statusStr == "completed") {
+        guiObj.CurrentStatusText := "Re-process complete"
+        UpdateStatus(guiObj, "Re-process complete")
     } else {
+        guiObj.CurrentStatusText := "Re-processing started"
         UpdateStatus(guiObj, "Re-processing started")
     }
     UpdateButtonState(guiObj)
@@ -1029,7 +1046,17 @@ ActionRetextStartIO(guiObj, payload) {
             FileDelete(tmpManifestFile)
         } catch {
         }
-        FsmDispatch(guiObj, EV_RETEXT_DONE, Map("status", "success", "message", "Re-text started"))
+        guiObj.FsmMemory["ActiveRetext"] := false
+        if (guiObj.HasProp("TimerWorkerWatchdog") && guiObj.TimerWorkerWatchdog) {
+            try {
+                SetTimer(guiObj.TimerWorkerWatchdog, 0)
+                guiObj.TimerWorkerWatchdog := ""
+            } catch {
+            }
+        }
+        guiObj.CurrentStatusText := "Re-text complete"
+        UpdateStatus(guiObj, "Re-text complete")
+        FsmDispatch(guiObj, EV_RETEXT_DONE, Map("status", "success", "message", "Re-text complete"))
         return
     }
 
@@ -1072,8 +1099,10 @@ ActionRetextStartIO(guiObj, payload) {
 }
 
 ActionRetextDoneApply(guiObj, payload) {
-    if (Type(payload) == "Map" && payload.Has("status") && payload["status"] == "skipped") {
-        guiObj.FsmMemory["ActiveRetext"] := false
+    if (Type(payload) == "Map" && payload.Has("status")) {
+        if (payload["status"] == "skipped" || payload["status"] == "success" || payload["status"] == "completed") {
+            guiObj.FsmMemory["ActiveRetext"] := false
+        }
     }
     return FSM_IDLE
 }
@@ -1092,6 +1121,7 @@ ActionRetextDoneIO(guiObj, payload) {
     }
 
     if (statusStr == "skipped") {
+        guiObj.CurrentStatusText := "Retext skipped"
         UpdateStatus(guiObj, "Retext skipped")
         KardenMsgBox(msgStr, "Kardenwort", "Iconi")
         guiObj.FsmMemory["ActiveRetext"] := false
@@ -1102,7 +1132,11 @@ ActionRetextDoneIO(guiObj, payload) {
             } catch {
             }
         }
+    } else if (statusStr == "success" || statusStr == "completed") {
+        guiObj.CurrentStatusText := "Re-text complete"
+        UpdateStatus(guiObj, "Re-text complete")
     } else {
+        guiObj.CurrentStatusText := "Re-text started"
         UpdateStatus(guiObj, "Re-text started")
     }
     UpdateButtonState(guiObj)
@@ -3049,7 +3083,7 @@ WatchFile(guiObj, Folder := "", Changes := "") {
                     } catch {
                     }
                     if (jsCode != "") {
-                        if (RegExMatch(jsCode, 'i)"stage"\s*:\s*"finished"')
+                        if (RegExMatch(jsCode, 'i)"stage"\s*:\s*"(finished|enrichment|translated_text|saved)"')
                             || RegExMatch(jsCode, 'i)"status"\s*:\s*"(failed|partial_persisted)"')) {
                             terminalDetected := true
                         }
@@ -3107,11 +3141,15 @@ WatchFile(guiObj, Folder := "", Changes := "") {
                         }
                     }
 
-                    if (guiObj.FsmMemory.Has("ActiveRetext")) {
+                    if (guiObj.FsmMemory.Has("ActiveRetext") && guiObj.FsmMemory["ActiveRetext"]) {
                         guiObj.FsmMemory["ActiveRetext"] := false
+                        guiObj.CurrentStatusText := "Re-text complete"
+                        UpdateStatus(guiObj, "Re-text complete")
                     }
-                    if (guiObj.FsmMemory.Has("ActiveReprocess")) {
+                    if (guiObj.FsmMemory.Has("ActiveReprocess") && guiObj.FsmMemory["ActiveReprocess"]) {
                         guiObj.FsmMemory["ActiveReprocess"] := false
+                        guiObj.CurrentStatusText := "Re-process complete"
+                        UpdateStatus(guiObj, "Re-process complete")
                     }
                     UpdateButtonState(guiObj)
                 } else if (guiObj.HasProp("TimerWorkerWatchdog") && guiObj.TimerWorkerWatchdog) {
