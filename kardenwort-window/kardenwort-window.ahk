@@ -1263,9 +1263,25 @@ StartImportWatcher(guiObj, logPath, pid := 0) {
             }
         }
         
-        ; Stop watching after 20 seconds or if process died without output
-        if (elapsed > 20000 || (pid > 0 && elapsed > 2000 && !ProcessExist(pid))) {
+        ; Stop watching after 20 seconds or if process exited
+        if (elapsed > 20000 || (pid > 0 && elapsed > 4000 && !ProcessExist(pid))) {
             SetTimer(watcherFn, 0)
+            if (FileExist(logPath)) {
+                try {
+                    content := FileRead(logPath, "UTF-8")
+                    if (InStr(content, "ERR_ANKI_NOT_RUNNING") || InStr(content, "Cannot connect to AnkiConnect")) {
+                        UpdateStatus(guiObj, "⚠️ Anki is closed")
+                        UpdateButtonState(guiObj)
+                        return
+                    }
+                    if (InStr(content, "ERR_") || InStr(content, "[ERROR]")) {
+                        UpdateStatus(guiObj, "⚠️ Anki import failed")
+                        UpdateButtonState(guiObj)
+                        return
+                    }
+                } catch {
+                }
+            }
             UpdateStatus(guiObj, "Ready")
             UpdateButtonState(guiObj)
         }
@@ -2402,6 +2418,7 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
     MyGui.SourceText := sourceText
     MyGui.TsvPath := tsvPath
     MyGui.SessionID := sessionID
+    MyGui.SeqNum := seqNum
     MyGui.selectableTextMode := false
     MyGui.persistentSelectableTextMode := false
     FsmInit(MyGui)
@@ -3534,11 +3551,15 @@ UpdateStatus(guiObj, text) {
     } catch {
         fileName := ""
     }
+    prefix := ""
+    if (guiObj.HasProp("SeqNum") && guiObj.SeqNum != "") {
+        prefix := "[" guiObj.SeqNum "] "
+    }
     try {
         if (fileName != "") {
-            guiObj.Title := "Kardenwort - " guiObj.Lang " (" guiObj.TextMode ") - " fileName " - " text
+            guiObj.Title := prefix "Kardenwort - " guiObj.Lang " (" guiObj.TextMode ") - " fileName " - " text
         } else {
-            guiObj.Title := "Kardenwort - " guiObj.Lang " (" guiObj.TextMode ") - " text
+            guiObj.Title := prefix "Kardenwort - " guiObj.Lang " (" guiObj.TextMode ") - " text
         }
     } catch {
         ; Ignore if window is destroyed
