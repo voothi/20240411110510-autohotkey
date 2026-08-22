@@ -1234,12 +1234,16 @@ StartImportWatcher(guiObj, logPath, pid := 0) {
                 content := FileRead(logPath, "UTF-8")
                 if (InStr(content, "ERR_ANKI_NOT_RUNNING") || InStr(content, "Cannot connect to AnkiConnect")) {
                     SetTimer(watcherFn, 0)
-                    UpdateStatus(guiObj, "⚠️ Anki is closed")
+                    guiObj.FsmMemory["LastError"] := "Anki is closed"
+                    UpdateStatus(guiObj, "Anki is closed")
                     UpdateButtonState(guiObj)
                     return
                 }
                 if (InStr(content, '"status": "success"') || InStr(content, '"status":"success"') || InStr(content, "[SUCCESS]")) {
                     SetTimer(watcherFn, 0)
+                    if (guiObj.FsmMemory.Has("LastError")) {
+                        guiObj.FsmMemory.Delete("LastError")
+                    }
                     cardCount := ""
                     if RegExMatch(content, '"cards_imported":\s*(\d+)', &cMatch) {
                         cardCount := cMatch[1]
@@ -1255,7 +1259,8 @@ StartImportWatcher(guiObj, logPath, pid := 0) {
                     if RegExMatch(content, '"message":\s*"([^"]+)"', &mMatch) {
                         errMsg := StrReplace(mMatch[1], "\\", "\")
                     }
-                    UpdateStatus(guiObj, "⚠️ " errMsg)
+                    guiObj.FsmMemory["LastError"] := errMsg
+                    UpdateStatus(guiObj, errMsg)
                     UpdateButtonState(guiObj)
                     return
                 }
@@ -1270,12 +1275,14 @@ StartImportWatcher(guiObj, logPath, pid := 0) {
                 try {
                     content := FileRead(logPath, "UTF-8")
                     if (InStr(content, "ERR_ANKI_NOT_RUNNING") || InStr(content, "Cannot connect to AnkiConnect")) {
-                        UpdateStatus(guiObj, "⚠️ Anki is closed")
+                        guiObj.FsmMemory["LastError"] := "Anki is closed"
+                        UpdateStatus(guiObj, "Anki is closed")
                         UpdateButtonState(guiObj)
                         return
                     }
                     if (InStr(content, "ERR_") || InStr(content, "[ERROR]")) {
-                        UpdateStatus(guiObj, "⚠️ Anki import failed")
+                        guiObj.FsmMemory["LastError"] := "Anki import failed"
+                        UpdateStatus(guiObj, "Anki import failed")
                         UpdateButtonState(guiObj)
                         return
                     }
@@ -1329,13 +1336,12 @@ ActionExportFailedIO(guiObj, payload) {
     if (G_FsmTestMode) {
         return
     }
-    UpdateStatus(guiObj, "Export failed")
-    if (payload != "") {
-        if (InStr(payload, "ERR_ANKI_NOT_RUNNING") || InStr(payload, "Cannot connect to AnkiConnect")) {
-            KardenMsgBox("⚠️ Anki is closed. Open Anki and click Send to Anki again.", "Kardenwort Import Warning", "Icon!")
-        } else {
-            KardenMsgBox("Failed to export favorites:`n" payload, "Kardenwort Error", 16)
-        }
+    if (payload != "" && (InStr(payload, "ERR_ANKI_NOT_RUNNING") || InStr(payload, "Cannot connect to AnkiConnect"))) {
+        guiObj.FsmMemory["LastError"] := "Anki is closed"
+        UpdateStatus(guiObj, "Anki is closed")
+    } else {
+        guiObj.FsmMemory["LastError"] := "Export failed"
+        UpdateStatus(guiObj, "Export failed")
     }
     UpdateButtonState(guiObj)
 }
@@ -2369,7 +2375,7 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
         seqNum := GetSequenceNumber()
     }
 
-    guiTitle := "[" seqNum "] Kardenwort - " lang " (" textMode ")"
+    guiTitle := "Kardenwort - " lang " (" textMode ")"
 
     ; Create GUI immediately for instant visual responsiveness
     DllCall("shell32\SetCurrentProcessExplicitAppUserModelID", "WStr", "Kardenwort.Window." seqNum)
@@ -2394,7 +2400,7 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
 
     ; Native Footer Buttons
     SaveBtn := MyGui.Add("Text", "x15 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor " Disabled", "Save (Ctrl+S)")
-    UpdateBtn := MyGui.Add("Text", "x114 y615 w100 h30 Center +Border +0x200 +Hidden " G_GuiTextColor, "⟳ Update")
+    UpdateBtn := MyGui.Add("Text", "x114 y615 w100 h30 Center +Border +0x200 +Hidden " G_GuiTextColor, "Update")
     RetextBtn := MyGui.Add("Text", "x224 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Re-text")
     ReprocBtn := MyGui.Add("Text", "x323 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Re-word")
     SendBtn := MyGui.Add("Text", "x433 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
@@ -2528,7 +2534,7 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
             SetLanguage(detectedLang)
             lang := detectedLang
             MyGui.Lang := detectedLang
-            MyGui.Title := "[" seqNum "] Kardenwort - " lang " (" textMode ")"
+            MyGui.Title := "Kardenwort - " lang " (" textMode ")"
             UpdateStatus(MyGui, "Invoking backend analysis (" lang ")...")
             cmd := BuildRenderCmd(lang, false)
             try {
@@ -2705,13 +2711,15 @@ UpdateButtonState(guiObj) {
     } else if (guiObj.FsmMemory.Has("ActiveRetext") && guiObj.FsmMemory["ActiveRetext"]) {
         UpdateStatus(guiObj, "Re-texting...")
     } else if (guiObj.FsmMemory.Has("LastError") && guiObj.FsmMemory["LastError"] != "") {
-        UpdateStatus(guiObj, "⚠️ " . guiObj.FsmMemory["LastError"])
+        UpdateStatus(guiObj, guiObj.FsmMemory["LastError"])
     } else if (isDirty && pending) {
         UpdateStatus(guiObj, "Unsaved edits + update ready")
     } else if (isDirty && !pending) {
         UpdateStatus(guiObj, "Unsaved edits")
     } else if (!isDirty && pending) {
-        UpdateStatus(guiObj, "Data ready. Click ⟳ to update.")
+        UpdateStatus(guiObj, "Data ready. Click Update to refresh.")
+    } else if (guiObj.HasProp("CurrentStatusText") && guiObj.CurrentStatusText != "" && guiObj.CurrentStatusText != "Ready") {
+        UpdateStatus(guiObj, guiObj.CurrentStatusText)
     } else {
         UpdateStatus(guiObj, "Ready")
     }
@@ -3551,15 +3559,11 @@ UpdateStatus(guiObj, text) {
     } catch {
         fileName := ""
     }
-    prefix := ""
-    if (guiObj.HasProp("SeqNum") && guiObj.SeqNum != "") {
-        prefix := "[" guiObj.SeqNum "] "
-    }
     try {
         if (fileName != "") {
-            guiObj.Title := prefix "Kardenwort - " guiObj.Lang " (" guiObj.TextMode ") - " fileName " - " text
+            guiObj.Title := "Kardenwort - " guiObj.Lang " (" guiObj.TextMode ") - " fileName " - " text
         } else {
-            guiObj.Title := prefix "Kardenwort - " guiObj.Lang " (" guiObj.TextMode ") - " text
+            guiObj.Title := "Kardenwort - " guiObj.Lang " (" guiObj.TextMode ") - " text
         }
     } catch {
         ; Ignore if window is destroyed
