@@ -1137,8 +1137,8 @@ ActionExportStartApply(guiObj, payload) {
     return FSM_EXPORTING
 }
 ActionExportStartIO(guiObj, payload) {
-    if (G_FsmTestMode) {
-        return
+    if (guiObj.FsmMemory.Has("LastError")) {
+        guiObj.FsmMemory.Delete("LastError")
     }
     UpdateStatus(guiObj, "Exporting favorites...")
     jsonStr := guiObj.FsmMemory["ExportSelection"]
@@ -1228,63 +1228,115 @@ StartImportWatcher(guiObj, logPath, pid := 0) {
         }
         
         elapsed := A_TickCount - startTime
+        isProcessAlive := (pid > 0 && ProcessExist(pid))
         
         if (FileExist(logPath)) {
             try {
                 content := FileRead(logPath, "UTF-8")
-                if (InStr(content, "ERR_ANKI_NOT_RUNNING") || InStr(content, "Cannot connect to AnkiConnect")) {
-                    SetTimer(watcherFn, 0)
-                    guiObj.FsmMemory["LastError"] := "Anki is closed"
-                    UpdateStatus(guiObj, "Anki is closed")
-                    UpdateButtonState(guiObj)
-                    return
-                }
-                if (InStr(content, '"status": "success"') || InStr(content, '"status":"success"') || InStr(content, "[SUCCESS]")) {
-                    SetTimer(watcherFn, 0)
-                    if (guiObj.FsmMemory.Has("LastError")) {
-                        guiObj.FsmMemory.Delete("LastError")
+                if (content != "") {
+                    lines := StrSplit(content, "`n", "`r")
+                    ; Scan backwards from the latest line to find the most recent status entry
+                    loop lines.Length {
+                        idx := lines.Length - A_Index + 1
+                        line := Trim(lines[idx])
+                        if (line == "")
+                            continue
+                        
+                        ; 1. Check for success in the latest entries
+                        if (InStr(line, '"status": "success"') || InStr(line, '"status":"success"') || InStr(line, "[SUCCESS]")) {
+                            SetTimer(watcherFn, 0)
+                            if (guiObj.FsmMemory.Has("LastError")) {
+                                guiObj.FsmMemory.Delete("LastError")
+                            }
+                            cardCount := ""
+                            if RegExMatch(line, '"cards_imported":\s*(\d+)', &cMatch) {
+                                cardCount := cMatch[1]
+                            } else if RegExMatch(content, '"cards_imported":\s*(\d+)', &cMatch) {
+                                cardCount := cMatch[1]
+                            }
+                            statusText := cardCount != "" ? "Imported " cardCount " cards to Anki" : "Anki import complete"
+                            guiObj.CurrentStatusText := statusText
+                            UpdateStatus(guiObj, statusText)
+                            UpdateButtonState(guiObj)
+                            return
+                        }
+                        
+                        ; 2. Check for Anki not running error in the latest entries
+                        if (InStr(line, "ERR_ANKI_NOT_RUNNING") || InStr(line, "Cannot connect to AnkiConnect")) {
+                            if (isProcessAlive && elapsed < 20000) {
+                                break ; Process is still running, keep polling
+                            }
+                            SetTimer(watcherFn, 0)
+                            guiObj.FsmMemory["LastError"] := "Anki is closed"
+                            UpdateStatus(guiObj, "Anki is closed")
+                            UpdateButtonState(guiObj)
+                            return
+                        }
+                        
+                        ; 3. Check for general failure error in the latest entries
+                        if (InStr(line, "ERR_") || InStr(line, "[ERROR]")) {
+                            if (isProcessAlive && elapsed < 20000) {
+                                break ; Process is still running, keep polling
+                            }
+                            SetTimer(watcherFn, 0)
+                            errMsg := "Anki import failed"
+                            if RegExMatch(line, '"message":\s*"([^"]+)"', &mMatch) {
+                                errMsg := StrReplace(mMatch[1], "\\", "\")
+                            }
+                            guiObj.FsmMemory["LastError"] := errMsg
+                            UpdateStatus(guiObj, errMsg)
+                            UpdateButtonState(guiObj)
+                            return
+                        }
                     }
-                    cardCount := ""
-                    if RegExMatch(content, '"cards_imported":\s*(\d+)', &cMatch) {
-                        cardCount := cMatch[1]
-                    }
-                    statusText := cardCount != "" ? "Imported " cardCount " cards to Anki" : "Anki import complete"
-                    UpdateStatus(guiObj, statusText)
-                    UpdateButtonState(guiObj)
-                    return
-                }
-                if (InStr(content, "ERR_") || InStr(content, "[ERROR]")) {
-                    SetTimer(watcherFn, 0)
-                    errMsg := "Anki import failed"
-                    if RegExMatch(content, '"message":\s*"([^"]+)"', &mMatch) {
-                        errMsg := StrReplace(mMatch[1], "\\", "\")
-                    }
-                    guiObj.FsmMemory["LastError"] := errMsg
-                    UpdateStatus(guiObj, errMsg)
-                    UpdateButtonState(guiObj)
-                    return
                 }
             } catch {
             }
         }
         
-        ; Stop watching after 20 seconds or if process exited
-        if (elapsed > 20000 || (pid > 0 && elapsed > 4000 && !ProcessExist(pid))) {
+        ; Stop watching after 20 seconds or if process exited and produced no terminal status
+        if (elapsed > 20000 || (pid > 0 && elapsed > 2000 && !isProcessAlive)) {
             SetTimer(watcherFn, 0)
             if (FileExist(logPath)) {
                 try {
                     content := FileRead(logPath, "UTF-8")
-                    if (InStr(content, "ERR_ANKI_NOT_RUNNING") || InStr(content, "Cannot connect to AnkiConnect")) {
-                        guiObj.FsmMemory["LastError"] := "Anki is closed"
-                        UpdateStatus(guiObj, "Anki is closed")
-                        UpdateButtonState(guiObj)
-                        return
-                    }
-                    if (InStr(content, "ERR_") || InStr(content, "[ERROR]")) {
-                        guiObj.FsmMemory["LastError"] := "Anki import failed"
-                        UpdateStatus(guiObj, "Anki import failed")
-                        UpdateButtonState(guiObj)
-                        return
+                    if (content != "") {
+                        lines := StrSplit(content, "`n", "`r")
+                        loop lines.Length {
+                            idx := lines.Length - A_Index + 1
+                            line := Trim(lines[idx])
+                            if (line == "")
+                                continue
+                            
+                            if (InStr(line, '"status": "success"') || InStr(line, '"status":"success"') || InStr(line, "[SUCCESS]")) {
+                                if (guiObj.FsmMemory.Has("LastError")) {
+                                    guiObj.FsmMemory.Delete("LastError")
+                                }
+                                cardCount := ""
+                                if RegExMatch(line, '"cards_imported":\s*(\d+)', &cMatch) {
+                                    cardCount := cMatch[1]
+                                } else if RegExMatch(content, '"cards_imported":\s*(\d+)', &cMatch) {
+                                    cardCount := cMatch[1]
+                                }
+                                statusText := cardCount != "" ? "Imported " cardCount " cards to Anki" : "Anki import complete"
+                                guiObj.CurrentStatusText := statusText
+                                UpdateStatus(guiObj, statusText)
+                                UpdateButtonState(guiObj)
+                                return
+                            }
+                            if (InStr(line, "ERR_ANKI_NOT_RUNNING") || InStr(line, "Cannot connect to AnkiConnect")) {
+                                guiObj.FsmMemory["LastError"] := "Anki is closed"
+                                UpdateStatus(guiObj, "Anki is closed")
+                                UpdateButtonState(guiObj)
+                                return
+                            }
+                            if (InStr(line, "ERR_") || InStr(line, "[ERROR]")) {
+                                guiObj.FsmMemory["LastError"] := "Anki import failed"
+                                UpdateStatus(guiObj, "Anki import failed")
+                                UpdateButtonState(guiObj)
+                                return
+                            }
+                        }
                     }
                 } catch {
                 }
@@ -3056,6 +3108,49 @@ WatchFile(guiObj, Folder := "", Changes := "") {
                 try {
                     currentMTime := FileGetTime(guiObj.TsvPath)
                 } catch {
+                }
+            }
+        }
+    try {
+        if (guiObj.FsmMemory.Has("LastError") && guiObj.FsmMemory["LastError"] == "Anki is closed" && guiObj.HasProp("ZID") && guiObj.ZID != "") {
+            favLogPath := ""
+            candLog := A_ScriptDir "\favorites\" guiObj.ZID "-import.log"
+            if (FileExist(candLog)) {
+                favLogPath := candLog
+            } else if (guiObj.HasProp("TsvPath") && guiObj.TsvPath != "") {
+                SplitPath(guiObj.TsvPath, , &tsvDir)
+                candLog2 := tsvDir "\" guiObj.ZID "-import.log"
+                if (FileExist(candLog2)) {
+                    favLogPath := candLog2
+                }
+            }
+            if (favLogPath != "" && FileExist(favLogPath)) {
+                logContent := FileRead(favLogPath, "UTF-8")
+                if (logContent != "") {
+                    logLines := StrSplit(logContent, "`n", "`r")
+                    loop logLines.Length {
+                        lIdx := logLines.Length - A_Index + 1
+                        lText := Trim(logLines[lIdx])
+                        if (lText == "")
+                            continue
+                        if (InStr(lText, '"status": "success"') || InStr(lText, '"status":"success"') || InStr(lText, "[SUCCESS]")) {
+                            guiObj.FsmMemory.Delete("LastError")
+                            cCount := ""
+                            if RegExMatch(lText, '"cards_imported":\s*(\d+)', &cm) {
+                                cCount := cm[1]
+                            } else if RegExMatch(logContent, '"cards_imported":\s*(\d+)', &cm) {
+                                cCount := cm[1]
+                            }
+                            sText := cCount != "" ? "Imported " cCount " cards to Anki" : "Anki import complete"
+                            guiObj.CurrentStatusText := sText
+                            UpdateStatus(guiObj, sText)
+                            UpdateButtonState(guiObj)
+                            break
+                        }
+                        if (InStr(lText, "ERR_") || InStr(lText, "[ERROR]")) {
+                            break
+                        }
+                    }
                 }
             }
         }
