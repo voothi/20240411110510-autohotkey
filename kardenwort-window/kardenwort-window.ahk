@@ -2909,13 +2909,13 @@ WatchFile(guiObj, Folder := "", Changes := "") {
         return
     }
 
+    currentMTime := ""
     try {
-        if (!FileExist(guiObj.TsvPath)) {
-            return
+        if (guiObj.HasProp("TsvPath") && guiObj.TsvPath != "" && FileExist(guiObj.TsvPath)) {
+            currentMTime := FileGetTime(guiObj.TsvPath)
         }
-        currentMTime := FileGetTime(guiObj.TsvPath)
     } catch {
-        return
+        currentMTime := ""
     }
 
     try {
