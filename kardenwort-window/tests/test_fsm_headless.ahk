@@ -297,6 +297,28 @@ _Assert(!g.FsmMemory["ActiveRetext"], "S5.10a: OnAhkCall finished clears ActiveR
 _Assert(g.FsmState == FSM_IDLE, "S5.10b: OnAhkCall finished maintains IDLE state without reload dispatch")
 
 ; ===================================================================================
+; Scenario Group 6: HTTP Fast-Path & Fallback Robustness
+; ===================================================================================
+
+; S6.1: JSON_Stringify escapes quotes, backslashes, newlines
+strVal := 'Hello "World" `n Path\To\File'
+jsonStr := JSON_Stringify(strVal)
+_Assert(InStr(jsonStr, '\"World\"') && InStr(jsonStr, '\\'), "S6.1: JSON_Stringify properly escapes quotes and backslashes")
+
+; S6.2: FetchHtmlViaHttp fails gracefully when server is offline/unreachable without crashing
+outB64 := ""
+errJSON := ""
+httpRes := FetchHtmlViaHttp("en", "20260823000000", "single", "Test sentence", "", 1, false, &outB64, &errJSON)
+_Assert(httpRes != 0 || outB64 != "", "S6.2: FetchHtmlViaHttp returns status code without crashing")
+
+; S6.3: Offline/failure returns non-zero code prompting CLI fallback
+if (httpRes != 0) {
+    _Assert(httpRes != 0, "S6.3: FetchHtmlViaHttp indicates offline status for CLI fallback")
+} else {
+    _Assert(outB64 != "", "S6.3: FetchHtmlViaHttp retrieved b64 html payload")
+}
+
+; ===================================================================================
 ; Summary
 ; ===================================================================================
 

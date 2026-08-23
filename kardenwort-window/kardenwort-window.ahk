@@ -1879,6 +1879,55 @@ SendControllerRequest(endpoint, payloadJson, &responseJson, timeoutSec := 3) {
     return false
 }
 
+FetchHtmlViaHttp(targetLang, zid, textMode, sourceText, tsvPath, seqNum, isBypass, &outB64, &errJSON) {
+    global G_ServerHost, G_ServerPort, G_ControllerPort, G_ServerApiKey, G_Theme, G_DefaultZoom, G_SplitGapLimit
+    host := G_ServerHost ? G_ServerHost : "127.0.0.1"
+    port := G_ControllerPort ? G_ControllerPort : (G_ServerPort ? G_ServerPort : 18335)
+    url := "http://" . host . ":" . port . "/api/v1/render"
+
+    payload := "{"
+        . '"session_zid": ' JSON_Stringify(zid)
+        . ', "zid": ' JSON_Stringify(zid)
+        . ', "language": ' JSON_Stringify(targetLang)
+        . ', "text_mode": ' JSON_Stringify(textMode)
+        . ', "theme": ' JSON_Stringify(G_Theme)
+        . ', "zoom": ' JSON_Stringify(G_DefaultZoom)
+        . ', "seq_num": ' (seqNum ? seqNum : 1)
+        . ', "split_gap_limit": ' (G_SplitGapLimit ? G_SplitGapLimit : 60)
+        . ', "bypass_lang_check": ' (isBypass ? "true" : "false")
+        . (tsvPath != "" ? ', "tsv": ' JSON_Stringify(tsvPath) : '')
+        . (sourceText != "" ? ', "text": ' JSON_Stringify(sourceText) : '')
+        . "}"
+
+    try {
+        http := ComObject("WinHttp.WinHttpRequest.5.1")
+        http.Open("POST", url, false)
+        http.SetTimeouts(500, 500, 3000, 3000)
+        if (G_ServerApiKey != "") {
+            http.SetRequestHeader("X-API-Token", G_ServerApiKey)
+        }
+        http.SetRequestHeader("Content-Type", "application/json; charset=utf-8")
+        http.Send(payload)
+
+        if (http.Status == 200) {
+            resp := http.ResponseText
+            if RegExMatch(resp, '"html_b64":\s*"([^"]+)"', &mB64) {
+                outB64 := mB64[1]
+                return 0
+            } else if RegExMatch(resp, '"html":\s*"([^"]+)"', &mHtml) {
+                outB64 := mHtml[1]
+                return 0
+            }
+        } else if (http.Status >= 400) {
+            errJSON := http.ResponseText
+            return http.Status
+        }
+    } catch as e {
+        errJSON := "HTTP error: " e.Message
+    }
+    return -1
+}
+
 JSON_Stringify(val) {
     str := String(val)
     str := StrReplace(str, "\", "\\")
@@ -2612,10 +2661,20 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
     exitCode := 1
     outB64 := ""
     errJSON := ""
-    try {
-        exitCode := RunSilent(cmd, &outB64, &errJSON)
-    } catch as e {
-        errJSON := "RunSilent threw an exception: " e.Message
+
+    ; Try fast HTTP in-memory path first
+    httpExit := FetchHtmlViaHttp(lang, ZID, textMode, sourceText, tsvPath, seqNum, false, &outB64, &errJSON)
+    if (httpExit == 0) {
+        exitCode := 0
+    } else if (httpExit > 0 && InStr(errJSON, "LANGUAGE_MISMATCH")) {
+        exitCode := httpExit
+    } else {
+        ; Graceful fallback to CLI RunSilent
+        try {
+            exitCode := RunSilent(cmd, &outB64, &errJSON)
+        } catch as e {
+            errJSON := "RunSilent threw an exception: " e.Message
+        }
     }
 
     if (exitCode != 0 && InStr(errJSON, "LANGUAGE_MISMATCH")) {
@@ -2625,13 +2684,13 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
             detectedLang := mDet[1]
         if RegExMatch(errJSON, '"expected_language":\s*"([^"]+)"', &mExp)
             expectedLang := mExp[1]
-        
+
         detLabel := langNames.Has(detectedLang) ? langNames[detectedLang] " (" detectedLang ")" : detectedLang
         expLabel := langNames.Has(expectedLang) ? langNames[expectedLang] " (" expectedLang ")" : expectedLang
         detName := langNames.Has(detectedLang) ? langNames[detectedLang] : detectedLang
 
         promptMsg := "The text appears to be " detLabel ", but the active profile is " expLabel ".`n`nSwitch language to " detName "?"
-        
+
         choice := KardenMsgBox(promptMsg, "Language Verification", "YesNoCancel")
         if (choice == "Yes" && detectedLang != "") {
             SetLanguage(detectedLang)
@@ -2639,18 +2698,28 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
             MyGui.Lang := detectedLang
             MyGui.Title := "Kardenwort - " lang " (" textMode ")"
             UpdateStatus(MyGui, "Invoking backend analysis (" lang ")...")
-            cmd := BuildRenderCmd(lang, false)
-            try {
-                exitCode := RunSilent(cmd, &outB64, &errJSON)
-            } catch as e {
-                errJSON := "Execution failed: " e.Message
+            httpExit := FetchHtmlViaHttp(lang, ZID, textMode, sourceText, tsvPath, seqNum, false, &outB64, &errJSON)
+            if (httpExit == 0) {
+                exitCode := 0
+            } else {
+                cmd := BuildRenderCmd(lang, false)
+                try {
+                    exitCode := RunSilent(cmd, &outB64, &errJSON)
+                } catch as e {
+                    errJSON := "Execution failed: " e.Message
+                }
             }
         } else if (choice == "No") {
-            cmdBypass := BuildRenderCmd(lang, true)
-            try {
-                exitCode := RunSilent(cmdBypass, &outB64, &errJSON)
-            } catch as e {
-                errJSON := "Bypass execution failed: " e.Message
+            httpExit := FetchHtmlViaHttp(lang, ZID, textMode, sourceText, tsvPath, seqNum, true, &outB64, &errJSON)
+            if (httpExit == 0) {
+                exitCode := 0
+            } else {
+                cmdBypass := BuildRenderCmd(lang, true)
+                try {
+                    exitCode := RunSilent(cmdBypass, &outB64, &errJSON)
+                } catch as e {
+                    errJSON := "Bypass execution failed: " e.Message
+                }
             }
         } else {
             try FileDelete(tmpTextFile)
