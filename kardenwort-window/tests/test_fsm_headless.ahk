@@ -303,7 +303,8 @@ _Assert(g.FsmState == FSM_IDLE, "S5.10b: OnAhkCall finished maintains IDLE state
 ; S6.1: JSON_Stringify escapes quotes, backslashes, newlines
 strVal := 'Hello "World" `n Path\To\File'
 jsonStr := JSON_Stringify(strVal)
-_Assert(InStr(jsonStr, '\"World\"') && InStr(jsonStr, '\\'), "S6.1: JSON_Stringify properly escapes quotes and backslashes")
+_Assert(InStr(jsonStr, '\"World\"') && InStr(jsonStr, '\\'),
+"S6.1: JSON_Stringify properly escapes quotes and backslashes")
 
 ; S6.2: FetchHtmlViaHttp fails gracefully when server is offline/unreachable without crashing
 outB64 := ""
