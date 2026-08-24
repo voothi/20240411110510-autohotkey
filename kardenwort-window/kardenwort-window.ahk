@@ -1093,16 +1093,26 @@ ActionRetextStartIO(guiObj, payload) {
         if RegExMatch(outStr, '"message":\s*"([^"]+)"', &match) {
             msgStr := StrReplace(match[1], "\\", "\")
         }
-        FsmDispatch(guiObj, EV_RETEXT_DONE, Map("status", statusStr, "message", msgStr))
+        retextStarted := false
+        if (RegExMatch(outStr, '"retext_started":\s*true') || InStr(outStr, '"retext_started": true')) {
+            retextStarted := true
+        }
+        FsmDispatch(guiObj, EV_RETEXT_DONE, Map("status", statusStr, "message", msgStr, "retext_started", retextStarted))
     } else {
         FsmDispatch(guiObj, EV_RETEXT_FAILED, errJSON)
     }
 }
 
 ActionRetextDoneApply(guiObj, payload) {
-    if (Type(payload) == "Map" && payload.Has("status")) {
-        if (payload["status"] == "skipped" || payload["status"] == "success" || payload["status"] == "completed") {
-            guiObj.FsmMemory["ActiveRetext"] := false
+    if (Type(payload) == "Map") {
+        if (payload.Has("status")) {
+            if (payload["status"] == "skipped" || payload["status"] == "success" || payload["status"] == "completed") {
+                guiObj.FsmMemory["ActiveRetext"] := false
+            } else if (payload["status"] == "started" || (payload.Has("retext_started") && payload["retext_started"])) {
+                guiObj.FsmMemory["ActiveRetext"] := true
+            }
+        } else if (payload.Has("retext_started") && payload["retext_started"]) {
+            guiObj.FsmMemory["ActiveRetext"] := true
         }
     }
     return FSM_IDLE
@@ -1114,11 +1124,14 @@ ActionRetextDoneIO(guiObj, payload) {
 
     statusStr := ""
     msgStr := "Retext skipped."
+    retextStarted := false
     if (Type(payload) == "Map") {
         if (payload.Has("status"))
             statusStr := payload["status"]
         if (payload.Has("message"))
             msgStr := payload["message"]
+        if (payload.Has("retext_started") && payload["retext_started"])
+            retextStarted := true
     }
 
     if (statusStr == "skipped") {
@@ -1137,8 +1150,8 @@ ActionRetextDoneIO(guiObj, payload) {
         guiObj.CurrentStatusText := "Re-text complete"
         UpdateStatus(guiObj, "Re-text complete")
     } else {
-        guiObj.CurrentStatusText := "Re-text started"
-        UpdateStatus(guiObj, "Re-text started")
+        guiObj.CurrentStatusText := "Re-texting..."
+        UpdateStatus(guiObj, "Re-texting...")
     }
     UpdateButtonState(guiObj)
 }
@@ -2812,6 +2825,7 @@ OnAhkCall(guiObj, action, value) {
         if (guiObj.FsmMemory.Has("ActiveReprocess")) {
             guiObj.FsmMemory["ActiveReprocess"] := false
         }
+        guiObj.CurrentStatusText := "Ready"
         UpdateButtonState(guiObj)
 
 
@@ -3204,6 +3218,11 @@ WatchFile(guiObj, Folder := "", Changes := "") {
                                 errMsg := "Re-word failed: " . errMsg
                             }
                         }
+                        if (guiObj.FsmMemory.Has("ActiveRetext") && guiObj.FsmMemory["ActiveRetext"]) {
+                            if (!InStr(errMsg, "Re-text failed")) {
+                                errMsg := "Re-text failed: " . errMsg
+                            }
+                        }
                         guiObj.FsmMemory["LastError"] := errMsg
                     } else {
                         if (guiObj.FsmMemory.Has("LastError")) {
@@ -3213,13 +3232,13 @@ WatchFile(guiObj, Folder := "", Changes := "") {
 
                     if (guiObj.FsmMemory.Has("ActiveRetext") && guiObj.FsmMemory["ActiveRetext"]) {
                         guiObj.FsmMemory["ActiveRetext"] := false
-                        guiObj.CurrentStatusText := "Re-text complete"
-                        UpdateStatus(guiObj, "Re-text complete")
+                        guiObj.CurrentStatusText := "Ready"
+                        UpdateStatus(guiObj, "Ready")
                     }
                     if (guiObj.FsmMemory.Has("ActiveReprocess") && guiObj.FsmMemory["ActiveReprocess"]) {
                         guiObj.FsmMemory["ActiveReprocess"] := false
-                        guiObj.CurrentStatusText := "Re-process complete"
-                        UpdateStatus(guiObj, "Re-process complete")
+                        guiObj.CurrentStatusText := "Ready"
+                        UpdateStatus(guiObj, "Ready")
                     }
                     UpdateButtonState(guiObj)
                 } else if (guiObj.HasProp("TimerWorkerWatchdog") && guiObj.TimerWorkerWatchdog) {

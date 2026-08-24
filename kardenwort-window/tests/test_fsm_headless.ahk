@@ -153,6 +153,20 @@ _Assert(g.FsmState == FSM_RETEXTING, "S3.4b: Second RETEXT_CLICK accepted from I
 FsmDispatch(g, EV_RETEXT_DONE, Map("status", "success"))
 _Assert(g.FsmState == FSM_IDLE, "S3.4c: Second RETEXT_DONE resolves cleanly to IDLE")
 
+; S3.5: Worker retext_started payload sets ActiveRetext=true and shows "Re-texting..."
+g := MakeMockGui()
+g.FsmState := FSM_RETEXTING
+FsmDispatch(g, EV_RETEXT_DONE, Map("retext_started", true))
+_Assert(g.FsmState == FSM_IDLE, "S3.5a: EV_RETEXT_DONE with retext_started resolves to IDLE")
+_Assert(g.FsmMemory["ActiveRetext"] == true, "S3.5b: ActiveRetext remains true during background worker execution")
+UpdateButtonState(g)
+_Assert(g.CurrentStatusText == "Re-texting...", "S3.5c: UpdateButtonState displays 'Re-texting...' while ActiveRetext is active")
+
+; S3.6: Retext completion clears ActiveRetext and restores title to Ready
+OnAhkCall(g, "finished", "")
+_Assert(g.FsmMemory["ActiveRetext"] == false, "S3.6a: OnAhkCall finished clears ActiveRetext")
+_Assert(g.CurrentStatusText == "Ready", "S3.6b: Window status restores to 'Ready' on retext finish")
+
 ; ===================================================================================
 ; Scenario Group 4: EV_EXPORT_FAILED — Export failure edge cases
 ; ===================================================================================
