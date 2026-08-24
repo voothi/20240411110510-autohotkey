@@ -882,6 +882,7 @@ ActionReprocessStartIO(guiObj, payload) {
         guiObj.CurrentStatusText := "Re-process complete"
         UpdateStatus(guiObj, "Re-process complete")
         FsmDispatch(guiObj, EV_REPROCESS_DONE, Map("status", "success", "message", "Re-process complete"))
+        WatchFile(guiObj)
         return
     }
 
@@ -908,6 +909,7 @@ ActionReprocessStartIO(guiObj, payload) {
             msgStr := StrReplace(match[1], "\\", "\")
         }
         FsmDispatch(guiObj, EV_REPROCESS_DONE, Map("status", statusStr, "message", msgStr))
+        WatchFile(guiObj)
     } else {
         FsmDispatch(guiObj, EV_REPROCESS_FAILED, errJSON)
     }
@@ -950,6 +952,7 @@ ActionReprocessDoneIO(guiObj, payload) {
     } else if (statusStr == "success" || statusStr == "completed") {
         guiObj.CurrentStatusText := "Re-process complete"
         UpdateStatus(guiObj, "Re-process complete")
+        WatchFile(guiObj)
     } else {
         guiObj.CurrentStatusText := "Re-processing started"
         UpdateStatus(guiObj, "Re-processing started")
