@@ -348,7 +348,7 @@ ActionRenderDoneIO(guiObj, payload) {
         } else {
             UpdateStatus(guiObj, "Analysis loaded successfully")
             if (!guiObj.HasOwnProp("TimerClearStatus")) {
-                guiObj.TimerClearStatus := UpdateButtonState.Bind(guiObj)
+                guiObj.TimerClearStatus := () => (guiObj.CurrentStatusText := "", UpdateButtonState(guiObj))
             }
             SetTimer(guiObj.TimerClearStatus, -2500)
         }
@@ -368,6 +368,7 @@ ActionRenderDoneIO(guiObj, payload) {
     } catch as e {
         UpdateStatus(guiObj, "Metadata binding failed: " e.Message)
     }
+    UpdateButtonState(guiObj)
 }
 
 ActionRenderFailedGuard(guiObj, payload) {
@@ -3446,10 +3447,11 @@ LayoutButtons(thisGui, Width, Height) {
         pos := btnPositions[i]
         btnY := Height - (totalRows - pos.row + 1) * 40
         try {
-            btn.Visible := false
             btn.Move(pos.x, btnY)
-            btn.Visible := true
         }
+    }
+    try {
+        WinRedraw(thisGui.Hwnd)
     }
 }
 
