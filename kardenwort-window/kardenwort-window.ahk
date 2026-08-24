@@ -3134,13 +3134,44 @@ WatchFile(guiObj, Folder := "", Changes := "") {
     }
 
     try {
+        candidateDirs := []
         updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
-        if DirExist(updatesDir) {
-            jsFiles := []
-            Loop Files, updatesDir "\*.js"
-            {
-                jsFiles.Push(A_LoopFileFullPath)
+        if (updatesDir != "" && DirExist(updatesDir)) {
+            candidateDirs.Push(updatesDir)
+        }
+
+        if (guiObj.HasProp("ZID") && guiObj.ZID != "") {
+            tsvDir := ""
+            if (guiObj.HasProp("TsvPath") && guiObj.TsvPath != "") {
+                SplitPath(guiObj.TsvPath, , &tsvDir)
             }
+            if (tsvDir != "" && DirExist(tsvDir)) {
+                Loop Files, tsvDir "\" guiObj.ZID "*.updates", "D"
+                {
+                    matchedDir := A_LoopFileFullPath
+                    isAlreadyAdded := false
+                    for index, d in candidateDirs {
+                        if (d = matchedDir) {
+                            isAlreadyAdded := true
+                            break
+                        }
+                    }
+                    if (!isAlreadyAdded) {
+                        candidateDirs.Push(matchedDir)
+                    }
+                }
+            }
+        }
+
+        jsFiles := []
+        for index, uDir in candidateDirs {
+            if (DirExist(uDir)) {
+                Loop Files, uDir "\*.js"
+                {
+                    jsFiles.Push(A_LoopFileFullPath)
+                }
+            }
+        }
             
             if (jsFiles.Length > 0) {
                 SortedFiles := ""
@@ -3251,7 +3282,6 @@ WatchFile(guiObj, Folder := "", Changes := "") {
                 } catch {
                 }
             }
-        }
     } catch {
     }
 
