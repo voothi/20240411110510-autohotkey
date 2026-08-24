@@ -84,6 +84,43 @@ EscapeCmdArg(str) {
 
     return '"' . result . '"'
 }
+
+FormatErrorLog(rawLog) {
+    if (rawLog == "")
+        return "No error output captured."
+
+    ; Extract message from JSON envelope if present: "message": "..."
+    if RegExMatch(rawLog, 's)"message"\s*:\s*"((?:[^"\\]|\\.)*)"', &match) {
+        msg := match[1]
+        msg := StrReplace(msg, '\"', '"')
+        msg := StrReplace(msg, '\n', "`n")
+        msg := StrReplace(msg, '\r', "")
+        msg := StrReplace(msg, '\t', "`t")
+        msg := StrReplace(msg, '\\', '\')
+
+        ; Decode Unicode escape sequences (\uXXXX)
+        pos := 1
+        while RegExMatch(msg, '\\u([0-9a-fA-F]{4})', &uMatch, pos) {
+            codePoint := Integer("0x" . uMatch[1])
+            char := Chr(codePoint)
+            msg := StrReplace(msg, uMatch[0], char, false, 1)
+            pos := InStr(msg, char) + 1
+        }
+        return msg
+    }
+
+    ; Decode Unicode escapes in raw string if no JSON envelope matched
+    cleanLog := rawLog
+    pos := 1
+    while RegExMatch(cleanLog, '\\u([0-9a-fA-F]{4})', &uMatch, pos) {
+        codePoint := Integer("0x" . uMatch[1])
+        char := Chr(codePoint)
+        cleanLog := StrReplace(cleanLog, uMatch[0], char, false, 1)
+        pos := InStr(cleanLog, char) + 1
+    }
+    return cleanLog
+}
+
 GetDeepLKey() {
     ; 1. Try secure settings
     Salt := IniRead(SettingsFile, "Security", "Salt", "")
@@ -297,7 +334,7 @@ TranslateSelection(SourceLang, TargetLang) {
         }
 
         if (ExitCode != 0) {
-            ErrorLog := FileExist(ErrorFile) ? Trim(FileRead(ErrorFile, "UTF-8")) : "No error output captured."
+            ErrorLog := FileExist(ErrorFile) ? FormatErrorLog(Trim(FileRead(ErrorFile, "UTF-8"))) : "No error output captured."
             AccumulatedErrors .= "[" . ProviderName . " (Exit Code " . ExitCode . ")]:`n" . ErrorLog . "`n`n"
             if FileExist(OutputFile)
                 FileDelete OutputFile

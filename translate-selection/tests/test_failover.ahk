@@ -129,6 +129,45 @@ AssertEqual("Cycling 3rd press wraps to 1", MockSession.CurrentProvider, 1)
 c4 := SimulateFailover("^!F2", "different word", MockBehaviors1)
 AssertEqual("New text resets provider", MockSession.CurrentProvider, 1)
 
+; 5. Error Log Formatting & JSON / Unicode decoding
+FormatErrorLog(rawLog) {
+    if (rawLog == "")
+        return "No error output captured."
+
+    if RegExMatch(rawLog, 's)"message"\s*:\s*"((?:[^"\\]|\\.)*)"', &match) {
+        msg := match[1]
+        msg := StrReplace(msg, '\"', '"')
+        msg := StrReplace(msg, '\n', "`n")
+        msg := StrReplace(msg, '\r', "")
+        msg := StrReplace(msg, '\t', "`t")
+        msg := StrReplace(msg, '\\', '\')
+
+        pos := 1
+        while RegExMatch(msg, '\\u([0-9a-fA-F]{4})', &uMatch, pos) {
+            codePoint := Integer("0x" . uMatch[1])
+            char := Chr(codePoint)
+            msg := StrReplace(msg, uMatch[0], char, false, 1)
+            pos := InStr(msg, char) + 1
+        }
+        return msg
+    }
+
+    cleanLog := rawLog
+    pos := 1
+    while RegExMatch(cleanLog, '\\u([0-9a-fA-F]{4})', &uMatch, pos) {
+        codePoint := Integer("0x" . uMatch[1])
+        char := Chr(codePoint)
+        cleanLog := StrReplace(cleanLog, uMatch[0], char, false, 1)
+        pos := InStr(cleanLog, char) + 1
+    }
+    return cleanLog
+}
+
+sampleJson := 'Attempt 1 failed: TransientResponseError. Retrying in 2.70s...`n{"status": "error", "message": "Google translation failed: \u0414\u043e\u0431\u0430\u0432\u044c --> No translation found."}'
+formattedErr := FormatErrorLog(sampleJson)
+AssertEqual("FormatErrorLog decodes Unicode Cyrillic", InStr(formattedErr, "Добавь") > 0, true)
+AssertEqual("FormatErrorLog extracts clean message", InStr(formattedErr, "Attempt 1 failed") == 0, true)
+
 ; --- REPORT ---
 ResultMsg := "Test Results: " . PassedTests . "/" . TotalTests . " Passed"
 if (Failures != "") {
