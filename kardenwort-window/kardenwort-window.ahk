@@ -246,7 +246,6 @@ ActionRenderDoneIO(guiObj, payload) {
     FileAppend(htmlContent, tmpHtmlFile, "UTF-8-RAW")
 
     try {
-        guiObj.wvc.Visible := false
         guiObj.wb.Navigate(tmpHtmlFile)
         while guiObj.wb.ReadyState != 4
             Sleep(10)
@@ -689,17 +688,12 @@ ActionReloadDoneIO(guiObj, payload) {
     FileAppend(htmlContent, tmpHtmlFile, "UTF-8-RAW")
 
     try {
-        guiObj.wvc.Visible := false
         guiObj.wb.Navigate(tmpHtmlFile)
         while guiObj.wb.ReadyState != 4
             Sleep(10)
     } catch {
         try {
             FileDelete(tmpHtmlFile)
-        } catch {
-        }
-        try {
-            guiObj.wvc.Visible := true
         } catch {
         }
         return
@@ -2482,8 +2476,21 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
     }
     ZID := presetZID != "" ? presetZID : A_Now
 
+    local seqNum
+    global G_OverrideSeqNum
+    if (G_OverrideSeqNum != "") {
+        seqNum := G_OverrideSeqNum
+        G_OverrideSeqNum := ""
+        try {
+            RegWrite(seqNum, "REG_DWORD", "HKEY_CURRENT_USER\Software\Kardenwort", "WindowCount")
+        } catch {
+        }
+    } else {
+        seqNum := GetSequenceNumber()
+    }
+
     global G_ActiveWindows
-    sessionID := tsvPath != "" ? tsvPath : ZID
+    sessionID := (tsvPath != "" ? tsvPath : ZID) . "#" . seqNum
     if (G_ActiveWindows.Has(sessionID)) {
         hwnd := G_ActiveWindows[sessionID]
         if WinExist("ahk_id " hwnd) {
@@ -2527,19 +2534,6 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
     }
 
     lang := G_CurrentLang
-
-    local seqNum
-    global G_OverrideSeqNum
-    if (G_OverrideSeqNum != "") {
-        seqNum := G_OverrideSeqNum
-        G_OverrideSeqNum := ""
-        try {
-            RegWrite(seqNum, "REG_DWORD", "HKEY_CURRENT_USER\Software\Kardenwort", "WindowCount")
-        } catch {
-        }
-    } else {
-        seqNum := GetSequenceNumber()
-    }
 
     guiTitle := "Kardenwort - " lang " (" textMode ")"
 
@@ -3317,13 +3311,21 @@ GuiClose(thisGui) {
         } catch {
         }
     }
-    if (G_CloseDescendantsOnParentClose && thisGui.HasProp("Children")) {
+    if (G_CloseDescendantsOnParentClose && thisGui.HasProp("Children") && !(thisGui.HasProp("IsStub") && thisGui.IsStub)) {
         for childSessionID in thisGui.Children {
             try {
                 if (G_ActiveWindows.Has(childSessionID)) {
                     childHwnd := G_ActiveWindows[childSessionID]
                     if WinExist("ahk_id " childHwnd) {
                         WinClose("ahk_id " childHwnd)
+                    }
+                } else {
+                    for actKey, actHwnd in G_ActiveWindows {
+                        if (InStr(actKey, childSessionID . "#") == 1) {
+                            if WinExist("ahk_id " actHwnd) {
+                                WinClose("ahk_id " actHwnd)
+                            }
+                        }
                     }
                 }
             } catch {
