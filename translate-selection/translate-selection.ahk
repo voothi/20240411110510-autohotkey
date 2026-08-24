@@ -84,7 +84,6 @@ EscapeCmdArg(str) {
 
     return '"' . result . '"'
 }
-
 GetDeepLKey() {
     ; 1. Try secure settings
     Salt := IniRead(SettingsFile, "Security", "Salt", "")
@@ -118,11 +117,11 @@ GetDeepLKey() {
         return IniRead(LegacyFile, "DeepL", "Key", "")
     }
 
-    MsgBox "DeepL API Key not found.`nPlease run setup-security.ahk to configure secure storage."
     return ""
 }
 
 Providers := [GetGoogleCommand, GetDeepLCommand]
+ProviderNames := ["Google", "DeepL"]
 
 class TranslationSession {
     static SourceText := ""
@@ -212,143 +211,193 @@ TranslateSelection(SourceLang, TargetLang) {
     ; Check if Advanced Tokenization is enabled in Settings
     UseTokens := IniRead(SettingsFile, "Settings", "UseTokens", "false")
 
-    if (UseTokens == "true" or UseTokens == "1") {
-        ; PHASE 1: Collision Protection (Literal Escaping)
-        ; Protect any literal occurrences of our tokens in the source text
-        ; We remove brackets in the escape version to prevent Phase 3 restoration regex from matching them.
-        ProcessText := StrReplace(ProcessText, "[[S]]", "AHK_ESC_S_")
-        ProcessText := StrReplace(ProcessText, "[[B]]", "AHK_ESC_B_")
-        ProcessText := StrReplace(ProcessText, "[[N]]", "AHK_ESC_N_")
-
-        ; PHASE 2: Functional Tokenization
-        ; Tokenize Double Spaces (Indentation) to separate tokens [[S]]
-        ; We pad tokens with spaces so DeepL treats them as words, not garbage string
-        ProcessText := StrReplace(ProcessText, "  ", " [[S]] ")
-
-        ; DeepL Specific: Tokenize Backslashes to [[B]]
-        ; This avoids ANY command line escaping issues or DeepL escape interpretation.
-        if (TranslationSession.CurrentProvider == 2) {
-            ProcessText := StrReplace(ProcessText, "\", " [[B]] ")
-        }
-
-        if (PreserveNewlines) {
-            ; Use a distinct token which is less likely to be interpreted as grammar
-            ; STRICT PRESERVATION: Do NOT pad with spaces.
-            Token := "[[N]]"
-            ProcessText := StrReplace(ProcessText, "`r`n", Token)
-            ProcessText := StrReplace(ProcessText, "`n", Token)
-            ProcessText := StrReplace(ProcessText, "`r", Token)
-        } else {
-            ; Flatten text for CLI (single line)
-            ProcessText := StrReplace(ProcessText, "`r`n", " ")
-            ProcessText := StrReplace(ProcessText, "`n", " ")
-            ProcessText := StrReplace(ProcessText, "`r", " ")
-        }
-    } else {
-        ; Default/Fallback behavior if tokens are disabled
-        ; Determine if we simply flatten or try to preserve newlines simply?
-        ; For safety with CLI, usually we must flatten if we don't have a token strategy.
-        ProcessText := StrReplace(ProcessText, "`r`n", " ")
-        ProcessText := StrReplace(ProcessText, "`n", " ")
-        ProcessText := StrReplace(ProcessText, "`r", " ")
-    }
-
-    ; Quote escaping is now handled by EscapeCmdArg in the command generator
-
     ; Temporary file for capturing output
     OutputFile := A_Temp . "\ahk_translate_out.txt"
-    if FileExist(OutputFile)
-        FileDelete OutputFile
-
     ErrorFile := A_Temp . "\ahk_translate_err.txt"
-    if FileExist(ErrorFile)
-        FileDelete ErrorFile
 
-    ; Get command for current provider
-    ProviderFunc := Providers[TranslationSession.CurrentProvider]
-    CommandStr := ProviderFunc(ProcessText, SourceLang, TargetLang, OutputFile, ErrorFile)
+    TotalProviders := Providers.Length
+    StartProvider := TranslationSession.CurrentProvider
+    Success := false
+    AccumulatedErrors := ""
 
-    if (CommandStr == "")
-        return
+    Loop TotalProviders {
+        AttemptIndex := A_Index
+        ProviderIndex := Mod(StartProvider - 1 + (AttemptIndex - 1), TotalProviders) + 1
+        ProviderName := (ProviderIndex <= ProviderNames.Length) ? ProviderNames[ProviderIndex] : ("Provider " . ProviderIndex)
 
-    ; Run the command hidden and check for errors
-    try {
-        ExitCode := RunWait(CommandStr, , "Hide")
-        if (ExitCode != 0) {
-            ErrorLog := FileExist(ErrorFile) ? FileRead(ErrorFile, "UTF-8") : "No error output captured."
-            MsgBox "Translation failed (Exit Code " . ExitCode . "):`n`n" . ErrorLog
+        ; Prepare text specifically for this provider
+        AttemptText := ProcessText
+        if (UseTokens == "true" or UseTokens == "1") {
+            ; PHASE 1: Collision Protection (Literal Escaping)
+            ; Protect any literal occurrences of our tokens in the source text
+            ; We remove brackets in the escape version to prevent Phase 3 restoration regex from matching them.
+            AttemptText := StrReplace(AttemptText, "[[S]]", "AHK_ESC_S_")
+            AttemptText := StrReplace(AttemptText, "[[B]]", "AHK_ESC_B_")
+            AttemptText := StrReplace(AttemptText, "[[N]]", "AHK_ESC_N_")
+
+            ; PHASE 2: Functional Tokenization
+            ; Tokenize Double Spaces (Indentation) to separate tokens [[S]]
+            ; We pad tokens with spaces so DeepL treats them as words, not garbage string
+            AttemptText := StrReplace(AttemptText, "  ", " [[S]] ")
+
+            ; DeepL Specific: Tokenize Backslashes to [[B]]
+            ; This avoids ANY command line escaping issues or DeepL escape interpretation.
+            if (ProviderIndex == 2) {
+                AttemptText := StrReplace(AttemptText, "\", " [[B]] ")
+            }
+
+            if (PreserveNewlines) {
+                ; Use a distinct token which is less likely to be interpreted as grammar
+                ; STRICT PRESERVATION: Do NOT pad with spaces.
+                Token := "[[N]]"
+                AttemptText := StrReplace(AttemptText, "`r`n", Token)
+                AttemptText := StrReplace(AttemptText, "`n", Token)
+                AttemptText := StrReplace(AttemptText, "`r", Token)
+            } else {
+                ; Flatten text for CLI (single line)
+                AttemptText := StrReplace(AttemptText, "`r`n", " ")
+                AttemptText := StrReplace(AttemptText, "`n", " ")
+                AttemptText := StrReplace(AttemptText, "`r", " ")
+            }
+        } else {
+            ; Default/Fallback behavior if tokens are disabled
+            AttemptText := StrReplace(AttemptText, "`r`n", " ")
+            AttemptText := StrReplace(AttemptText, "`n", " ")
+            AttemptText := StrReplace(AttemptText, "`r", " ")
+        }
+
+        ; Quote escaping is handled by EscapeCmdArg in the command generator
+
+        ; Ensure temp files are clean before execution
+        if FileExist(OutputFile)
+            FileDelete OutputFile
+        if FileExist(ErrorFile)
+            FileDelete ErrorFile
+
+        ; Get command for current provider
+        ProviderFunc := Providers[ProviderIndex]
+        CommandStr := ProviderFunc(AttemptText, SourceLang, TargetLang, OutputFile, ErrorFile)
+
+        if (CommandStr == "") {
+            AccumulatedErrors .= "[" . ProviderName . "]: Skipped (command generation failed or API key missing).`n`n"
+            continue
+        }
+
+        ; Run the command hidden and check for errors
+        ExitCode := 0
+        try {
+            ExitCode := RunWait(CommandStr, , "Hide")
+        } catch as err {
+            AccumulatedErrors .= "[" . ProviderName . "]: Execution error: " . err.Message . "`n`n"
             if FileExist(OutputFile)
                 FileDelete OutputFile
             if FileExist(ErrorFile)
                 FileDelete ErrorFile
-            return
+            continue
         }
-    } catch as err {
-        MsgBox "Failed to execute translation command: " . err.Message
-        return
-    }
 
-    ; Read the output
-    if FileExist(OutputFile) {
-        try
-        {
-            ; Read with UTF-8 encoding
-            TranslatedText := FileRead(OutputFile, "UTF-8")
-
-            ; Handle restoration of external whitespace if trimming is disabled
-            if (TrimWhitespace == "false" or TrimWhitespace == "0") {
-                TranslatedText := LeadingWS . TranslatedText . TrailingWS
-            } else if (TrimWhitespace == "true" or TrimWhitespace == "1") {
-                TranslatedText := Trim(TranslatedText, " `t`r`n")
-            }
-
-            if (UseTokens == "true" or UseTokens == "1") {
-                ; DeepL Specific Restore: [[B]] -> \
-                ; We use \s* here because these are explicitly padded by us
-                if (TranslationSession.CurrentProvider == 2) {
-                    TranslatedText := RegExReplace(TranslatedText, "i)\s*\[\[\s*B\s*\]\]\s*", "\")
-                }
-
-                ; Global Restore: [[S]] -> "  " (Double Space)
-                ; We use \s* here because these are explicitly padded by us
-                TranslatedText := RegExReplace(TranslatedText, "i)\s*\[\[\s*S\s*\]\]\s*", "  ")
-
-                if (PreserveNewlines) {
-                    ; Remove newlines completely to avoid any spacing artifacts
-                    TranslatedText := StrReplace(TranslatedText, "`r`n", "")
-                    TranslatedText := StrReplace(TranslatedText, "`n", "")
-                    TranslatedText := StrReplace(TranslatedText, "`r", "")
-
-                    ; Restore newlines from the token
-                    ; STRICT PRESERVATION: Do NOT consume surrounding spaces.
-                    ; Only match the token itself, allowing for minor DeepL hallucinations (whitespace inside brackets)
-                    TranslatedText := RegExReplace(TranslatedText, "i)\[\[\s*N\s*\]\]", "`n")
-                }
-
-                ; PHASE 3: Unescaping Literals
-                ; Restore the protected literal tokens. Use regex to handle potential DeepL artifacts.
-                TranslatedText := RegExReplace(TranslatedText, "i)AHK_ESC_S_", "[[S]]")
-                TranslatedText := RegExReplace(TranslatedText, "i)AHK_ESC_B_", "[[B]]")
-                TranslatedText := RegExReplace(TranslatedText, "i)AHK_ESC_N_", "[[N]]")
-            }
-
-            if (TranslatedText != "") {
-                ; Place result in clipboard and paste
-                A_Clipboard := TranslatedText
-                SendInput "^v"
-
-                ; Restore original text to clipboard so user can use it
-                Sleep 200
-                A_Clipboard := TranslationSession.SourceText
-            }
+        if (ExitCode != 0) {
+            ErrorLog := FileExist(ErrorFile) ? Trim(FileRead(ErrorFile, "UTF-8")) : "No error output captured."
+            AccumulatedErrors .= "[" . ProviderName . " (Exit Code " . ExitCode . ")]:`n" . ErrorLog . "`n`n"
+            if FileExist(OutputFile)
+                FileDelete OutputFile
+            if FileExist(ErrorFile)
+                FileDelete ErrorFile
+            continue
         }
-        catch as err {
-            MsgBox "Error reading output file: " . err.Message
+
+        if !FileExist(OutputFile) {
+            AccumulatedErrors .= "[" . ProviderName . "]: Output file not created.`n`n"
+            if FileExist(ErrorFile)
+                FileDelete ErrorFile
+            continue
+        }
+
+        ; Read the output
+        RawOutput := ""
+        try {
+            RawOutput := FileRead(OutputFile, "UTF-8")
+        } catch as err {
+            AccumulatedErrors .= "[" . ProviderName . "]: Error reading output file: " . err.Message . "`n`n"
+            if FileExist(OutputFile)
+                FileDelete OutputFile
+            if FileExist(ErrorFile)
+                FileDelete ErrorFile
+            continue
+        }
+
+        if (Trim(RawOutput, " `t`r`n") == "") {
+            AccumulatedErrors .= "[" . ProviderName . "]: Empty translation returned.`n`n"
+            if FileExist(OutputFile)
+                FileDelete OutputFile
+            if FileExist(ErrorFile)
+                FileDelete ErrorFile
+            continue
+        }
+
+        ; Process successful output
+        TranslatedText := RawOutput
+
+        ; Handle restoration of external whitespace if trimming is disabled
+        if (TrimWhitespace == "false" or TrimWhitespace == "0") {
+            TranslatedText := LeadingWS . TranslatedText . TrailingWS
+        } else if (TrimWhitespace == "true" or TrimWhitespace == "1") {
+            TranslatedText := Trim(TranslatedText, " `t`r`n")
+        }
+
+        if (UseTokens == "true" or UseTokens == "1") {
+            ; DeepL Specific Restore: [[B]] -> \
+            ; We use \s* here because these are explicitly padded by us
+            if (ProviderIndex == 2) {
+                TranslatedText := RegExReplace(TranslatedText, "i)\s*\[\[\s*B\s*\]\]\s*", "\")
+            }
+
+            ; Global Restore: [[S]] -> "  " (Double Space)
+            ; We use \s* here because these are explicitly padded by us
+            TranslatedText := RegExReplace(TranslatedText, "i)\s*\[\[\s*S\s*\]\]\s*", "  ")
+
+            if (PreserveNewlines) {
+                ; Remove newlines completely to avoid any spacing artifacts
+                TranslatedText := StrReplace(TranslatedText, "`r`n", "")
+                TranslatedText := StrReplace(TranslatedText, "`n", "")
+                TranslatedText := StrReplace(TranslatedText, "`r", "")
+
+                ; Restore newlines from the token
+                TranslatedText := RegExReplace(TranslatedText, "i)\[\[\s*N\s*\]\]", "`n")
+            }
+
+            ; PHASE 3: Unescaping Literals
+            TranslatedText := RegExReplace(TranslatedText, "i)AHK_ESC_S_", "[[S]]")
+            TranslatedText := RegExReplace(TranslatedText, "i)AHK_ESC_B_", "[[B]]")
+            TranslatedText := RegExReplace(TranslatedText, "i)AHK_ESC_N_", "[[N]]")
+        }
+
+        if (TranslatedText != "") {
+            ; Place result in clipboard and paste
+            A_Clipboard := TranslatedText
+            SendInput "^v"
+
+            ; Restore original text to clipboard so user can use it
+            Sleep 200
+            A_Clipboard := TranslationSession.SourceText
         }
 
         ; Cleanup
-        FileDelete OutputFile
+        if FileExist(OutputFile)
+            FileDelete OutputFile
         if FileExist(ErrorFile)
             FileDelete ErrorFile
+
+        Success := true
+        break
+    }
+
+    if (!Success) {
+        if FileExist(OutputFile)
+            FileDelete OutputFile
+        if FileExist(ErrorFile)
+            FileDelete ErrorFile
+
+        MsgBox "Translation failed across all providers:`n`n" . Trim(AccumulatedErrors)
     }
 }
