@@ -160,7 +160,8 @@ FsmDispatch(g, EV_RETEXT_DONE, Map("retext_started", true))
 _Assert(g.FsmState == FSM_IDLE, "S3.5a: EV_RETEXT_DONE with retext_started resolves to IDLE")
 _Assert(g.FsmMemory["ActiveRetext"] == true, "S3.5b: ActiveRetext remains true during background worker execution")
 UpdateButtonState(g)
-_Assert(g.CurrentStatusText == "Re-texting...", "S3.5c: UpdateButtonState displays 'Re-texting...' while ActiveRetext is active")
+_Assert(g.CurrentStatusText == "Re-texting...",
+    "S3.5c: UpdateButtonState displays 'Re-texting...' while ActiveRetext is active")
 
 ; S3.6: Retext completion clears ActiveRetext and restores title to Ready
 OnAhkCall(g, "finished", "")
