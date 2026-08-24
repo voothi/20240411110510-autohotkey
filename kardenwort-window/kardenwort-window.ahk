@@ -2479,31 +2479,6 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
     }
     ZID := presetZID != "" ? presetZID : A_Now
 
-    local seqNum
-    global G_OverrideSeqNum
-    if (G_OverrideSeqNum != "") {
-        seqNum := G_OverrideSeqNum
-        G_OverrideSeqNum := ""
-        try {
-            RegWrite(seqNum, "REG_DWORD", "HKEY_CURRENT_USER\Software\Kardenwort", "WindowCount")
-        } catch {
-        }
-    } else {
-        seqNum := GetSequenceNumber()
-    }
-
-    global G_ActiveWindows
-    sessionID := (tsvPath != "" ? tsvPath : ZID) . "#" . seqNum
-    if (G_ActiveWindows.Has(sessionID)) {
-        hwnd := G_ActiveWindows[sessionID]
-        if WinExist("ahk_id " hwnd) {
-            WinActivate("ahk_id " hwnd)
-            return
-        } else {
-            G_ActiveWindows.Delete(sessionID)
-        }
-    }
-
     activeWindows := GetActiveKardenwortWindows()
     global G_WindowCount
     G_WindowCount := activeWindows.Length
@@ -2533,6 +2508,31 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
                     return
                 }
             }
+        }
+    }
+
+    local seqNum
+    global G_OverrideSeqNum
+    if (G_OverrideSeqNum != "") {
+        seqNum := G_OverrideSeqNum
+        G_OverrideSeqNum := ""
+        try {
+            RegWrite(seqNum, "REG_DWORD", "HKEY_CURRENT_USER\Software\Kardenwort", "WindowCount")
+        } catch {
+        }
+    } else {
+        seqNum := GetSequenceNumber()
+    }
+
+    global G_ActiveWindows
+    sessionID := (tsvPath != "" ? tsvPath : ZID) . "#" . seqNum
+    if (G_ActiveWindows.Has(sessionID)) {
+        hwnd := G_ActiveWindows[sessionID]
+        if WinExist("ahk_id " hwnd) {
+            WinActivate("ahk_id " hwnd)
+            return
+        } else {
+            G_ActiveWindows.Delete(sessionID)
         }
     }
 
