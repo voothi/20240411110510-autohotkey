@@ -3448,10 +3448,8 @@ LayoutButtons(thisGui, Width, Height) {
         btnY := Height - (totalRows - pos.row + 1) * 40
         try {
             btn.Move(pos.x, btnY)
+            WinRedraw(btn.Hwnd)
         }
-    }
-    try {
-        WinRedraw(thisGui.Hwnd)
     }
 }
 
