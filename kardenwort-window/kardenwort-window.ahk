@@ -262,6 +262,7 @@ ActionRenderDoneIO(guiObj, payload) {
         } catch {
         }
         guiObj.wvc.Visible := true
+        guiObj.Show()
         return
     }
     try {
@@ -288,6 +289,7 @@ ActionRenderDoneIO(guiObj, payload) {
         InjectHoverHighlightMvp(guiObj, G_HoverHighlightMvpBookmarks)
     }
     guiObj.wvc.Visible := true
+    guiObj.Show()
     try {
         childrenDiv := guiObj.wb.document.getElementById("kardenwort-children")
         if (childrenDiv) {
@@ -1654,6 +1656,7 @@ global G_KeyTogglePointer := "Alt"
 global G_SplitGapLimit := "60"
 global G_CloseDescendantsOnParentClose := 1
 global G_AutoCloseOnNewLaunch := 0
+global G_CascadeBatchWindows := 0
 global G_OverrideSeqNum := ""
 
 global G_PressCount := 0
@@ -1709,6 +1712,7 @@ LoadConfig() {
     global G_SplitGapLimit := IniRead(configPath, "Settings", "SplitGapLimit", "60")
     global G_CloseDescendantsOnParentClose := IniRead(configPath, "Settings", "CloseDescendantsOnParentClose", 1)
     global G_AutoCloseOnNewLaunch := IniRead(configPath, "Settings", "AutoCloseOnNewLaunch", 0)
+    global G_CascadeBatchWindows := IniRead(configPath, "Settings", "CascadeBatchWindows", 0)
 
     if (G_DeskPythonPath == "" || !FileExist(G_DeskPythonPath)) {
         KardenMsgBox("Python interpreter not found: " G_DeskPythonPath, "Kardenwort Error", 16)
@@ -2689,9 +2693,11 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
     initW := Trim(StrSplit(IniRead(configPath, "Window", "Width", "1143"), ";")[1])
     initH := Trim(StrSplit(IniRead(configPath, "Window", "Height", "957"), ";")[1])
 
-    global G_WindowCount, G_CascadeIndex, G_BaseX, G_BaseY
-    if (G_WindowCount == 0) {
-        G_CascadeIndex := 0
+    global G_WindowCount, G_CascadeIndex, G_BaseX, G_BaseY, G_CascadeBatchWindows
+    if (G_WindowCount == 0 || G_CascadeBatchWindows == 0 || G_CascadeBatchWindows == "0") {
+        if (G_WindowCount == 0) {
+            G_CascadeIndex := 0
+        }
         if (initX == "" || initY == "") {
             GetCascadeCoords(&x, &y)
             showStr := "x" x " y" y " w" initW " h" initH
@@ -2710,7 +2716,7 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
         }
     }
 
-    MyGui.Show(showStr)
+    MyGui.Show("Hide " showStr)
     MyGui.GetClientPos(, , &clientWidth, &clientHeight)
     GuiSize(MyGui, 0, clientWidth, clientHeight)
     if (G_WindowCount == 0) {
@@ -3256,7 +3262,9 @@ WatchFile(guiObj, Folder := "", Changes := "") {
             }
         }
             
+            updatesEvaluated := false
             if (jsFiles.Length > 0) {
+                updatesEvaluated := true
                 SortedFiles := ""
                 for index, filePath in jsFiles {
                     SortedFiles .= filePath "`n"
@@ -3367,7 +3375,9 @@ WatchFile(guiObj, Folder := "", Changes := "") {
                 }
 
                 try {
-                    currentMTime := FileGetTime(guiObj.TsvPath)
+                    if (FileExist(guiObj.TsvPath)) {
+                        guiObj.FsmMemory["LastMTime"] := FileGetTime(guiObj.TsvPath)
+                    }
                 } catch {
                 }
             }
@@ -3418,6 +3428,10 @@ WatchFile(guiObj, Folder := "", Changes := "") {
             }
         }
     } catch {
+    }
+
+    if (updatesEvaluated) {
+        return
     }
 
     FsmDispatch(guiObj, EV_FILE_CHANGED, currentMTime)

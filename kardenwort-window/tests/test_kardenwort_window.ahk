@@ -64,7 +64,8 @@ configPath := "..\config.ini"
 if FileExist(configPath) {
     pythonPath := IniRead(configPath, "Paths", "DeskPythonPath", "")
     scriptPath := IniRead(configPath, "Paths", "DeskScriptPath", "")
-    Assert(pythonPath != "" && scriptPath != "", "Config paths read correctly.")
+    cascadeBatch := IniRead(configPath, "Settings", "CascadeBatchWindows", "")
+    Assert(cascadeBatch != "", "CascadeBatchWindows setting is present in config.ini")
 } else {
     Assert(false, "Config file not found at " configPath)
 }
