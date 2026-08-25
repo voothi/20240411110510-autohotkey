@@ -2484,10 +2484,11 @@ RunSilent(cmd, &stdout := "", &stderr := "") {
     return exitCode
 }
 
-GetCascadeCoords(&x, &y) {
+GetCascadeCoords(&x, &y, effectiveIndex := "") {
     global G_CascadeIndex
-    x := 50 + Mod(G_CascadeIndex, 15) * 30
-    y := 50 + Mod(G_CascadeIndex, 15) * 30
+    idx := (effectiveIndex !== "") ? effectiveIndex : G_CascadeIndex
+    x := 50 + Mod(idx, 15) * 30
+    y := 50 + Mod(idx, 15) * 30
 }
 
 ApplyZoom(wb) {
@@ -2694,24 +2695,25 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
     initH := Trim(StrSplit(IniRead(configPath, "Window", "Height", "957"), ";")[1])
 
     global G_WindowCount, G_CascadeIndex, G_BaseX, G_BaseY, G_CascadeBatchWindows
+    effectiveIndex := (IsNumber(seqNum) && Integer(seqNum) > 1) ? (Integer(seqNum) - 2) : G_CascadeIndex
     if (G_WindowCount == 0 || G_CascadeBatchWindows == 0 || G_CascadeBatchWindows == "0") {
         if (G_WindowCount == 0) {
             G_CascadeIndex := 0
         }
         if (initX == "" || initY == "") {
-            GetCascadeCoords(&x, &y)
+            GetCascadeCoords(&x, &y, effectiveIndex)
             showStr := "x" x " y" y " w" initW " h" initH
         } else {
             showStr := "x" initX " y" initY " w" initW " h" initH
         }
     } else {
         if (G_BaseX !== "" && G_BaseY !== "") {
-            cascadeOffset := Mod(G_CascadeIndex, 15) * 30
+            cascadeOffset := Mod(effectiveIndex, 15) * 30
             x := G_BaseX + cascadeOffset
             y := G_BaseY + cascadeOffset
             showStr := "x" x " y" y " w" initW " h" initH
         } else {
-            GetCascadeCoords(&x, &y)
+            GetCascadeCoords(&x, &y, effectiveIndex)
             showStr := "x" x " y" y " w" initW " h" initH
         }
     }

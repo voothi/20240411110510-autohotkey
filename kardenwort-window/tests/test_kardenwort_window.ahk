@@ -59,6 +59,26 @@ G_CascadeIndex := 15
 GetCascadeCoords(&x15, &y15) ; should wrap to 0 (50, 50)
 Assert(x14 == 470 && x15 == 50, "Coordinate wrap-around reset after 15 windows.")
 
+; Test 3b: Sequence-aware cascade offsets (Badge 2 -> offset 0, Badge 3 -> offset 1, Badge 9 -> offset 7, Badge 17 -> offset 0)
+s2 := 2
+eff2 := (s2 > 1) ? (s2 - 2) : 0
+GetCascadeCoords(&xSeq2, &ySeq2, eff2)
+
+s3 := 3
+eff3 := (s3 > 1) ? (s3 - 2) : 0
+GetCascadeCoords(&xSeq3, &ySeq3, eff3)
+
+s9 := 9
+eff9 := (s9 > 1) ? (s9 - 2) : 0
+GetCascadeCoords(&xSeq9, &ySeq9, eff9)
+
+s17 := 17
+eff17 := (s17 > 1) ? (s17 - 2) : 0
+GetCascadeCoords(&xSeq17, &ySeq17, eff17)
+
+Assert(xSeq2 == 50 && ySeq2 == 50 && xSeq3 == 80 && ySeq3 == 80 && xSeq9 == 260 && ySeq9 == 260 && xSeq17 == 50 && ySeq17 == 50,
+    "Sequence-aware cascade offsets (Badge 2..9..17) calculated correctly.")
+
 ; Test 4: Verify config file existence and format
 configPath := "..\config.ini"
 if FileExist(configPath) {
