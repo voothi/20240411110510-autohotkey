@@ -265,6 +265,37 @@ try {
     Assert(false, "OnAhkCall 'finished' action threw an error: " err.Message)
 }
 
+; Test 20b: Progressive mode ignores EV_FILE_CHANGED when G_AutoUpdate=0 (prevents reload flicker)
+g_prog := MakeMockGui()
+g_prog.FsmState := FSM_IDLE
+g_prog.FsmMemory["IsProgressive"] := true
+g_prog.FsmMemory["LastMTime"] := "20260825120000"
+g_prog.FsmMemory["AutoInjectRetries"] := 0
+global G_AutoUpdate := 0
+FsmDispatch(g_prog, EV_FILE_CHANGED, "20260825120001")
+Assert(g_prog.FsmState == FSM_IDLE, "Progressive mode with G_AutoUpdate=0 remains in IDLE without reload flicker")
+
+; Test 20c: G_AutoUpdate=1 transitions EV_FILE_CHANGED to RELOADING
+g_auto := MakeMockGui()
+g_auto.FsmState := FSM_IDLE
+g_auto.FsmMemory["IsProgressive"] := false
+g_auto.FsmMemory["LastMTime"] := "20260825120000"
+global G_AutoUpdate := 1
+FsmDispatch(g_auto, EV_FILE_CHANGED, "20260825120001")
+Assert(g_auto.FsmState == FSM_RELOADING, "G_AutoUpdate=1 transitions EV_FILE_CHANGED to RELOADING")
+global G_AutoUpdate := 0
+
+; Test 20d: Progressive grace period settlement latches IsProgressive to false and sets PendingUpdate
+g_settle := MakeMockGui()
+g_settle.FsmState := FSM_IDLE
+g_settle.FsmMemory["IsProgressive"] := true
+g_settle.FsmMemory["LastMTime"] := "20260825120000"
+g_settle.FsmMemory["AutoInjectRetries"] := 1000
+global G_AutoUpdate := 0
+FsmDispatch(g_settle, EV_FILE_CHANGED, "20260825120002")
+Assert(g_settle.FsmState == FSM_IDLE && !g_settle.FsmMemory["IsProgressive"] && g_settle.FsmMemory["PendingUpdate"],
+    "Grace period expiry latches IsProgressive to false and sets PendingUpdate")
+
 ; Test 21: Compound flow - Re-text (FSM_RETEXTING -> FSM_IDLE)
 g := MakeMockGui()
 g.FsmState := FSM_IDLE

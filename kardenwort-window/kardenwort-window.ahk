@@ -576,18 +576,20 @@ ActionFileChangedGuard(guiObj, payload) {
 
     currentJsMTime := ""
     hasUpdatesDir := false
-    updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
-
-    if (DirExist(updatesDir)) {
-        hasUpdatesDir := true
+    updatesDir := ""
+    if (guiObj.HasProp("TsvPath") && guiObj.TsvPath != "") {
+        updatesDir := RegExReplace(guiObj.TsvPath, "(?i)\.tsv$", ".updates")
+        if (DirExist(updatesDir)) {
+            hasUpdatesDir := true
+        }
     }
 
-    if (!guiObj.FsmMemory["IsLazy"]) {
+    if (!guiObj.FsmMemory.Get("IsLazy", false)) {
         if (hasUpdatesDir) {
             if (!guiObj.HasOwnProp("TimerClearStatus")) {
                 guiObj.TimerClearStatus := UpdateButtonState.Bind(guiObj)
             }
-            if (guiObj.FsmMemory["IsProgressive"]) {
+            if (guiObj.FsmMemory.Get("IsProgressive", false)) {
                 guiObj.FsmMemory["LastMTime"] := currentMTime
                 guiObj.FsmMemory["AutoInjectRetries"] := 0
                 UpdateStatus(guiObj, "Progressive data injected automatically.")
@@ -605,22 +607,25 @@ ActionFileChangedGuard(guiObj, payload) {
 
     isActiveReprocess := guiObj.FsmMemory.Has("ActiveReprocess") && guiObj.FsmMemory["ActiveReprocess"]
     isActiveRetext := guiObj.FsmMemory.Has("ActiveRetext") && guiObj.FsmMemory["ActiveRetext"]
-    isAutoInjecting := guiObj.FsmMemory["IsProgressive"] || isActiveReprocess || isActiveRetext
+    isAutoInjecting := guiObj.FsmMemory.Get("IsProgressive", false) || isActiveReprocess || isActiveRetext
     if (isAutoInjecting) {
         ; Reset the grace period counter whenever a genuinely NEW TSV snapshot arrives
         if (currentMTime != guiObj.FsmMemory.Get("GracePeriodMTime", "")) {
             guiObj.FsmMemory["GracePeriodMTime"] := currentMTime
             guiObj.FsmMemory["AutoInjectRetries"] := 0
         }
-        guiObj.FsmMemory["AutoInjectRetries"] += 1
+        guiObj.FsmMemory["AutoInjectRetries"] := guiObj.FsmMemory.Get("AutoInjectRetries", 0) + 1
         maxRetries := Round(G_AutoInjectGracePeriodSec * 1000 / G_FileWatcherIntervalMs)
         if (guiObj.FsmMemory["AutoInjectRetries"] < maxRetries) {
             return false
         }
         guiObj.FsmMemory["AutoInjectRetries"] := 0
+        if (guiObj.FsmMemory.Get("IsProgressive", false)) {
+            guiObj.FsmMemory["IsProgressive"] := false
+        }
     }
 
-    if (G_AutoUpdate || guiObj.FsmMemory["IsProgressive"]) {
+    if (G_AutoUpdate) {
         return true
     } else {
         guiObj.FsmMemory["PendingUpdate"] := true
@@ -3235,6 +3240,12 @@ WatchFile(guiObj, Folder := "", Changes := "") {
                             guiObj.TimerWorkerWatchdog := ""
                         } catch {
                         }
+                    }
+                    try {
+                        if (FileExist(guiObj.TsvPath)) {
+                            guiObj.FsmMemory["LastMTime"] := FileGetTime(guiObj.TsvPath)
+                        }
+                    } catch {
                     }
                     guiObj.FsmMemory["PendingUpdate"] := false
                     guiObj.FsmMemory["IsProgressive"] := false

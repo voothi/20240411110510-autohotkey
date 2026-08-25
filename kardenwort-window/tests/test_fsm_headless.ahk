@@ -311,6 +311,38 @@ OnAhkCall(g, "finished", "")
 _Assert(!g.FsmMemory["ActiveRetext"], "S5.10a: OnAhkCall finished clears ActiveRetext")
 _Assert(g.FsmState == FSM_IDLE, "S5.10b: OnAhkCall finished maintains IDLE state without reload dispatch")
 
+; S5.11: IDLE + EV_FILE_CHANGED with IsProgressive=true and G_AutoUpdate=0 does not trigger reload flicker
+g := MakeMockGui()
+g.FsmState := FSM_IDLE
+g.FsmMemory["IsProgressive"] := true
+g.FsmMemory["LastMTime"] := "20260825000000"
+g.FsmMemory["AutoInjectRetries"] := 0
+global G_AutoUpdate := 0
+FsmDispatch(g, EV_FILE_CHANGED, "20260825000001")
+_Assert(g.FsmState == FSM_IDLE, "S5.11: IDLE + EV_FILE_CHANGED with IsProgressive=true & G_AutoUpdate=0 stays in IDLE (no reload flicker)")
+
+; S5.12: IDLE + EV_FILE_CHANGED with G_AutoUpdate=1 triggers RELOADING
+g := MakeMockGui()
+g.FsmState := FSM_IDLE
+g.FsmMemory["IsProgressive"] := false
+g.FsmMemory["LastMTime"] := "20260825000000"
+global G_AutoUpdate := 1
+FsmDispatch(g, EV_FILE_CHANGED, "20260825000001")
+_Assert(g.FsmState == FSM_RELOADING, "S5.12: IDLE + EV_FILE_CHANGED with G_AutoUpdate=1 transitions to RELOADING")
+global G_AutoUpdate := 0
+
+; S5.13: Grace period expiry in ActionFileChangedGuard settles IsProgressive to false and sets PendingUpdate
+g := MakeMockGui()
+g.FsmState := FSM_IDLE
+g.FsmMemory["IsProgressive"] := true
+g.FsmMemory["LastMTime"] := "20260825000000"
+g.FsmMemory["AutoInjectRetries"] := 1000 ; force max retries exceeded
+global G_AutoUpdate := 0
+FsmDispatch(g, EV_FILE_CHANGED, "20260825000002")
+_Assert(g.FsmState == FSM_IDLE, "S5.13a: Settled progressive change remains in IDLE")
+_Assert(!g.FsmMemory["IsProgressive"], "S5.13b: IsProgressive latched to false after grace period")
+_Assert(g.FsmMemory["PendingUpdate"], "S5.13c: PendingUpdate set to true for manual update")
+
 ; ===================================================================================
 ; Scenario Group 6: HTTP Fast-Path & Fallback Robustness
 ; ===================================================================================
