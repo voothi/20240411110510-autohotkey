@@ -336,12 +336,26 @@ g := MakeMockGui()
 g.FsmState := FSM_IDLE
 g.FsmMemory["IsProgressive"] := true
 g.FsmMemory["LastMTime"] := "20260825000000"
+g.FsmMemory["GracePeriodMTime"] := "20260825000002"
 g.FsmMemory["AutoInjectRetries"] := 1000 ; force max retries exceeded
 global G_AutoUpdate := 0
 FsmDispatch(g, EV_FILE_CHANGED, "20260825000002")
 _Assert(g.FsmState == FSM_IDLE, "S5.13a: Settled progressive change remains in IDLE")
 _Assert(!g.FsmMemory["IsProgressive"], "S5.13b: IsProgressive latched to false after grace period")
 _Assert(g.FsmMemory["PendingUpdate"], "S5.13c: PendingUpdate set to true for manual update")
+
+; S5.14: LOADING + EV_FILE_CHANGED updates LastMTime and stays in LOADING without triggering reload
+g := MakeMockGui()
+g.FsmState := FSM_LOADING
+g.FsmMemory["LastMTime"] := "20260826000000"
+FsmDispatch(g, EV_FILE_CHANGED, "20260826000001")
+_Assert(g.FsmState == FSM_LOADING, "S5.14a: LOADING + EV_FILE_CHANGED remains in LOADING")
+_Assert(g.FsmMemory["LastMTime"] == "20260826000001", "S5.14b: LOADING + EV_FILE_CHANGED updates LastMTime in memory")
+_Assert(!g.FsmMemory.Get("PendingUpdate", false), "S5.14c: LOADING + EV_FILE_CHANGED does not trigger PendingUpdate")
+
+; S5.15: Subsequent EV_RENDER_DONE transitions cleanly from LOADING to IDLE
+FsmDispatch(g, EV_RENDER_DONE, { outB64: "" })
+_Assert(g.FsmState == FSM_IDLE, "S5.15: EV_RENDER_DONE transitions from LOADING to IDLE cleanly")
 
 ; ===================================================================================
 ; Scenario Group 6: HTTP Fast-Path & Fallback Robustness

@@ -397,6 +397,23 @@ ActionRenderFailedIO(guiObj, payload) {
     guiObj.Destroy()
 }
 
+ActionFileChangedLoadingGuard(guiObj, payload) {
+    if (payload == "") {
+        return false
+    }
+    return true
+}
+ActionFileChangedLoadingApply(guiObj, payload) {
+    if (payload != "") {
+        guiObj.FsmMemory["LastMTime"] := payload
+        guiObj.FsmMemory["AutoInjectRetries"] := 0
+    }
+    return FSM_LOADING
+}
+ActionFileChangedLoadingIO(guiObj, payload) {
+    ; Suppress reload cycles during mount/loading phase
+}
+
 ActionDirtyApply(guiObj, payload) {
     guiObj.FsmMemory["IsDirty"] := true
     guiObj.CurrentStatusText := ""
@@ -1556,7 +1573,9 @@ global G_FSM_TRANSITIONS := Map(
     FSM_LOADING, Map(
         EV_RENDER_DONE, { nextState: FSM_IDLE, guard: "ActionRenderDoneGuard", apply: "ActionRenderDoneApply", io: "ActionRenderDoneIO" },
         EV_RENDER_FAILED, { nextState: FSM_ERROR, guard: "ActionRenderFailedGuard", apply: "ActionRenderFailedApply",
-            io: "ActionRenderFailedIO" }
+            io: "ActionRenderFailedIO" },
+        EV_FILE_CHANGED, { nextState: FSM_LOADING, guard: "ActionFileChangedLoadingGuard", apply: "ActionFileChangedLoadingApply",
+            io: "ActionFileChangedLoadingIO" }
     ),
     FSM_IDLE, Map(
         EV_DIRTY, { nextState: FSM_IDLE, apply: "ActionDirtyApply", io: "ActionDirtyIO" },
@@ -1903,7 +1922,7 @@ SendControllerRequest(endpoint, payloadJson, &responseJson, timeoutSec := 3) {
 }
 
 FetchHtmlViaHttp(targetLang, zid, textMode, sourceText, tsvPath, seqNum, isBypass, &outB64, &errJSON) {
-    global G_ServerHost, G_ServerPort, G_ControllerPort, G_ServerApiKey, G_Theme, G_DefaultZoom, G_SplitGapLimit
+    global G_ServerHost, G_ServerPort, G_ControllerPort, G_ServerApiKey, G_Theme, G_DefaultZoom, G_SplitGapLimit, G_WindowCount
     host := G_ServerHost ? G_ServerHost : "127.0.0.1"
     port := G_ControllerPort ? G_ControllerPort : (G_ServerPort ? G_ServerPort : 18335)
     url := "http://" . host . ":" . port . "/api/v1/render"
@@ -1922,10 +1941,18 @@ FetchHtmlViaHttp(targetLang, zid, textMode, sourceText, tsvPath, seqNum, isBypas
         . (sourceText != "" ? ', "text": ' JSON_Stringify(sourceText) : '')
         . "}"
 
+    winCount := IsSet(G_WindowCount) ? G_WindowCount : 0
+    recvTimeout := 8000
+    if (winCount > 20) {
+        recvTimeout := 12000
+    } else if (winCount > 10) {
+        recvTimeout := 10000
+    }
+
     try {
         http := ComObject("WinHttp.WinHttpRequest.5.1")
         http.Open("POST", url, false)
-        http.SetTimeouts(500, 500, 3000, 3000)
+        http.SetTimeouts(500, 500, 5000, recvTimeout)
         if (G_ServerApiKey != "") {
             http.SetRequestHeader("X-API-Token", G_ServerApiKey)
         }
@@ -2342,34 +2369,78 @@ Receive_WM_COPYDATA(wParam, lParam, msg, hwnd) {
 }
 
 ProcessArgs(argsArray) {
-    if (argsArray.Length > 0) {
-        textMode := "multi"
-        i := 1
-        while (i <= argsArray.Length) {
-            arg := argsArray[i]
-            if (arg == "--seq-num") {
-                global G_OverrideSeqNum := argsArray[i + 1]
-                i += 2
-            } else if (arg == "--zid") {
-                global G_OverrideZID := argsArray[i + 1]
-                i += 2
-            } else if (arg == "--language") {
-                global G_OverrideLanguage := argsArray[i + 1]
-                i += 2
-            } else if (arg == "--restore") {
-                LaunchRestore(argsArray[i + 1])
-                i += 2
-            } else if (arg == "--desk") {
-                LaunchDesk(argsArray[i + 1], textMode)
-                i += 2
-            } else if (arg == "--text-mode") {
-                textMode := argsArray[i + 1]
-                i += 2
-            } else {
-                i += 1
-            }
+    if (argsArray.Length == 0)
+        return
+
+    actions := []
+    textMode := "multi"
+    currSeqNum := ""
+    currZid := ""
+    currLang := ""
+
+    i := 1
+    while (i <= argsArray.Length) {
+        arg := argsArray[i]
+        if (arg == "--seq-num" && i < argsArray.Length) {
+            currSeqNum := argsArray[i + 1]
+            i += 2
+        } else if (arg == "--zid" && i < argsArray.Length) {
+            currZid := argsArray[i + 1]
+            i += 2
+        } else if (arg == "--language" && i < argsArray.Length) {
+            currLang := argsArray[i + 1]
+            i += 2
+        } else if (arg == "--text-mode" && i < argsArray.Length) {
+            textMode := argsArray[i + 1]
+            i += 2
+        } else if (arg == "--restore" && i < argsArray.Length) {
+            actions.Push({ type: "restore", target: argsArray[i + 1], seqNum: currSeqNum, zid: currZid, lang: currLang, mode: textMode })
+            currSeqNum := ""
+            currZid := ""
+            currLang := ""
+            i += 2
+        } else if (arg == "--desk" && i < argsArray.Length) {
+            actions.Push({ type: "desk", target: argsArray[i + 1], seqNum: currSeqNum, zid: currZid, lang: currLang, mode: textMode })
+            currSeqNum := ""
+            currZid := ""
+            currLang := ""
+            i += 2
+        } else {
+            i += 1
         }
     }
+
+    if (actions.Length == 0)
+        return
+
+    batchSize := 4
+    ExecuteAction(act) {
+        if (act.seqNum != "")
+            global G_OverrideSeqNum := act.seqNum
+        if (act.zid != "")
+            global G_OverrideZID := act.zid
+        if (act.lang != "")
+            global G_OverrideLanguage := act.lang
+
+        if (act.type == "restore") {
+            LaunchRestore(act.target)
+        } else if (act.type == "desk") {
+            LaunchDesk(act.target, act.mode)
+        }
+    }
+
+    ExecuteBatch(startIndex) {
+        endIndex := Min(startIndex + batchSize - 1, actions.Length)
+        loop (endIndex - startIndex + 1) {
+            idx := startIndex + A_Index - 1
+            ExecuteAction(actions[idx])
+        }
+        if (endIndex < actions.Length) {
+            SetTimer(() => ExecuteBatch(endIndex + 1), -20)
+        }
+    }
+
+    ExecuteBatch(1)
 }
 
 ; ===================================================================================
