@@ -1648,6 +1648,7 @@ global G_CloseDescendantsOnParentClose := 1
 global G_AutoCloseOnNewLaunch := 0
 global G_CascadeBatchWindows := 0
 global G_OverrideSeqNum := ""
+global G_LaunchInBrowser := 0
 
 global G_PressCount := 0
 global G_CapturedText := ""
@@ -1703,6 +1704,7 @@ LoadConfig() {
     global G_CloseDescendantsOnParentClose := IniRead(configPath, "Settings", "CloseDescendantsOnParentClose", 1)
     global G_AutoCloseOnNewLaunch := IniRead(configPath, "Settings", "AutoCloseOnNewLaunch", 0)
     global G_CascadeBatchWindows := IniRead(configPath, "Settings", "CascadeBatchWindows", 0)
+    global G_LaunchInBrowser := IniRead(configPath, "Window", "LaunchInBrowser", 0)
 
     if (G_DeskPythonPath == "" || !FileExist(G_DeskPythonPath)) {
         KardenMsgBox("Python interpreter not found: " G_DeskPythonPath, "Kardenwort Error", 16)
@@ -2620,6 +2622,48 @@ ApplyWindowAndClassIcons(hwnd, hIconSmall, hIconBig) {
 ; ===================================================================================
 ; GUI & Watcher Implementation
 ; ===================================================================================
+LaunchBrowserTab(sourceText, textMode, presetZID := "") {
+    if (textMode == "single") {
+        sourceText := CleanClipboardText(sourceText)
+    }
+    ZID := presetZID != "" ? presetZID : A_Now
+
+    global G_ServerHost, G_ServerPort, G_ControllerPort, G_ServerApiKey, G_Theme, G_CurrentLang, G_ServerEnabled
+    host := G_ServerHost ? G_ServerHost : "127.0.0.1"
+    port := G_ControllerPort ? G_ControllerPort : (G_ServerPort ? G_ServerPort : 18335)
+
+    ; Server availability check / failover notification
+    if (!CheckServerHealth(host, port)) {
+        if (G_ServerEnabled) {
+            StartServerProcess()
+            if (!CheckServerHealth(host, port)) {
+                TrayTip("Local controller server is not responding at " . host . ":" . port, "Kardenwort Error", 16)
+                return false
+            }
+        } else {
+            TrayTip("Desk server is disabled or offline. Cannot open in browser.", "Kardenwort Error", 16)
+            return false
+        }
+    }
+
+    ; Initialize session via HTTP render fast-path so session data and tsv are prepared
+    local outB64 := "", errJSON := "", outChildren := []
+    status := FetchHtmlViaHttp(G_CurrentLang, ZID, textMode, sourceText, "", 1, false, &outB64, &errJSON, &outChildren)
+    if (status != 0 && status != 200) {
+        TrayTip("Failed to initialize session: " . errJSON, "Kardenwort Error", 16)
+        return false
+    }
+
+    ; Construct target URL and invoke Run(url)
+    targetUrl := "http://" . host . ":" . port . "/?session_zid=" . ZID . "&theme=" . G_Theme
+    if (G_ServerApiKey != "") {
+        targetUrl .= "&token=" . G_ServerApiKey
+    }
+
+    Run(targetUrl)
+    return true
+}
+
 LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
     return _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID, tsvPath)
 }
@@ -3774,7 +3818,7 @@ GuiSize(thisGui, MinMax, Width, Height) {
 ; Hotkey & SmartAction Routing
 ; ===================================================================================
 HandleSmartAction() {
-    global G_PressCount, G_CapturedText, G_TapSingleMode, G_TapDoubleMode
+    global G_PressCount, G_CapturedText, G_TapSingleMode, G_TapDoubleMode, G_LaunchInBrowser
     Taps := G_PressCount
     G_PressCount := 0
 
@@ -3787,6 +3831,11 @@ HandleSmartAction() {
     KeyWait "Alt"
     KeyWait "Control"
     KeyWait "Shift"
+
+    if (G_LaunchInBrowser == 1 || G_LaunchInBrowser == "1") {
+        LaunchBrowserTab(G_CapturedText, textMode)
+        return
+    }
 
     LaunchKardenwortWindow(G_CapturedText, textMode)
 }

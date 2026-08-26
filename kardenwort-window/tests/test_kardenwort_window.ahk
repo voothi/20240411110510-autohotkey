@@ -66,6 +66,9 @@ if FileExist(configPath) {
     scriptPath := IniRead(configPath, "Paths", "DeskScriptPath", "")
     cascadeBatch := IniRead(configPath, "Settings", "CascadeBatchWindows", "")
     Assert(cascadeBatch != "", "CascadeBatchWindows setting is present in config.ini")
+    launchInBrowserVal := IniRead(configPath, "Window", "LaunchInBrowser", "")
+    Assert(launchInBrowserVal == "0" || launchInBrowserVal == "1", "LaunchInBrowser setting is present and valid in config.ini")
+    Assert(IsSet(G_LaunchInBrowser), "G_LaunchInBrowser global variable is defined")
 } else {
     Assert(false, "Config file not found at " configPath)
 }
