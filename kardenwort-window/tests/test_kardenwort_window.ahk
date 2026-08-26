@@ -845,6 +845,7 @@ Assert(setClassCalls.Length == 2 && setClassCalls[1].nIndex == -34 && setClassCa
 Assert(ExtractZidFromPath("20260826230451") == "20260826230451", "ExtractZidFromPath extracts standard 14-digit ZID")
 Assert(ExtractZidFromPath("20260826230451-01") == "20260826230451-01", "ExtractZidFromPath extracts child indexed ZID")
 Assert(ExtractZidFromPath("U:\voothi\20260629183335-kardenwort-desk\results\20260826230451-02.de.tsv") == "20260826230451-02", "ExtractZidFromPath extracts child ZID from full file path")
+Assert(ExtractZidFromPath("U:\voothi\20260629183335-kardenwort-desk\results\20260826234818-01.de.tsv") == "20260826234818-01", "ExtractZidFromPath ignores timestamp in folder name and extracts filename child ZID")
 Assert(ExtractZidFromPath("custom_target_name") == "custom_target_name", "ExtractZidFromPath returns fallback string if no regex match")
 
 ; Test: BuildDeskBrowserUrl formatting

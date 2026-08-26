@@ -2630,7 +2630,10 @@ ApplyWindowAndClassIcons(hwnd, hIconSmall, hIconBig) {
 }
 
 ExtractZidFromPath(pathOrZid) {
-    if RegExMatch(pathOrZid, "(\d{14}(?:-\d+)?)", &mZid) {
+    local fileName := ""
+    SplitPath(pathOrZid, &fileName)
+    targetName := (fileName != "") ? fileName : pathOrZid
+    if RegExMatch(targetName, "(\d{14}(?:-\d+)?)", &mZid) {
         return mZid[1]
     }
     return pathOrZid
