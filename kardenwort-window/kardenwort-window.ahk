@@ -2681,6 +2681,12 @@ LaunchBrowserTab(sourceText, textMode, presetZID := "") {
     local outB64 := "", errJSON := "", outChildren := []
     status := FetchHtmlViaHttp(G_CurrentLang, ZID, textMode, sourceText, "", 1, false, &outB64, &errJSON, &outChildren)
     if (status != 0 && status != 200) {
+        if (status == 422 && InStr(errJSON, "LANGUAGE_MISMATCH")) {
+            ; Language mismatch detected: Open the web view immediately so the web verification modal prompts the user
+            mainUrl := BuildDeskBrowserUrl(ZID, 1)
+            Run(mainUrl)
+            return true
+        }
         TrayTip("Failed to initialize session: " . errJSON, "Kardenwort Error", 16)
         return false
     }
