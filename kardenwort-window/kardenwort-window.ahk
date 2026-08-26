@@ -2302,7 +2302,7 @@ LaunchRestore(filePath) {
         inferredMode := "multi"
     }
 
-    LaunchKardenwortWindow(sourceText, inferredMode, ZID, foundTsvPath != "" ? foundTsvPath : filePath)
+    return LaunchKardenwortWindow(sourceText, inferredMode, ZID, foundTsvPath != "" ? foundTsvPath : filePath)
 }
 
 LaunchDesk(filePath, textMode) {
@@ -2335,7 +2335,7 @@ LaunchDesk(filePath, textMode) {
         G_OverrideZID := "" ; Reset after use
     }
 
-    LaunchKardenwortWindow(sourceText, textMode, presetZID)
+    return LaunchKardenwortWindow(sourceText, textMode, presetZID)
 }
 
 if (A_ScriptFullPath = A_LineFile) {
@@ -2417,8 +2417,8 @@ ProcessArgs(argsArray) {
     if (actions.Length == 0)
         return
 
-    batchSize := 4
-    ExecuteAction(act) {
+    firstHwnd := 0
+    for act in actions {
         if (act.seqNum != "")
             global G_OverrideSeqNum := act.seqNum
         if (act.zid != "")
@@ -2426,25 +2426,21 @@ ProcessArgs(argsArray) {
         if (act.lang != "")
             global G_OverrideLanguage := act.lang
 
+        local hwnd := 0
         if (act.type == "restore") {
-            LaunchRestore(act.target)
+            hwnd := LaunchRestore(act.target)
         } else if (act.type == "desk") {
-            LaunchDesk(act.target, act.mode)
+            hwnd := LaunchDesk(act.target, act.mode)
+        }
+
+        if (!firstHwnd && hwnd) {
+            firstHwnd := hwnd
         }
     }
 
-    ExecuteBatch(startIndex) {
-        endIndex := Min(startIndex + batchSize - 1, actions.Length)
-        loop (endIndex - startIndex + 1) {
-            idx := startIndex + A_Index - 1
-            ExecuteAction(actions[idx])
-        }
-        if (endIndex < actions.Length) {
-            SetTimer(() => ExecuteBatch(endIndex + 1), -20)
-        }
+    if (firstHwnd && WinExist("ahk_id " firstHwnd)) {
+        WinActivate("ahk_id " firstHwnd)
     }
-
-    ExecuteBatch(1)
 }
 
 ; ===================================================================================
@@ -2558,7 +2554,7 @@ CloseAllActiveWindows() {
 ; GUI & Watcher Implementation
 ; ===================================================================================
 LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
-    _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID, tsvPath)
+    return _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID, tsvPath)
 }
 
 _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath := "") {
@@ -2701,8 +2697,12 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
             G_CascadeIndex := 0
         }
         if (initX == "" || initY == "") {
-            GetCascadeCoords(&x, &y, effectiveIndex)
-            showStr := "x" x " y" y " w" initW " h" initH
+            if (G_BaseX !== "" && G_BaseY !== "") {
+                showStr := "x" G_BaseX " y" G_BaseY " w" initW " h" initH
+            } else {
+                GetCascadeCoords(&x, &y, 0)
+                showStr := "x" x " y" y " w" initW " h" initH
+            }
         } else {
             showStr := "x" initX " y" initY " w" initW " h" initH
         }
@@ -2840,6 +2840,7 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
     } else {
         FsmDispatch(MyGui, EV_RENDER_DONE, { outB64: outB64 })
     }
+    return MyGui.Hwnd
 }
 
 OnAhkCall(guiObj, action, value) {

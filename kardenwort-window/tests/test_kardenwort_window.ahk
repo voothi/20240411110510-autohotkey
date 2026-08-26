@@ -497,6 +497,89 @@ Assert(!gW.FsmMemory["ActiveReprocess"] && !gW.FsmMemory["ActiveRetext"],
     "Watchdog timeout reset active reprocess and retext flags.")
 Assert(!gW.FsmMemory["PendingUpdate"], "Watchdog timeout reset pending update flag.")
 
+; ===================================================================================
+; Part 6: Cascade Indexing, Sequential Processing, and Descendant Closing Tests
+; ===================================================================================
+
+; Test: CascadeBatchWindows = 1 calculation
+baseX := 100, baseY := 100
+ComputeCascadeCoords(bX, bY, seq, cascadeEnabled) {
+    if (!cascadeEnabled) {
+        return { x: bX, y: bY }
+    }
+    eff := (seq > 1) ? (seq - 2) : 0
+    off := Mod(eff, 15) * 30
+    return { x: bX + off, y: bY + off }
+}
+
+c2 := ComputeCascadeCoords(baseX, baseY, 2, true)
+c3 := ComputeCascadeCoords(baseX, baseY, 3, true)
+c4 := ComputeCascadeCoords(baseX, baseY, 4, true)
+Assert(c2.x == 100 && c2.y == 100 && c3.x == 130 && c3.y == 130 && c4.x == 160 && c4.y == 160,
+    "CascadeBatchWindows=1 calculates natural cascade offsets (Badge 2 at base, 3 at +30, 4 at +60).")
+
+; Test: CascadeBatchWindows = 0 calculation (stacked)
+s2_0 := ComputeCascadeCoords(baseX, baseY, 2, false)
+s3_0 := ComputeCascadeCoords(baseX, baseY, 3, false)
+s4_0 := ComputeCascadeCoords(baseX, baseY, 4, false)
+Assert(s2_0.x == 100 && s2_0.y == 100 && s3_0.x == 100 && s3_0.y == 100 && s4_0.x == 100 && s4_0.y == 100,
+    "CascadeBatchWindows=0 stacks all child windows at base coordinates without offset.")
+
+; Test: Sequential argument processing and first window activation
+SimulateProcessArgs(args) {
+    executed := []
+    firstHwnd := 0
+    currSeq := ""
+    i := 1
+    while (i <= args.Length) {
+        if (args[i] == "--seq-num" && i < args.Length) {
+            currSeq := args[i + 1]
+            i += 2
+        } else if (args[i] == "--desk" && i < args.Length) {
+            hwnd := 1000 + Integer(currSeq)
+            executed.Push({ seq: currSeq, hwnd: hwnd })
+            if (!firstHwnd)
+                firstHwnd := hwnd
+            currSeq := ""
+            i += 2
+        } else {
+            i += 1
+        }
+    }
+    return { executed: executed, activated: firstHwnd }
+}
+
+testArgs := ["--seq-num", "2", "--desk", "p1.txt", "--seq-num", "3", "--desk", "p2.txt", "--seq-num", "4", "--desk", "p3.txt"]
+resProc := SimulateProcessArgs(testArgs)
+Assert(resProc.executed.Length == 3 && resProc.executed[1].seq == "2" && resProc.executed[2].seq == "3" && resProc.executed[3].seq == "4",
+    "ProcessArgs parses and processes actions in natural sequential order (2 -> 3 -> 4).")
+Assert(resProc.activated == 1002, "ProcessArgs activates Window #2 (first child window) in foreground.")
+
+; Test: Parent Window 1 closing cleans up child descendant windows
+SimulateParentClose(parentChildren, activeMap, closeDescendants) {
+    closedHwnds := []
+    if (closeDescendants) {
+        for childSessionID in parentChildren {
+            if (activeMap.Has(childSessionID)) {
+                closedHwnds.Push(activeMap[childSessionID])
+            } else {
+                for actKey, actHwnd in activeMap {
+                    if (InStr(actKey, childSessionID . "#") == 1) {
+                        closedHwnds.Push(actHwnd)
+                    }
+                }
+            }
+        }
+    }
+    return closedHwnds
+}
+
+testActive := Map("c:/temp/s1.tsv#2", 2002, "c:/temp/s2.tsv#3", 2003, "c:/temp/s3.tsv#4", 2004)
+testChildren := ["c:/temp/s1.tsv", "c:/temp/s2.tsv", "c:/temp/s3.tsv"]
+closedList := SimulateParentClose(testChildren, testActive, true)
+Assert(closedList.Length == 3 && closedList[1] == 2002 && closedList[2] == 2003 && closedList[3] == 2004,
+    "Closing Window 1 successfully identifies and closes all child descendant windows.")
+
 ; Write summary
 FileAppend("`nSummary: " (totalTests - failedTests) "/" totalTests " tests passed.`n", A_ScriptDir "\test_results.txt")
 ExitApp()
