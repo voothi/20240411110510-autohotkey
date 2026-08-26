@@ -267,6 +267,7 @@ ActionRenderDoneIO(guiObj, payload) {
     } catch {
     }
     try {
+        guiObj.wb.document.body.classList.add("kw-ahk-native-host")
         if (isMax) {
             guiObj.wb.document.body.classList.add("maximized")
         } else {
@@ -734,6 +735,7 @@ ActionReloadDoneIO(guiObj, payload) {
     } catch {
     }
     try {
+        guiObj.wb.document.body.classList.add("kw-ahk-native-host")
         if (isMax) {
             guiObj.wb.document.body.classList.add("maximized")
         } else {
