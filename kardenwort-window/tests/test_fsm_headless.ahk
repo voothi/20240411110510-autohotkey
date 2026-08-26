@@ -319,7 +319,8 @@ g.FsmMemory["LastMTime"] := "20260825000000"
 g.FsmMemory["AutoInjectRetries"] := 0
 global G_AutoUpdate := 0
 FsmDispatch(g, EV_FILE_CHANGED, "20260825000001")
-_Assert(g.FsmState == FSM_IDLE, "S5.11: IDLE + EV_FILE_CHANGED with IsProgressive=true & G_AutoUpdate=0 stays in IDLE (no reload flicker)")
+_Assert(g.FsmState == FSM_IDLE,
+    "S5.11: IDLE + EV_FILE_CHANGED with IsProgressive=true & G_AutoUpdate=0 stays in IDLE (no reload flicker)")
 
 ; S5.12: IDLE + EV_FILE_CHANGED with G_AutoUpdate=1 triggers RELOADING
 g := MakeMockGui()

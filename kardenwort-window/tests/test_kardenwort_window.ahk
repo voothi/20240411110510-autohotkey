@@ -76,7 +76,8 @@ s17 := 17
 eff17 := (s17 > 1) ? (s17 - 2) : 0
 GetCascadeCoords(&xSeq17, &ySeq17, eff17)
 
-Assert(xSeq2 == 50 && ySeq2 == 50 && xSeq3 == 80 && ySeq3 == 80 && xSeq9 == 260 && ySeq9 == 260 && xSeq17 == 50 && ySeq17 == 50,
+Assert(xSeq2 == 50 && ySeq2 == 50 && xSeq3 == 80 && ySeq3 == 80 && xSeq9 == 260 && ySeq9 == 260 && xSeq17 == 50 &&
+    ySeq17 == 50,
     "Sequence-aware cascade offsets (Badge 2..9..17) calculated correctly.")
 
 ; Test 4: Verify config file existence and format
@@ -311,6 +312,7 @@ g_settle := MakeMockGui()
 g_settle.FsmState := FSM_IDLE
 g_settle.FsmMemory["IsProgressive"] := true
 g_settle.FsmMemory["LastMTime"] := "20260825120000"
+g_settle.FsmMemory["GracePeriodMTime"] := "20260825120002"
 g_settle.FsmMemory["AutoInjectRetries"] := 1000
 global G_AutoUpdate := 0
 FsmDispatch(g_settle, EV_FILE_CHANGED, "20260825120002")
