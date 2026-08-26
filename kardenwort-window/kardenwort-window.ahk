@@ -1947,17 +1947,17 @@ FetchHtmlViaHttp(targetLang, zid, textMode, sourceText, tsvPath, seqNum, isBypas
         . "}"
 
     winCount := IsSet(G_WindowCount) ? G_WindowCount : 0
-    recvTimeout := 8000
+    recvTimeout := 25000
     if (winCount > 20) {
-        recvTimeout := 12000
+        recvTimeout := 35000
     } else if (winCount > 10) {
-        recvTimeout := 10000
+        recvTimeout := 30000
     }
 
     try {
         http := ComObject("WinHttp.WinHttpRequest.5.1")
         http.Open("POST", url, false)
-        http.SetTimeouts(500, 500, 5000, recvTimeout)
+        http.SetTimeouts(1000, 1000, 10000, recvTimeout)
         if (G_ServerApiKey != "") {
             http.SetRequestHeader("X-API-Token", G_ServerApiKey)
         }
@@ -2446,10 +2446,36 @@ ProcessArgs(argsArray) {
         }
     }
 
-    global G_CascadeLayoutMode
+    global G_CascadeLayoutMode, G_ActiveWindows
     if (G_CascadeLayoutMode == "front_first" || G_CascadeLayoutMode == "2") {
-        if (firstHwnd && WinExist("ahk_id " firstHwnd)) {
-            WinActivate("ahk_id " firstHwnd)
+        targetHwnd := 0
+        minSeq := 999999
+        minHwnd := 0
+
+        for sId, h in G_ActiveWindows {
+            if (!WinExist("ahk_id " h))
+                continue
+            seq := 0
+            if RegExMatch(sId, "#(\d+)$", &mSeq) {
+                seq := Integer(mSeq[1])
+            }
+            if (seq == 1) {
+                targetHwnd := h
+                break
+            }
+            if (seq > 0 && seq < minSeq) {
+                minSeq := seq
+                minHwnd := h
+            }
+        }
+
+        if (!targetHwnd && minHwnd)
+            targetHwnd := minHwnd
+        if (!targetHwnd && firstHwnd && WinExist("ahk_id " firstHwnd))
+            targetHwnd := firstHwnd
+
+        if (targetHwnd && WinExist("ahk_id " targetHwnd)) {
+            WinActivate("ahk_id " targetHwnd)
         }
     } else {
         ; Reverse-stack mode: Window 1 stays at the bottom of the stack.
@@ -2827,14 +2853,18 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
     outB64 := ""
     errJSON := ""
 
-    ; Try fast HTTP in-memory path first
-    httpExit := FetchHtmlViaHttp(lang, ZID, textMode, sourceText, tsvPath, seqNum, false, &outB64, &errJSON)
-    if (httpExit == 0) {
-        exitCode := 0
-    } else if (httpExit > 0 && InStr(errJSON, "LANGUAGE_MISMATCH")) {
-        exitCode := httpExit
+    global G_ServerEnabled, G_ServerStatus
+    isServerActive := G_ServerEnabled || (G_ServerStatus == "Running" || G_ServerStatus == "Running (Unconfirmed)")
+
+    if (isServerActive) {
+        httpExit := FetchHtmlViaHttp(lang, ZID, textMode, sourceText, tsvPath, seqNum, false, &outB64, &errJSON)
+        if (httpExit == 0) {
+            exitCode := 0
+        } else {
+            exitCode := httpExit
+        }
     } else {
-        ; Graceful fallback to CLI RunSilent
+        ; Standalone CLI path
         try {
             exitCode := RunSilent(cmd, &outB64, &errJSON)
         } catch as e {
@@ -2863,9 +2893,13 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
             MyGui.Lang := detectedLang
             MyGui.Title := "Kardenwort - " lang " (" textMode ")"
             UpdateStatus(MyGui, "Invoking backend analysis (" lang ")...")
-            httpExit := FetchHtmlViaHttp(lang, ZID, textMode, sourceText, tsvPath, seqNum, false, &outB64, &errJSON)
-            if (httpExit == 0) {
-                exitCode := 0
+            if (isServerActive) {
+                httpExit := FetchHtmlViaHttp(lang, ZID, textMode, sourceText, tsvPath, seqNum, false, &outB64, &errJSON)
+                if (httpExit == 0) {
+                    exitCode := 0
+                } else {
+                    exitCode := httpExit
+                }
             } else {
                 cmd := BuildRenderCmd(lang, false)
                 try {
@@ -2875,9 +2909,13 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
                 }
             }
         } else if (choice == "No") {
-            httpExit := FetchHtmlViaHttp(lang, ZID, textMode, sourceText, tsvPath, seqNum, true, &outB64, &errJSON)
-            if (httpExit == 0) {
-                exitCode := 0
+            if (isServerActive) {
+                httpExit := FetchHtmlViaHttp(lang, ZID, textMode, sourceText, tsvPath, seqNum, true, &outB64, &errJSON)
+                if (httpExit == 0) {
+                    exitCode := 0
+                } else {
+                    exitCode := httpExit
+                }
             } else {
                 cmdBypass := BuildRenderCmd(lang, true)
                 try {

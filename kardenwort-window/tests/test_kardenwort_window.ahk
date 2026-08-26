@@ -566,19 +566,52 @@ SimulateProcessArgs(args, layoutMode := "reverse_stack", activeMap := Map()) {
 
     activatedHwnd := 0
     if (layoutMode == "front_first" || layoutMode == "2") {
-        activatedHwnd := firstHwnd
+        targetHwnd := 0
+        minSeq := 999999
+        minHwnd := 0
+        for sId, h in activeMap {
+            seq := 0
+            if RegExMatch(sId, "#(\d+)$", &mSeq) {
+                seq := Integer(mSeq[1])
+            }
+            if (seq == 1) {
+                targetHwnd := h
+                break
+            }
+            if (seq > 0 && seq < minSeq) {
+                minSeq := seq
+                minHwnd := h
+            }
+        }
+        if (!targetHwnd && minHwnd)
+            targetHwnd := minHwnd
+        if (!targetHwnd && firstHwnd)
+            targetHwnd := firstHwnd
+        activatedHwnd := targetHwnd
     } else {
         activatedHwnd := lastHwnd
     }
     return { executed: executed, activated: activatedHwnd }
 }
 
-testMapFF := Map("session#1", 1001)
-testArgsFF := ["--seq-num", "2", "--desk", "p1.txt", "--seq-num", "3", "--desk", "p2.txt", "--seq-num", "4", "--desk", "p3.txt"]
-resProcFF := SimulateProcessArgs(testArgsFF, "front_first", testMapFF)
-Assert(resProcFF.executed.Length == 3 && resProcFF.executed[1].seq == "2" && resProcFF.executed[2].seq == "3" && resProcFF.executed[3].seq == "4",
+; Test: front_first activation with Master Window 1 active (Full parent mode)
+testMapFF_Full := Map("session#1", 1001)
+testArgsFF_Normal := ["--seq-num", "2", "--desk", "p1.txt", "--seq-num", "3", "--desk", "p2.txt", "--seq-num", "4", "--desk", "p3.txt"]
+resProcFF_Full := SimulateProcessArgs(testArgsFF_Normal, "front_first", testMapFF_Full)
+Assert(resProcFF_Full.executed.Length == 3 && resProcFF_Full.executed[1].seq == "2" && resProcFF_Full.executed[2].seq == "3" && resProcFF_Full.executed[3].seq == "4",
     "ProcessArgs parses and processes actions in natural sequential order (2 -> 3 -> 4).")
-Assert(resProcFF.activated == 1002, "ProcessArgs in front_first mode activates Window #2 (first child window) in foreground.")
+Assert(resProcFF_Full.activated == 1001, "ProcessArgs in front_first mode with parent full activates Window #1 (master window) in foreground.")
+
+testMapFF_Rev := Map("session#1", 1001)
+testArgsFF_Rev := ["--seq-num", "4", "--desk", "p3.txt", "--seq-num", "3", "--desk", "p2.txt", "--seq-num", "2", "--desk", "p1.txt"]
+resProcFF_Rev := SimulateProcessArgs(testArgsFF_Rev, "front_first", testMapFF_Rev)
+Assert(resProcFF_Rev.activated == 1001, "ProcessArgs in front_first mode with reverse argument spawn activates Window #1 (master window) in foreground.")
+
+; Test: front_first activation without Window 1 (Stub parent mode) activates lowest child window (Window #2)
+testMapFF_Stub := Map()
+testArgsFF_Stub := ["--seq-num", "4", "--desk", "p3.txt", "--seq-num", "3", "--desk", "p2.txt", "--seq-num", "2", "--desk", "p1.txt"]
+resProcFF_Stub := SimulateProcessArgs(testArgsFF_Stub, "front_first", testMapFF_Stub)
+Assert(resProcFF_Stub.activated == 1002, "ProcessArgs in front_first mode without Window 1 activates lowest sequence child Window #2 in foreground.")
 
 testMapRS := Map("session#1", 1001)
 testArgsRS := ["--seq-num", "4", "--desk", "p3.txt", "--seq-num", "3", "--desk", "p2.txt", "--seq-num", "2", "--desk", "p1.txt"]
