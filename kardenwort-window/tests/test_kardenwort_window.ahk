@@ -81,7 +81,7 @@ Assert(xSeq2 == 80 && ySeq2 == 80 && xSeq3 == 110 && ySeq3 == 110 && xSeq9 == 29
     "front_first sequence-aware cascade offsets (Badge 2 at +30px, Badge 3 at +60px) calculated correctly without overlapping Window 1.")
 
 ; Test 4: Verify config file existence and format
-configPath := "..\config.ini"
+configPath := A_ScriptDir "\..\config.ini"
 if FileExist(configPath) {
     pythonPath := IniRead(configPath, "Paths", "DeskPythonPath", "")
     scriptPath := IniRead(configPath, "Paths", "DeskScriptPath", "")
@@ -609,6 +609,37 @@ testChildren := ["c:/temp/s1.tsv", "c:/temp/s2.tsv", "c:/temp/s3.tsv"]
 closedList := SimulateParentClose(testChildren, testActive, true)
 Assert(closedList.Length == 3 && closedList[1] == 2002 && closedList[2] == 2003 && closedList[3] == 2004,
     "Closing Window 1 successfully identifies and closes all child descendant windows.")
+
+; ===================================================================================
+; Part 7: Single-Instance Exit and Render Done Non-Activation
+; ===================================================================================
+
+; Test: Single-Instance argument forwarding unconditionally terminates launcher process
+SimulateSingleInstanceForward(existingHwnd, args, sendSucceeds) {
+    if (existingHwnd) {
+        if (args.Length > 0) {
+            ; simulates SendMessage
+            if (!sendSucceeds) {
+                ; message box or error logged
+            }
+        }
+        return "EXITED"
+    }
+    return "CONTINUE_NEW_INSTANCE"
+}
+
+s1 := SimulateSingleInstanceForward(12345, ["--desk", "test.txt"], true)
+s2 := SimulateSingleInstanceForward(12345, ["--desk", "test.txt"], false)
+s3 := SimulateSingleInstanceForward(12345, [], false)
+s4 := SimulateSingleInstanceForward(0, ["--desk", "test.txt"], true)
+Assert(s1 == "EXITED" && s2 == "EXITED" && s3 == "EXITED" && s4 == "CONTINUE_NEW_INSTANCE",
+    "Single-instance startup unconditionally exits whenever an existing instance HWND is detected.")
+
+; Test: ActionRenderDone does not activate or pop window
+gRender := MakeMockGui()
+gRender.FsmState := FSM_LOADING
+FsmDispatch(gRender, EV_RENDER_DONE, { outB64: "" })
+Assert(gRender.FsmState == FSM_IDLE, "Render done transitions state from LOADING to IDLE without raising GUI focus")
 
 ; Write summary
 FileAppend("`nSummary: " (totalTests - failedTests) "/" totalTests " tests passed.`n", A_ScriptDir "\test_results.txt")

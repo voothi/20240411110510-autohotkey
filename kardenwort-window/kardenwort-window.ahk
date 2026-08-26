@@ -11,10 +11,8 @@ if (A_ScriptFullPath = A_LineFile && !IsSet(G_FsmTestMode)) {
         try {
             if InStr(WinGetTitle(win), A_ScriptFullPath) {
                 if (win != A_ScriptHwnd) {
-                    if (!DllCall("IsHungAppWindow", "Ptr", win)) {
-                        existingHwnd := win
-                        break
-                    }
+                    existingHwnd := win
+                    break
                 }
             }
         } catch Any {
@@ -29,27 +27,22 @@ if (A_ScriptFullPath = A_LineFile && !IsSet(G_FsmTestMode)) {
             for arg in A_Args {
                 payload .= arg "`n"
             }
-            CopyDataStruct := Buffer(3 * A_PtrSize, 0)
-            strBuf := Buffer(StrPut(payload, "UTF-16"), 0)
+            CopyDataStruct := Buffer(3 * A_PtrSize)
+            strBuf := Buffer(StrPut(payload, "UTF-16"))
             StrPut(payload, strBuf, "UTF-16")
             NumPut("Ptr", 1, CopyDataStruct, 0)
             NumPut("UInt", strBuf.Size, CopyDataStruct, A_PtrSize)
             NumPut("Ptr", strBuf.Ptr, CopyDataStruct, 2 * A_PtrSize)
 
             DetectHiddenWindows True
-            sentSuccessfully := false
             try {
                 SendMessage(0x004A, 0, CopyDataStruct.Ptr, , "ahk_id " existingHwnd, , , , 15000)
-                sentSuccessfully := true
             } catch Error as err {
-                TrayTip("Kardenwort Warning", "Failed to forward arguments to existing instance; starting new session.", 2)
+                KardenMsgBox("Failed to send arguments to existing instance (timeout/error):`n" err.Message,
+                    "Kardenwort SendMessage Error", 16)
             }
-            if (sentSuccessfully) {
-                ExitApp()
-            }
-        } else {
-            ExitApp()
         }
+        ExitApp()
     }
 }
 
@@ -262,7 +255,6 @@ ActionRenderDoneIO(guiObj, payload) {
         } catch {
         }
         guiObj.wvc.Visible := true
-        guiObj.Show()
         return
     }
     try {
@@ -289,7 +281,6 @@ ActionRenderDoneIO(guiObj, payload) {
         InjectHoverHighlightMvp(guiObj, G_HoverHighlightMvpBookmarks)
     }
     guiObj.wvc.Visible := true
-    guiObj.Show()
     try {
         childrenDiv := guiObj.wb.document.getElementById("kardenwort-children")
         if (childrenDiv) {
