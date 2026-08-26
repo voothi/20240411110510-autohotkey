@@ -837,6 +837,48 @@ Assert(sentMsgs.Length == 2 && sentMsgs[1].msg == 0x80 && sentMsgs[1].wParam == 
 Assert(setClassCalls.Length == 2 && setClassCalls[1].nIndex == -34 && setClassCalls[2].nIndex == -14,
     "ApplyWindowAndClassIcons registers class icon fallbacks for GCLP_HICONSM (-34) and GCLP_HICON (-14)")
 
+; ===================================================================================
+; Part 10: Browser Tab Cascade URL Formulation & Extraction Tests
+; ===================================================================================
+
+; Test: ExtractZidFromPath extraction accuracy
+Assert(ExtractZidFromPath("20260826230451") == "20260826230451", "ExtractZidFromPath extracts standard 14-digit ZID")
+Assert(ExtractZidFromPath("20260826230451-01") == "20260826230451-01", "ExtractZidFromPath extracts child indexed ZID")
+Assert(ExtractZidFromPath("U:\voothi\20260629183335-kardenwort-desk\results\20260826230451-02.de.tsv") == "20260826230451-02", "ExtractZidFromPath extracts child ZID from full file path")
+Assert(ExtractZidFromPath("custom_target_name") == "custom_target_name", "ExtractZidFromPath returns fallback string if no regex match")
+
+; Test: BuildDeskBrowserUrl formatting
+testUrl := BuildDeskBrowserUrl("20260826230451-01")
+Assert(InStr(testUrl, "session_zid=20260826230451-01") > 0, "BuildDeskBrowserUrl contains session_zid query parameter")
+Assert(InStr(testUrl, "theme=") > 0, "BuildDeskBrowserUrl contains theme query parameter")
+
+; Test: outChildren parsing logic simulation
+mockOutChildren := [
+    "--seq-num", "2", "--restore", "U:\voothi\results\20260826230451-01.de.tsv",
+    "--seq-num", "3", "--restore", "U:\voothi\results\20260826230451-02.de.tsv",
+    "--seq-num", "4", "--restore", "U:\voothi\results\20260826230451-03.de.tsv"
+]
+childUrls := []
+if (mockOutChildren.Length > 0) {
+    i := 1
+    while (i <= mockOutChildren.Length) {
+        arg := mockOutChildren[i]
+        if (arg == "--restore" && i < mockOutChildren.Length) {
+            targetPath := mockOutChildren[i + 1]
+            childZid := ExtractZidFromPath(targetPath)
+            childUrl := BuildDeskBrowserUrl(childZid)
+            childUrls.Push(childUrl)
+            i += 2
+        } else {
+            i += 1
+        }
+    }
+}
+Assert(childUrls.Length == 3, "Iterating mockOutChildren produced 3 child tab URLs")
+Assert(InStr(childUrls[1], "20260826230451-01") > 0, "Child tab 1 URL contains 20260826230451-01")
+Assert(InStr(childUrls[2], "20260826230451-02") > 0, "Child tab 2 URL contains 20260826230451-02")
+Assert(InStr(childUrls[3], "20260826230451-03") > 0, "Child tab 3 URL contains 20260826230451-03")
+
 ; Write summary
 FileAppend("`nSummary: " (totalTests - failedTests) "/" totalTests " tests passed.`n", A_ScriptDir "\test_results.txt")
 ExitApp()

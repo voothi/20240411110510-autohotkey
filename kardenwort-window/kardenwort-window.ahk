@@ -2450,9 +2450,19 @@ ProcessArgs(argsArray) {
 
         local hwnd := 0
         if (act.type == "restore") {
-            hwnd := LaunchRestore(act.target)
+            if (G_LaunchInBrowser == 1 || G_LaunchInBrowser == "1") {
+                childZid := ExtractZidFromPath(act.target)
+                targetUrl := BuildDeskBrowserUrl(childZid)
+                Run(targetUrl)
+            } else {
+                hwnd := LaunchRestore(act.target)
+            }
         } else if (act.type == "desk") {
-            hwnd := LaunchDesk(act.target, act.mode)
+            if (G_LaunchInBrowser == 1 || G_LaunchInBrowser == "1") {
+                LaunchBrowserTab(act.target, act.mode, act.zid)
+            } else {
+                hwnd := LaunchDesk(act.target, act.mode)
+            }
         }
 
         if (hwnd) {
@@ -2619,9 +2629,24 @@ ApplyWindowAndClassIcons(hwnd, hIconSmall, hIconBig) {
     return true
 }
 
-; ===================================================================================
-; GUI & Watcher Implementation
-; ===================================================================================
+ExtractZidFromPath(pathOrZid) {
+    if RegExMatch(pathOrZid, "(\d{14}(?:-\d+)?)", &mZid) {
+        return mZid[1]
+    }
+    return pathOrZid
+}
+
+BuildDeskBrowserUrl(sessionIdentifier) {
+    global G_ServerHost, G_ServerPort, G_ControllerPort, G_ServerApiKey, G_Theme
+    host := G_ServerHost ? G_ServerHost : "127.0.0.1"
+    port := G_ControllerPort ? G_ControllerPort : (G_ServerPort ? G_ServerPort : 18335)
+    url := "http://" . host . ":" . port . "/?session_zid=" . sessionIdentifier . "&theme=" . G_Theme
+    if (G_ServerApiKey != "") {
+        url .= "&token=" . G_ServerApiKey
+    }
+    return url
+}
+
 LaunchBrowserTab(sourceText, textMode, presetZID := "") {
     if (textMode == "single") {
         sourceText := CleanClipboardText(sourceText)
@@ -2654,13 +2679,27 @@ LaunchBrowserTab(sourceText, textMode, presetZID := "") {
         return false
     }
 
-    ; Construct target URL and invoke Run(url)
-    targetUrl := "http://" . host . ":" . port . "/?session_zid=" . ZID . "&theme=" . G_Theme
-    if (G_ServerApiKey != "") {
-        targetUrl .= "&token=" . G_ServerApiKey
+    ; Construct target URL and invoke Run(url) for master tab
+    mainUrl := BuildDeskBrowserUrl(ZID)
+    Run(mainUrl)
+
+    ; Open each decomposed child session tab in the browser
+    if (outChildren.Length > 0) {
+        i := 1
+        while (i <= outChildren.Length) {
+            arg := outChildren[i]
+            if (arg == "--restore" && i < outChildren.Length) {
+                targetPath := outChildren[i + 1]
+                childZid := ExtractZidFromPath(targetPath)
+                childUrl := BuildDeskBrowserUrl(childZid)
+                Run(childUrl)
+                i += 2
+            } else {
+                i += 1
+            }
+        }
     }
 
-    Run(targetUrl)
     return true
 }
 
