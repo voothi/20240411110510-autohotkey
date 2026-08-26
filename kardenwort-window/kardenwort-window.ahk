@@ -38,8 +38,7 @@ if (A_ScriptFullPath = A_LineFile && !IsSet(G_FsmTestMode)) {
             try {
                 SendMessage(0x004A, 0, CopyDataStruct.Ptr, , "ahk_id " existingHwnd, , , , 15000)
             } catch Error as err {
-                KardenMsgBox("Failed to send arguments to existing instance (timeout/error):`n" err.Message,
-                    "Kardenwort SendMessage Error", 16)
+                TrayTip("Kardenwort Warning", "Failed to send arguments to existing instance: " err.Message, 2)
             }
         }
         ExitApp()
@@ -1807,15 +1806,24 @@ OnToggleHotkeyPress(keyToWait, thisHotkey) {
     if (!activeHwnd)
         return
 
-    guiObj := GuiFromHwnd(activeHwnd)
-    if (!guiObj || !guiObj.HasProp("wb"))
+    try {
+        if (WinGetPID(activeHwnd) != ProcessExist())
+            return
+        if (WinGetClass(activeHwnd) != "AutoHotkeyGUI")
+            return
+
+        guiObj := GuiFromHwnd(activeHwnd)
+        if (!guiObj || !guiObj.HasProp("wb"))
+            return
+
+        ToggleSelectableTextMode(guiObj, true)
+
+        KeyWait(keyToWait)
+
+        ToggleSelectableTextMode(guiObj, false)
+    } catch {
         return
-
-    ToggleSelectableTextMode(guiObj, true)
-
-    KeyWait(keyToWait)
-
-    ToggleSelectableTextMode(guiObj, false)
+    }
 }
 
 InitializeTrayMenu() {
@@ -2555,6 +2563,39 @@ CloseAllActiveWindows() {
     return true
 }
 
+SetWindowAppId(hwnd, appId) {
+    if (!hwnd || appId == "")
+        return false
+    static IID_IPropertyStore := "{886d8eeb-8cf2-4446-8d02-cdba1dbdcf99}"
+    static pkeyAppId := 0
+    if (!pkeyAppId) {
+        pkeyAppId := Buffer(20, 0)
+        DllCall("ole32\CLSIDFromString", "WStr", "{9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3}", "Ptr", pkeyAppId)
+        NumPut("UInt", 5, pkeyAppId, 16)
+    }
+
+    iidBuf := Buffer(16, 0)
+    DllCall("ole32\CLSIDFromString", "WStr", IID_IPropertyStore, "Ptr", iidBuf)
+
+    local pPropStore := 0
+    hr := DllCall("shell32\SHGetPropertyStoreForWindow", "Ptr", hwnd, "Ptr", iidBuf, "Ptr*", &pPropStore, "Int")
+    if (hr != 0 || !pPropStore)
+        return false
+
+    ; PROPVARIANT for VT_LPWSTR (vt = 31)
+    propVar := Buffer(24, 0)
+    NumPut("UShort", 31, propVar, 0)
+    NumPut("Ptr", StrPtr(appId), propVar, 8)
+
+    ; IPropertyStore::SetValue (index 6)
+    hrSet := ComCall(6, pPropStore, "Ptr", pkeyAppId, "Ptr", propVar)
+    ; IPropertyStore::Commit (index 7)
+    hrCommit := ComCall(7, pPropStore)
+
+    ObjRelease(pPropStore)
+    return (hrSet == 0 && hrCommit == 0)
+}
+
 ; ===================================================================================
 ; GUI & Watcher Implementation
 ; ===================================================================================
@@ -2630,15 +2671,17 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
     guiTitle := "Kardenwort - " lang " (" textMode ")"
 
     ; Create GUI immediately for instant visual responsiveness
-    DllCall("shell32\SetCurrentProcessExplicitAppUserModelID", "WStr", "Kardenwort.Window." seqNum)
     local iconPath := A_ScriptDir "\..\assets\numbers\" seqNum ".ico"
+    local hIconSmall := 0, hIconBig := 0
     MyGui := Gui("+Resize +MinSize400x300", guiTitle)
+    SetWindowAppId(MyGui.Hwnd, "Kardenwort.Window." seqNum)
     if (FileExist(iconPath)) {
-        local hIcon := LoadPicture(iconPath, "w32 h32", &imageType := 1)
-        if (hIcon) {
-            SendMessage(0x80, 0, hIcon, , MyGui.Hwnd)
-            SendMessage(0x80, 1, hIcon, , MyGui.Hwnd)
-        }
+        hIconSmall := LoadPicture(iconPath, "w16 h16", &imageTypeSmall := 1)
+        hIconBig := LoadPicture(iconPath, "w32 h32", &imageTypeBig := 1)
+        if (hIconSmall)
+            SendMessage(0x80, 0, hIconSmall, , MyGui.Hwnd)
+        if (hIconBig)
+            SendMessage(0x80, 1, hIconBig, , MyGui.Hwnd)
     }
     MyGui.BackColor := G_GuiBgColor
     DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", MyGui.Hwnd, "UInt", 20, "Ptr*", G_DwmDark, "UInt", 4)
@@ -2730,6 +2773,11 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
     }
 
     MyGui.Show(showStr)
+    SetWindowAppId(MyGui.Hwnd, "Kardenwort.Window." seqNum)
+    if (hIconSmall)
+        SendMessage(0x80, 0, hIconSmall, , MyGui.Hwnd)
+    if (hIconBig)
+        SendMessage(0x80, 1, hIconBig, , MyGui.Hwnd)
     MyGui.GetClientPos(, , &clientWidth, &clientHeight)
     GuiSize(MyGui, 0, clientWidth, clientHeight)
     if (G_WindowCount == 0) {
