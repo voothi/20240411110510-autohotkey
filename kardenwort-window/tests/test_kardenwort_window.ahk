@@ -849,8 +849,9 @@ Assert(ExtractZidFromPath("U:\voothi\20260629183335-kardenwort-desk\results\2026
 Assert(ExtractZidFromPath("custom_target_name") == "custom_target_name", "ExtractZidFromPath returns fallback string if no regex match")
 
 ; Test: BuildDeskBrowserUrl formatting
-testUrl := BuildDeskBrowserUrl("20260826230451-01")
+testUrl := BuildDeskBrowserUrl("20260826230451-01", 2)
 Assert(InStr(testUrl, "session_zid=20260826230451-01") > 0, "BuildDeskBrowserUrl contains session_zid query parameter")
+Assert(InStr(testUrl, "seq_num=2") > 0, "BuildDeskBrowserUrl contains seq_num query parameter")
 Assert(InStr(testUrl, "theme=") > 0, "BuildDeskBrowserUrl contains theme query parameter")
 
 ; Test: outChildren parsing logic simulation
@@ -861,14 +862,19 @@ mockOutChildren := [
 ]
 childUrls := []
 if (mockOutChildren.Length > 0) {
+    childSeq := 2
     i := 1
     while (i <= mockOutChildren.Length) {
         arg := mockOutChildren[i]
-        if (arg == "--restore" && i < mockOutChildren.Length) {
+        if (arg == "--seq-num" && i < mockOutChildren.Length) {
+            childSeq := mockOutChildren[i + 1]
+            i += 2
+        } else if (arg == "--restore" && i < mockOutChildren.Length) {
             targetPath := mockOutChildren[i + 1]
             childZid := ExtractZidFromPath(targetPath)
-            childUrl := BuildDeskBrowserUrl(childZid)
+            childUrl := BuildDeskBrowserUrl(childZid, childSeq)
             childUrls.Push(childUrl)
+            childSeq += 1
             i += 2
         } else {
             i += 1
@@ -876,8 +882,8 @@ if (mockOutChildren.Length > 0) {
     }
 }
 Assert(childUrls.Length == 3, "Iterating mockOutChildren produced 3 child tab URLs")
-Assert(InStr(childUrls[1], "20260826230451-01") > 0, "Child tab 1 URL contains 20260826230451-01")
-Assert(InStr(childUrls[2], "20260826230451-02") > 0, "Child tab 2 URL contains 20260826230451-02")
+Assert(InStr(childUrls[1], "20260826230451-01") > 0 && InStr(childUrls[1], "seq_num=2") > 0, "Child tab 1 URL contains 20260826230451-01 and seq_num=2")
+Assert(InStr(childUrls[2], "20260826230451-02") > 0 && InStr(childUrls[2], "seq_num=3") > 0, "Child tab 2 URL contains 20260826230451-02 and seq_num=3")
 Assert(InStr(childUrls[3], "20260826230451-03") > 0, "Child tab 3 URL contains 20260826230451-03")
 
 ; Write summary

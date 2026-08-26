@@ -2452,7 +2452,8 @@ ProcessArgs(argsArray) {
         if (act.type == "restore") {
             if (G_LaunchInBrowser == 1 || G_LaunchInBrowser == "1") {
                 childZid := ExtractZidFromPath(act.target)
-                targetUrl := BuildDeskBrowserUrl(childZid)
+                seqNum := (act.seqNum != "") ? act.seqNum : 1
+                targetUrl := BuildDeskBrowserUrl(childZid, seqNum)
                 Run(targetUrl)
             } else {
                 hwnd := LaunchRestore(act.target)
@@ -2639,11 +2640,11 @@ ExtractZidFromPath(pathOrZid) {
     return pathOrZid
 }
 
-BuildDeskBrowserUrl(sessionIdentifier) {
+BuildDeskBrowserUrl(sessionIdentifier, seqNum := 1) {
     global G_ServerHost, G_ServerPort, G_ControllerPort, G_ServerApiKey, G_Theme
     host := G_ServerHost ? G_ServerHost : "127.0.0.1"
     port := G_ControllerPort ? G_ControllerPort : (G_ServerPort ? G_ServerPort : 18335)
-    url := "http://" . host . ":" . port . "/?session_zid=" . sessionIdentifier . "&theme=" . G_Theme
+    url := "http://" . host . ":" . port . "/?session_zid=" . sessionIdentifier . "&seq_num=" . seqNum . "&theme=" . G_Theme
     if (G_ServerApiKey != "") {
         url .= "&token=" . G_ServerApiKey
     }
@@ -2683,19 +2684,24 @@ LaunchBrowserTab(sourceText, textMode, presetZID := "") {
     }
 
     ; Construct target URL and invoke Run(url) for master tab
-    mainUrl := BuildDeskBrowserUrl(ZID)
+    mainUrl := BuildDeskBrowserUrl(ZID, 1)
     Run(mainUrl)
 
     ; Open each decomposed child session tab in the browser
     if (outChildren.Length > 0) {
+        childSeq := 2
         i := 1
         while (i <= outChildren.Length) {
             arg := outChildren[i]
-            if (arg == "--restore" && i < outChildren.Length) {
+            if (arg == "--seq-num" && i < outChildren.Length) {
+                childSeq := outChildren[i + 1]
+                i += 2
+            } else if (arg == "--restore" && i < outChildren.Length) {
                 targetPath := outChildren[i + 1]
                 childZid := ExtractZidFromPath(targetPath)
-                childUrl := BuildDeskBrowserUrl(childZid)
+                childUrl := BuildDeskBrowserUrl(childZid, childSeq)
                 Run(childUrl)
+                childSeq += 1
                 i += 2
             } else {
                 i += 1
