@@ -3550,6 +3550,7 @@ GuiClose(thisGui) {
     }
     if (G_CloseDescendantsOnParentClose && thisGui.HasProp("Children") && !(thisGui.HasProp("IsStub") && thisGui.IsStub)) {
         closedHwnds := Map()
+        childRecords := []
         for childSessionID in thisGui.Children {
             try {
                 normChild := StrLower(StrReplace(childSessionID, "/", "\"))
@@ -3578,10 +3579,34 @@ GuiClose(thisGui) {
 
                     if (isMatch) {
                         closedHwnds[actHwnd] := true
-                        if WinExist("ahk_id " actHwnd) {
-                            WinClose("ahk_id " actHwnd)
+                        seqNum := 0
+                        if RegExMatch(actKey, "#(\d+)$", &mSeq) {
+                            seqNum := Integer(mSeq[1])
                         }
+                        childRecords.Push({ seq: seqNum, hwnd: actHwnd })
                     }
+                }
+            } catch {
+            }
+        }
+
+        ; Sort child records ascending by sequence number (2 -> 3 -> 4...)
+        i := 1
+        while (i <= childRecords.Length) {
+            j := i
+            while (j > 1 && childRecords[j - 1].seq > childRecords[j].seq) {
+                tmp := childRecords[j - 1]
+                childRecords[j - 1] := childRecords[j]
+                childRecords[j] := tmp
+                j -= 1
+            }
+            i += 1
+        }
+
+        for item in childRecords {
+            try {
+                if WinExist("ahk_id " item.hwnd) {
+                    WinClose("ahk_id " item.hwnd)
                 }
             } catch {
             }

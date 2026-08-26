@@ -548,11 +548,12 @@ resProcSingle := SimulateProcessArgs(testArgsSingle, testMapSingle)
 Assert(resProcSingle.activated == 1001,
     "ProcessArgs with single window activates the launched window.")
 
-; Test: Parent Window 1 closing cleans up child descendant windows with slash normalization & ZID matching
+; Test: Parent Window 1 closing cleans up child descendant windows with slash normalization & ZID matching in ascending sequence order
 SimulateParentClose(parentChildren, activeMap, closeDescendants) {
     closedHwnds := []
     if (closeDescendants) {
         closedMap := Map()
+        childRecords := []
         for childSessionID in parentChildren {
             normChild := StrLower(StrReplace(childSessionID, "/", "\"))
             childZid := ""
@@ -577,9 +578,30 @@ SimulateParentClose(parentChildren, activeMap, closeDescendants) {
                 }
                 if (isMatch) {
                     closedMap[actHwnd] := true
-                    closedHwnds.Push(actHwnd)
+                    seqNum := 0
+                    if RegExMatch(actKey, "#(\d+)$", &mSeq) {
+                        seqNum := Integer(mSeq[1])
+                    }
+                    childRecords.Push({ seq: seqNum, hwnd: actHwnd })
                 }
             }
+        }
+
+        ; Sort child records ascending by sequence number (2 -> 3 -> 4...)
+        i := 1
+        while (i <= childRecords.Length) {
+            j := i
+            while (j > 1 && childRecords[j - 1].seq > childRecords[j].seq) {
+                tmp := childRecords[j - 1]
+                childRecords[j - 1] := childRecords[j]
+                childRecords[j] := tmp
+                j -= 1
+            }
+            i += 1
+        }
+
+        for item in childRecords {
+            closedHwnds.Push(item.hwnd)
         }
     }
     return closedHwnds
@@ -591,6 +613,13 @@ closedList := SimulateParentClose(testChildren, testActive, true)
 Assert(closedList.Length == 3 && closedList[1] == 2002 && closedList[2] == 2003 && closedList[3] == 2004,
     "Closing Window 1 successfully identifies and closes all child descendant windows.")
 
+; Test: Out-of-order / reverse-spawned active map is closed in ascending sequence order (2 -> 3 -> 4)
+testActiveUnordered := Map("c:/temp/s3.tsv#4", 2004, "c:/temp/s1.tsv#2", 2002, "c:/temp/s2.tsv#3", 2003)
+testChildrenReverse := ["c:/temp/s3.tsv", "c:/temp/s2.tsv", "c:/temp/s1.tsv"]
+closedListUnordered := SimulateParentClose(testChildrenReverse, testActiveUnordered, true)
+Assert(closedListUnordered.Length == 3 && closedListUnordered[1] == 2002 && closedListUnordered[2] == 2003 && closedListUnordered[3] == 2004,
+    "SimulateParentClose closes child windows in ascending sequence order (2 -> 3 -> 4) regardless of registration order.")
+
 ; Test: Slash variation matching (/ vs \)
 testActiveMixedSlashes := Map("C:\vault\20260826171841-s1.de.tsv#2", 2102, "c:/vault/20260826171841-s2.de.tsv#3", 2103)
 testChildrenMixedSlashes := ["c:/vault/20260826171841-s1.de.tsv", "C:\vault\20260826171841-s2.de.tsv"]
@@ -598,12 +627,12 @@ closedMixed := SimulateParentClose(testChildrenMixedSlashes, testActiveMixedSlas
 Assert(closedMixed.Length == 2 && closedMixed[1] == 2102 && closedMixed[2] == 2103,
     "Descendant closure normalizes forward slashes and backslashes seamlessly.")
 
-; Test: 14-digit session ZID prefix matching across virtual SQLite session representations
-testActiveZid := Map("U:\vault\20260826171841-s1.de.tsv#2", 2202, "U:\vault\20260826171841-s2.de.tsv#3", 2203)
+; Test: 14-digit session ZID prefix matching across virtual SQLite session representations sorted ascending
+testActiveZid := Map("U:\vault\20260826171841-s3.de.tsv#4", 2204, "U:\vault\20260826171841-s1.de.tsv#2", 2202, "U:\vault\20260826171841-s2.de.tsv#3", 2203)
 testChildrenZid := ["20260826171841"]
 closedZid := SimulateParentClose(testChildrenZid, testActiveZid, true)
-Assert(closedZid.Length == 2 && closedZid[1] == 2202 && closedZid[2] == 2203,
-    "Descendant closure matches child windows by 14-digit session ZID prefix.")
+Assert(closedZid.Length == 3 && closedZid[1] == 2202 && closedZid[2] == 2203 && closedZid[3] == 2204,
+    "Descendant closure matches child windows by 14-digit session ZID prefix and sorts in ascending sequence order.")
 
 ; ===================================================================================
 ; Part 7: Single-Instance Exit and Render Done Non-Activation
