@@ -543,6 +543,7 @@ Assert(s2_0.x == 100 && s2_0.y == 100 && s3_0.x == 100 && s3_0.y == 100,
 SimulateProcessArgs(args, layoutMode := "reverse_stack", activeMap := Map()) {
     executed := []
     firstHwnd := 0
+    lastHwnd := 0
     currSeq := ""
     i := 1
     while (i <= args.Length) {
@@ -555,6 +556,7 @@ SimulateProcessArgs(args, layoutMode := "reverse_stack", activeMap := Map()) {
             activeMap["session#" . currSeq] := hwnd
             if (!firstHwnd)
                 firstHwnd := hwnd
+            lastHwnd := hwnd
             currSeq := ""
             i += 2
         } else {
@@ -566,12 +568,7 @@ SimulateProcessArgs(args, layoutMode := "reverse_stack", activeMap := Map()) {
     if (layoutMode == "front_first" || layoutMode == "2") {
         activatedHwnd := firstHwnd
     } else {
-        for sessionID, hwnd in activeMap {
-            if (SubStr(sessionID, -2) == "#1") {
-                activatedHwnd := hwnd
-                break
-            }
-        }
+        activatedHwnd := lastHwnd
     }
     return { executed: executed, activated: activatedHwnd }
 }
@@ -586,7 +583,7 @@ Assert(resProcFF.activated == 1002, "ProcessArgs in front_first mode activates W
 testMapRS := Map("session#1", 1001)
 testArgsRS := ["--seq-num", "4", "--desk", "p3.txt", "--seq-num", "3", "--desk", "p2.txt", "--seq-num", "2", "--desk", "p1.txt"]
 resProcRS := SimulateProcessArgs(testArgsRS, "reverse_stack", testMapRS)
-Assert(resProcRS.activated == 1001, "ProcessArgs in reverse_stack mode keeps Window #1 (master) in foreground.")
+Assert(resProcRS.activated == 1002, "ProcessArgs in reverse_stack mode activates Window #2 (top of stack) in foreground without raising Window #1.")
 
 ; Test: Parent Window 1 closing cleans up child descendant windows
 SimulateParentClose(parentChildren, activeMap, closeDescendants) {

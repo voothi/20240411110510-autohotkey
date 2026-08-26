@@ -2420,6 +2420,7 @@ ProcessArgs(argsArray) {
         return
 
     firstHwnd := 0
+    lastHwnd := 0
     for act in actions {
         if (act.seqNum != "")
             global G_OverrideSeqNum := act.seqNum
@@ -2435,23 +2436,23 @@ ProcessArgs(argsArray) {
             hwnd := LaunchDesk(act.target, act.mode)
         }
 
-        if (!firstHwnd && hwnd) {
-            firstHwnd := hwnd
+        if (hwnd) {
+            if (!firstHwnd)
+                firstHwnd := hwnd
+            lastHwnd := hwnd
         }
     }
 
-    global G_CascadeLayoutMode, G_ActiveWindows
+    global G_CascadeLayoutMode
     if (G_CascadeLayoutMode == "front_first" || G_CascadeLayoutMode == "2") {
         if (firstHwnd && WinExist("ahk_id " firstHwnd)) {
             WinActivate("ahk_id " firstHwnd)
         }
     } else {
-        ; Reverse-stack mode: Ensure master window (Window 1) remains active in the foreground
-        for sessionID, hwnd in G_ActiveWindows {
-            if (SubStr(sessionID, -2) == "#1" && WinExist("ahk_id " hwnd)) {
-                WinActivate("ahk_id " hwnd)
-                break
-            }
+        ; Reverse-stack mode: Window 1 stays at the bottom of the stack.
+        ; The top window (Window 2, spawned last) remains in the active foreground.
+        if (lastHwnd && WinExist("ahk_id " lastHwnd)) {
+            WinActivate("ahk_id " lastHwnd)
         }
     }
 }
