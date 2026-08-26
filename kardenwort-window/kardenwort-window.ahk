@@ -2282,11 +2282,16 @@ LaunchRestore(filePath) {
 
     foundTsv := ""
     foundTsvPath := ""
-    tsvPattern := fileDir "\" ZID "-*.tsv"
-    loop files, tsvPattern {
-        foundTsv := A_LoopFileName
-        foundTsvPath := A_LoopFileFullPath
-        break
+    if (SubStr(filePath, -4) == ".tsv" && FileExist(filePath)) {
+        foundTsvPath := filePath
+        SplitPath(filePath, &foundTsv)
+    } else {
+        tsvPattern := fileDir "\" ZID "-*.tsv"
+        loop files, tsvPattern {
+            foundTsv := A_LoopFileName
+            foundTsvPath := A_LoopFileFullPath
+            break
+        }
     }
     if (foundTsv != "") {
         RegExMatch(foundTsv, "\.([a-z]{2})\.tsv$", &mLangFound)

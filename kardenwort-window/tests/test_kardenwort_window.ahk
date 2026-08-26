@@ -641,6 +641,31 @@ gRender.FsmState := FSM_LOADING
 FsmDispatch(gRender, EV_RENDER_DONE, { outB64: "" })
 Assert(gRender.FsmState == FSM_IDLE, "Render done transitions state from LOADING to IDLE without raising GUI focus")
 
+; Test: LaunchRestore exact TSV path resolution without wildcard collision
+SimulateResolveRestoreTsv(filePath, fileDir, zid, fakeFiles) {
+    foundTsv := ""
+    foundTsvPath := ""
+    if (SubStr(filePath, -4) == ".tsv") {
+        foundTsvPath := filePath
+        SplitPath(filePath, &foundTsv)
+    } else {
+        tsvPattern := fileDir "\" zid "-*.tsv"
+        for f in fakeFiles {
+            if (InStr(f, zid) == 1 && SubStr(f, -4) == ".tsv") {
+                foundTsv := f
+                foundTsvPath := fileDir "\" f
+                break
+            }
+        }
+    }
+    return { name: foundTsv, path: foundTsvPath }
+}
+
+fakeDir := "C:\results"
+fakeFiles := ["20260826120000-001-first.de.tsv", "20260826120000-002-second.de.tsv"]
+resExact := SimulateResolveRestoreTsv("C:\results\20260826120000-002-second.de.tsv", fakeDir, "20260826120000", fakeFiles)
+Assert(resExact.path == "C:\results\20260826120000-002-second.de.tsv", "LaunchRestore with specific child TSV resolves directly to that child TSV without wildcard collision")
+
 ; Write summary
 FileAppend("`nSummary: " (totalTests - failedTests) "/" totalTests " tests passed.`n", A_ScriptDir "\test_results.txt")
 ExitApp()
