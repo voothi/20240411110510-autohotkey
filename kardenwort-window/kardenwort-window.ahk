@@ -2254,8 +2254,7 @@ LaunchRestore(filePath) {
     if (!FileExist(filePath)) {
         ; FS-Free SQLite mode: no physical file on disk.
         ; Delegate directly to LaunchKardenwortWindow which renders from SQLite session ZID.
-        LaunchKardenwortWindow("", "single", ZID, filePath)
-        return
+        return LaunchKardenwortWindow("", "single", ZID, filePath)
     }
 
     siblingTxt := ""

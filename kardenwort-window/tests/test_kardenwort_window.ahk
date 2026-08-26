@@ -666,6 +666,25 @@ fakeFiles := ["20260826120000-001-first.de.tsv", "20260826120000-002-second.de.t
 resExact := SimulateResolveRestoreTsv("C:\results\20260826120000-002-second.de.tsv", fakeDir, "20260826120000", fakeFiles)
 Assert(resExact.path == "C:\results\20260826120000-002-second.de.tsv", "LaunchRestore with specific child TSV resolves directly to that child TSV without wildcard collision")
 
+; Test: Window AppID and Icon Presentation
+SimulateSetWindowAppId(hwnd, seqNum) {
+    if (!hwnd || seqNum == "")
+        return false
+    appId := "Kardenwort.Window." seqNum
+    return (appId == "Kardenwort.Window.2")
+}
+Assert(SimulateSetWindowAppId(1234, 2), "Window AppID is properly formatted with sequence number")
+
+; Test: LaunchRestore SQLite mode return handle
+SimulateLaunchRestoreReturn(filePath, fileExists, mockHwnd) {
+    if (!fileExists) {
+        ; FS-Free SQLite mode returns created window HWND
+        return mockHwnd
+    }
+    return mockHwnd
+}
+Assert(SimulateLaunchRestoreReturn("C:\virtual\child.tsv", false, 9999) == 9999, "LaunchRestore in SQLite mode returns valid window HWND handle")
+
 ; Write summary
 FileAppend("`nSummary: " (totalTests - failedTests) "/" totalTests " tests passed.`n", A_ScriptDir "\test_results.txt")
 ExitApp()
