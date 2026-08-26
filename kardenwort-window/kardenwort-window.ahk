@@ -2602,6 +2602,20 @@ SetWindowAppId(hwnd, appId) {
     return (hrSet == 0 && hrCommit == 0)
 }
 
+ApplyWindowAndClassIcons(hwnd, hIconSmall, hIconBig) {
+    if (!hwnd)
+        return false
+    if (hIconSmall) {
+        DllCall("SendMessage", "Ptr", hwnd, "UInt", 0x80, "Ptr", 0, "Ptr", hIconSmall, "Ptr")
+        DllCall(A_PtrSize == 8 ? "SetClassLongPtr" : "SetClassLong", "Ptr", hwnd, "Int", -34, "Ptr", hIconSmall, "Ptr")
+    }
+    if (hIconBig) {
+        DllCall("SendMessage", "Ptr", hwnd, "UInt", 0x80, "Ptr", 1, "Ptr", hIconBig, "Ptr")
+        DllCall(A_PtrSize == 8 ? "SetClassLongPtr" : "SetClassLong", "Ptr", hwnd, "Int", -14, "Ptr", hIconBig, "Ptr")
+    }
+    return true
+}
+
 ; ===================================================================================
 ; GUI & Watcher Implementation
 ; ===================================================================================
@@ -2684,11 +2698,10 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
     if (FileExist(iconPath)) {
         hIconSmall := LoadPicture(iconPath, "w16 h16", &imageTypeSmall := 1)
         hIconBig := LoadPicture(iconPath, "w32 h32", &imageTypeBig := 1)
-        if (hIconSmall)
-            SendMessage(0x80, 0, hIconSmall, , MyGui.Hwnd)
-        if (hIconBig)
-            SendMessage(0x80, 1, hIconBig, , MyGui.Hwnd)
     }
+    MyGui.hIconSmall := hIconSmall
+    MyGui.hIconBig := hIconBig
+    ApplyWindowAndClassIcons(MyGui.Hwnd, hIconSmall, hIconBig)
     MyGui.BackColor := G_GuiBgColor
     DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", MyGui.Hwnd, "UInt", 20, "Ptr*", G_DwmDark, "UInt", 4)
     MyGui.OnEvent("Close", GuiClose)
@@ -2774,10 +2787,7 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
 
     MyGui.Show(showStr)
     SetWindowAppId(MyGui.Hwnd, "Kardenwort.Window." seqNum)
-    if (hIconSmall)
-        SendMessage(0x80, 0, hIconSmall, , MyGui.Hwnd)
-    if (hIconBig)
-        SendMessage(0x80, 1, hIconBig, , MyGui.Hwnd)
+    ApplyWindowAndClassIcons(MyGui.Hwnd, MyGui.hIconSmall, MyGui.hIconBig)
     MyGui.GetClientPos(, , &clientWidth, &clientHeight)
     GuiSize(MyGui, 0, clientWidth, clientHeight)
     if (G_WindowCount == 0) {
@@ -2912,6 +2922,19 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
     } else {
         FsmDispatch(MyGui, EV_RENDER_DONE, { outB64: outB64 })
         if (outChildren.Length > 0) {
+            childPaths := []
+            i := 1
+            while (i <= outChildren.Length) {
+                if ((outChildren[i] == "--restore" || outChildren[i] == "--desk") && i < outChildren.Length) {
+                    childPaths.Push(outChildren[i + 1])
+                    i += 2
+                } else {
+                    i += 1
+                }
+            }
+            if (childPaths.Length > 0) {
+                MyGui.Children := childPaths
+            }
             SetTimer(ProcessArgs.Bind(outChildren), -10)
         }
     }
@@ -3526,19 +3549,37 @@ GuiClose(thisGui) {
         }
     }
     if (G_CloseDescendantsOnParentClose && thisGui.HasProp("Children") && !(thisGui.HasProp("IsStub") && thisGui.IsStub)) {
+        closedHwnds := Map()
         for childSessionID in thisGui.Children {
             try {
-                if (G_ActiveWindows.Has(childSessionID)) {
-                    childHwnd := G_ActiveWindows[childSessionID]
-                    if WinExist("ahk_id " childHwnd) {
-                        WinClose("ahk_id " childHwnd)
+                normChild := StrLower(StrReplace(childSessionID, "/", "\"))
+                childZid := ""
+                if RegExMatch(childSessionID, "(\d{14})", &mZid) {
+                    childZid := mZid[1]
+                }
+                for actKey, actHwnd in G_ActiveWindows {
+                    if (actHwnd == thisGui.Hwnd || closedHwnds.Has(actHwnd)) {
+                        continue
                     }
-                } else {
-                    for actKey, actHwnd in G_ActiveWindows {
-                        if (InStr(actKey, childSessionID . "#") == 1) {
-                            if WinExist("ahk_id " actHwnd) {
-                                WinClose("ahk_id " actHwnd)
-                            }
+                    normActKey := StrLower(StrReplace(actKey, "/", "\"))
+                    actZid := ""
+                    if RegExMatch(actKey, "(\d{14})", &mActZid) {
+                        actZid := mActZid[1]
+                    }
+
+                    isMatch := false
+                    if (actKey == childSessionID || normActKey == normChild) {
+                        isMatch := true
+                    } else if (InStr(normActKey, normChild . "#") == 1 || InStr(actKey, childSessionID . "#") == 1) {
+                        isMatch := true
+                    } else if (childZid != "" && actZid != "" && childZid == actZid) {
+                        isMatch := true
+                    }
+
+                    if (isMatch) {
+                        closedHwnds[actHwnd] := true
+                        if WinExist("ahk_id " actHwnd) {
+                            WinClose("ahk_id " actHwnd)
                         }
                     }
                 }

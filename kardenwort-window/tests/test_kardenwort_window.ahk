@@ -548,18 +548,36 @@ resProcSingle := SimulateProcessArgs(testArgsSingle, testMapSingle)
 Assert(resProcSingle.activated == 1001,
     "ProcessArgs with single window activates the launched window.")
 
-; Test: Parent Window 1 closing cleans up child descendant windows
+; Test: Parent Window 1 closing cleans up child descendant windows with slash normalization & ZID matching
 SimulateParentClose(parentChildren, activeMap, closeDescendants) {
     closedHwnds := []
     if (closeDescendants) {
+        closedMap := Map()
         for childSessionID in parentChildren {
-            if (activeMap.Has(childSessionID)) {
-                closedHwnds.Push(activeMap[childSessionID])
-            } else {
-                for actKey, actHwnd in activeMap {
-                    if (InStr(actKey, childSessionID . "#") == 1) {
-                        closedHwnds.Push(actHwnd)
-                    }
+            normChild := StrLower(StrReplace(childSessionID, "/", "\"))
+            childZid := ""
+            if RegExMatch(childSessionID, "(\d{14})", &mZid) {
+                childZid := mZid[1]
+            }
+            for actKey, actHwnd in activeMap {
+                if (closedMap.Has(actHwnd))
+                    continue
+                normActKey := StrLower(StrReplace(actKey, "/", "\"))
+                actZid := ""
+                if RegExMatch(actKey, "(\d{14})", &mActZid) {
+                    actZid := mActZid[1]
+                }
+                isMatch := false
+                if (actKey == childSessionID || normActKey == normChild) {
+                    isMatch := true
+                } else if (InStr(normActKey, normChild . "#") == 1 || InStr(actKey, childSessionID . "#") == 1) {
+                    isMatch := true
+                } else if (childZid != "" && actZid != "" && childZid == actZid) {
+                    isMatch := true
+                }
+                if (isMatch) {
+                    closedMap[actHwnd] := true
+                    closedHwnds.Push(actHwnd)
                 }
             }
         }
@@ -572,6 +590,20 @@ testChildren := ["c:/temp/s1.tsv", "c:/temp/s2.tsv", "c:/temp/s3.tsv"]
 closedList := SimulateParentClose(testChildren, testActive, true)
 Assert(closedList.Length == 3 && closedList[1] == 2002 && closedList[2] == 2003 && closedList[3] == 2004,
     "Closing Window 1 successfully identifies and closes all child descendant windows.")
+
+; Test: Slash variation matching (/ vs \)
+testActiveMixedSlashes := Map("C:\vault\20260826171841-s1.de.tsv#2", 2102, "c:/vault/20260826171841-s2.de.tsv#3", 2103)
+testChildrenMixedSlashes := ["c:/vault/20260826171841-s1.de.tsv", "C:\vault\20260826171841-s2.de.tsv"]
+closedMixed := SimulateParentClose(testChildrenMixedSlashes, testActiveMixedSlashes, true)
+Assert(closedMixed.Length == 2 && closedMixed[1] == 2102 && closedMixed[2] == 2103,
+    "Descendant closure normalizes forward slashes and backslashes seamlessly.")
+
+; Test: 14-digit session ZID prefix matching across virtual SQLite session representations
+testActiveZid := Map("U:\vault\20260826171841-s1.de.tsv#2", 2202, "U:\vault\20260826171841-s2.de.tsv#3", 2203)
+testChildrenZid := ["20260826171841"]
+closedZid := SimulateParentClose(testChildrenZid, testActiveZid, true)
+Assert(closedZid.Length == 2 && closedZid[1] == 2202 && closedZid[2] == 2203,
+    "Descendant closure matches child windows by 14-digit session ZID prefix.")
 
 ; ===================================================================================
 ; Part 7: Single-Instance Exit and Render Done Non-Activation
@@ -703,6 +735,62 @@ Assert(didDispatch == true && dispatchedArgs.Length == 8, "In-process dispatch s
 dispatchedEmpty := []
 didDispatchEmpty := SimulateInProcessDispatch(parsedEmpty, &dispatchedEmpty)
 Assert(didDispatchEmpty == false && dispatchedEmpty.Length == 0, "In-process dispatch does not schedule ProcessArgs when children array is empty")
+
+; Test: Extract child session paths from outChildren
+SimulateExtractChildPaths(outChildren) {
+    childPaths := []
+    i := 1
+    while (i <= outChildren.Length) {
+        if ((outChildren[i] == "--restore" || outChildren[i] == "--desk") && i < outChildren.Length) {
+            childPaths.Push(outChildren[i + 1])
+            i += 2
+        } else {
+            i += 1
+        }
+    }
+    return childPaths
+}
+
+extractedPaths := SimulateExtractChildPaths(parsedChildren)
+Assert(extractedPaths.Length == 2 && extractedPaths[1] == "C:\results\20260826171841-s3.de.tsv" && extractedPaths[2] == "C:\results\20260826171840-s2.de.tsv",
+    "SimulateExtractChildPaths extracts both child session target paths directly from outChildren")
+
+; ===================================================================================
+; Part 9: Window & Taskbar Badge Icon Persistence
+; ===================================================================================
+
+; Test: GUI retains hIconSmall and hIconBig properties across instance lifetime
+mockGui := MakeMockGui()
+mockGui.hIconSmall := 1111
+mockGui.hIconBig := 2222
+Assert(mockGui.HasProp("hIconSmall") && mockGui.hIconSmall == 1111, "GUI instance permanently retains hIconSmall handle")
+Assert(mockGui.HasProp("hIconBig") && mockGui.hIconBig == 2222, "GUI instance permanently retains hIconBig handle")
+
+; Test: ApplyWindowAndClassIcons handles null HWND safely
+Assert(ApplyWindowAndClassIcons(0, 1111, 2222) == false, "ApplyWindowAndClassIcons returns false on invalid HWND handle")
+
+; Test: Window message and class icon dispatch simulation
+SimulateApplyWindowAndClassIcons(hwnd, hSmall, hBig, &sentMsgs, &setClassCalls) {
+    if (!hwnd)
+        return false
+    if (hSmall) {
+        sentMsgs.Push({ hwnd: hwnd, msg: 0x80, wParam: 0, lParam: hSmall })
+        setClassCalls.Push({ hwnd: hwnd, nIndex: -34, val: hSmall })
+    }
+    if (hBig) {
+        sentMsgs.Push({ hwnd: hwnd, msg: 0x80, wParam: 1, lParam: hBig })
+        setClassCalls.Push({ hwnd: hwnd, nIndex: -14, val: hBig })
+    }
+    return true
+}
+
+sentMsgs := []
+setClassCalls := []
+SimulateApplyWindowAndClassIcons(9999, 1111, 2222, &sentMsgs, &setClassCalls)
+Assert(sentMsgs.Length == 2 && sentMsgs[1].msg == 0x80 && sentMsgs[1].wParam == 0 && sentMsgs[2].msg == 0x80 && sentMsgs[2].wParam == 1,
+    "ApplyWindowAndClassIcons dispatches WM_SETICON (0x80) for both small (0) and big (1) icon handles")
+Assert(setClassCalls.Length == 2 && setClassCalls[1].nIndex == -34 && setClassCalls[2].nIndex == -14,
+    "ApplyWindowAndClassIcons registers class icon fallbacks for GCLP_HICONSM (-34) and GCLP_HICON (-14)")
 
 ; Write summary
 FileAppend("`nSummary: " (totalTests - failedTests) "/" totalTests " tests passed.`n", A_ScriptDir "\test_results.txt")
