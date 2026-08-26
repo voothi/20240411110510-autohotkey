@@ -1657,6 +1657,7 @@ global G_SplitGapLimit := "60"
 global G_CloseDescendantsOnParentClose := 1
 global G_AutoCloseOnNewLaunch := 0
 global G_CascadeBatchWindows := 0
+global G_CascadeLayoutMode := "reverse_stack"
 global G_OverrideSeqNum := ""
 
 global G_PressCount := 0
@@ -1713,6 +1714,7 @@ LoadConfig() {
     global G_CloseDescendantsOnParentClose := IniRead(configPath, "Settings", "CloseDescendantsOnParentClose", 1)
     global G_AutoCloseOnNewLaunch := IniRead(configPath, "Settings", "AutoCloseOnNewLaunch", 0)
     global G_CascadeBatchWindows := IniRead(configPath, "Settings", "CascadeBatchWindows", 0)
+    global G_CascadeLayoutMode := StrLower(IniRead(configPath, "Settings", "CascadeLayoutMode", "reverse_stack"))
 
     if (G_DeskPythonPath == "" || !FileExist(G_DeskPythonPath)) {
         KardenMsgBox("Python interpreter not found: " G_DeskPythonPath, "Kardenwort Error", 16)
@@ -2438,8 +2440,19 @@ ProcessArgs(argsArray) {
         }
     }
 
-    if (firstHwnd && WinExist("ahk_id " firstHwnd)) {
-        WinActivate("ahk_id " firstHwnd)
+    global G_CascadeLayoutMode, G_ActiveWindows
+    if (G_CascadeLayoutMode == "front_first" || G_CascadeLayoutMode == "2") {
+        if (firstHwnd && WinExist("ahk_id " firstHwnd)) {
+            WinActivate("ahk_id " firstHwnd)
+        }
+    } else {
+        ; Reverse-stack mode: Ensure master window (Window 1) remains active in the foreground
+        for sessionID, hwnd in G_ActiveWindows {
+            if (SubStr(sessionID, -2) == "#1" && WinExist("ahk_id " hwnd)) {
+                WinActivate("ahk_id " hwnd)
+                break
+            }
+        }
     }
 }
 
@@ -2690,8 +2703,14 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
     initW := Trim(StrSplit(IniRead(configPath, "Window", "Width", "1143"), ";")[1])
     initH := Trim(StrSplit(IniRead(configPath, "Window", "Height", "957"), ";")[1])
 
-    global G_WindowCount, G_CascadeIndex, G_BaseX, G_BaseY, G_CascadeBatchWindows
-    effectiveIndex := (IsNumber(seqNum) && Integer(seqNum) > 1) ? (Integer(seqNum) - 2) : G_CascadeIndex
+    global G_WindowCount, G_CascadeIndex, G_BaseX, G_BaseY, G_CascadeBatchWindows, G_CascadeLayoutMode
+    if (G_CascadeLayoutMode == "front_first" || G_CascadeLayoutMode == "2") {
+        ; Front-first mode: Window 2 gets offset 1 (+30px), Window 3 gets offset 2 (+60px), etc.
+        effectiveIndex := (IsNumber(seqNum) && Integer(seqNum) > 1) ? (Integer(seqNum) - 1) : G_CascadeIndex
+    } else {
+        ; Reverse-stack mode (default): Monotonic cascade index as windows are spawned
+        effectiveIndex := G_CascadeIndex
+    }
     if (G_WindowCount == 0 || G_CascadeBatchWindows == 0 || G_CascadeBatchWindows == "0") {
         if (G_WindowCount == 0) {
             G_CascadeIndex := 0
