@@ -1970,12 +1970,13 @@ FetchHtmlViaHttp(targetLang, zid, textMode, sourceText, tsvPath, seqNum, isBypas
                 pos := 1
                 while RegExMatch(childrenText, '"((?:[^"\\]|\\.)*)"', &mItem, pos) {
                     itemVal := mItem[1]
+                    itemVal := StrReplace(itemVal, '\\', Chr(1))
                     itemVal := StrReplace(itemVal, '\"', '"')
-                    itemVal := StrReplace(itemVal, '\\', '\')
                     itemVal := StrReplace(itemVal, '\/', '/')
                     itemVal := StrReplace(itemVal, '\n', '`n')
                     itemVal := StrReplace(itemVal, '\r', '`r')
                     itemVal := StrReplace(itemVal, '\t', '`t')
+                    itemVal := StrReplace(itemVal, Chr(1), '\')
                     outChildren.Push(itemVal)
                     pos := mItem.Pos + mItem.Len
                 }

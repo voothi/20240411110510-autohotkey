@@ -617,8 +617,10 @@ Assert(closedList.Length == 3 && closedList[1] == 2002 && closedList[2] == 2003 
 testActiveUnordered := Map("c:/temp/s3.tsv#4", 2004, "c:/temp/s1.tsv#2", 2002, "c:/temp/s2.tsv#3", 2003)
 testChildrenReverse := ["c:/temp/s3.tsv", "c:/temp/s2.tsv", "c:/temp/s1.tsv"]
 closedListUnordered := SimulateParentClose(testChildrenReverse, testActiveUnordered, true)
-Assert(closedListUnordered.Length == 3 && closedListUnordered[1] == 2002 && closedListUnordered[2] == 2003 && closedListUnordered[3] == 2004,
-    "SimulateParentClose closes child windows in ascending sequence order (2 -> 3 -> 4) regardless of registration order.")
+Assert(closedListUnordered.Length == 3 && closedListUnordered[1] == 2002 && closedListUnordered[2] == 2003 &&
+    closedListUnordered[3] == 2004,
+    "SimulateParentClose closes child windows in ascending sequence order (2 -> 3 -> 4) regardless of registration order."
+)
 
 ; Test: Slash variation matching (/ vs \)
 testActiveMixedSlashes := Map("C:\vault\20260826171841-s1.de.tsv#2", 2102, "c:/vault/20260826171841-s2.de.tsv#3", 2103)
@@ -628,7 +630,8 @@ Assert(closedMixed.Length == 2 && closedMixed[1] == 2102 && closedMixed[2] == 21
     "Descendant closure normalizes forward slashes and backslashes seamlessly.")
 
 ; Test: 14-digit session ZID prefix matching across virtual SQLite session representations sorted ascending
-testActiveZid := Map("U:\vault\20260826171841-s3.de.tsv#4", 2204, "U:\vault\20260826171841-s1.de.tsv#2", 2202, "U:\vault\20260826171841-s2.de.tsv#3", 2203)
+testActiveZid := Map("U:\vault\20260826171841-s3.de.tsv#4", 2204, "U:\vault\20260826171841-s1.de.tsv#2", 2202,
+    "U:\vault\20260826171841-s2.de.tsv#3", 2203)
 testChildrenZid := ["20260826171841"]
 closedZid := SimulateParentClose(testChildrenZid, testActiveZid, true)
 Assert(closedZid.Length == 3 && closedZid[1] == 2202 && closedZid[2] == 2203 && closedZid[3] == 2204,
@@ -724,12 +727,13 @@ SimulateParseChildrenJson(jsonText) {
         pos := 1
         while RegExMatch(childrenText, '"((?:[^"\\]|\\.)*)"', &mItem, pos) {
             itemVal := mItem[1]
+            itemVal := StrReplace(itemVal, '\\', Chr(1))
             itemVal := StrReplace(itemVal, '\"', '"')
-            itemVal := StrReplace(itemVal, '\\', '\')
             itemVal := StrReplace(itemVal, '\/', '/')
             itemVal := StrReplace(itemVal, '\n', '`n')
             itemVal := StrReplace(itemVal, '\r', '`r')
             itemVal := StrReplace(itemVal, '\t', '`t')
+            itemVal := StrReplace(itemVal, Chr(1), '\')
             outChildren.Push(itemVal)
             pos := mItem.Pos + mItem.Len
         }
@@ -737,12 +741,16 @@ SimulateParseChildrenJson(jsonText) {
     return outChildren
 }
 
-sampleJson := '{"status":"success","data":{"ok":true,"zid":"20260826171838","html_b64":"PGh0bWw+","children":["--seq-num","4","--restore","C:\\results\\20260826171841-s3.de.tsv","--seq-num","3","--restore","C:\\results\\20260826171840-s2.de.tsv"]}}'
+sampleJson :=
+    '{"status":"success","data":{"ok":true,"zid":"20260826171838","html_b64":"PGh0bWw+","children":["--seq-num","4","--restore","C:\\results\\20260826171841-s3.de.tsv","--seq-num","3","--restore","C:\\results\\20260826171840-s2.de.tsv"]}}'
 parsedChildren := SimulateParseChildrenJson(sampleJson)
 Assert(parsedChildren.Length == 8, "SimulateParseChildrenJson parses all 8 child argument tokens from JSON response")
-Assert(parsedChildren[1] == "--seq-num" && parsedChildren[2] == "4", "SimulateParseChildrenJson extracts sequence number")
-Assert(parsedChildren[3] == "--restore" && parsedChildren[4] == "C:\results\20260826171841-s3.de.tsv", "SimulateParseChildrenJson unescapes file paths with backslashes correctly")
-Assert(parsedChildren[7] == "--restore" && parsedChildren[8] == "C:\results\20260826171840-s2.de.tsv", "SimulateParseChildrenJson extracts subsequent child entries")
+Assert(parsedChildren[1] == "--seq-num" && parsedChildren[2] == "4",
+    "SimulateParseChildrenJson extracts sequence number")
+Assert(parsedChildren[3] == "--restore" && parsedChildren[4] == "C:\results\20260826171841-s3.de.tsv",
+    "SimulateParseChildrenJson unescapes file paths with backslashes correctly")
+Assert(parsedChildren[7] == "--restore" && parsedChildren[8] == "C:\results\20260826171840-s2.de.tsv",
+    "SimulateParseChildrenJson extracts subsequent child entries")
 
 sampleEmptyJson := '{"status":"success","data":{"ok":true,"zid":"20260826171838","html_b64":"PGh0bWw+","children":[]}}'
 parsedEmpty := SimulateParseChildrenJson(sampleEmptyJson)
@@ -759,11 +767,13 @@ SimulateInProcessDispatch(outChildren, &dispatchedArgs) {
 
 dispatchedArgs := []
 didDispatch := SimulateInProcessDispatch(parsedChildren, &dispatchedArgs)
-Assert(didDispatch == true && dispatchedArgs.Length == 8, "In-process dispatch schedules ProcessArgs directly with non-empty children array")
+Assert(didDispatch == true && dispatchedArgs.Length == 8,
+    "In-process dispatch schedules ProcessArgs directly with non-empty children array")
 
 dispatchedEmpty := []
 didDispatchEmpty := SimulateInProcessDispatch(parsedEmpty, &dispatchedEmpty)
-Assert(didDispatchEmpty == false && dispatchedEmpty.Length == 0, "In-process dispatch does not schedule ProcessArgs when children array is empty")
+Assert(didDispatchEmpty == false && dispatchedEmpty.Length == 0,
+    "In-process dispatch does not schedule ProcessArgs when children array is empty")
 
 ; Test: Extract child session paths from outChildren
 SimulateExtractChildPaths(outChildren) {
@@ -781,7 +791,8 @@ SimulateExtractChildPaths(outChildren) {
 }
 
 extractedPaths := SimulateExtractChildPaths(parsedChildren)
-Assert(extractedPaths.Length == 2 && extractedPaths[1] == "C:\results\20260826171841-s3.de.tsv" && extractedPaths[2] == "C:\results\20260826171840-s2.de.tsv",
+Assert(extractedPaths.Length == 2 && extractedPaths[1] == "C:\results\20260826171841-s3.de.tsv" && extractedPaths[2] ==
+    "C:\results\20260826171840-s2.de.tsv",
     "SimulateExtractChildPaths extracts both child session target paths directly from outChildren")
 
 ; ===================================================================================
@@ -789,14 +800,15 @@ Assert(extractedPaths.Length == 2 && extractedPaths[1] == "C:\results\2026082617
 ; ===================================================================================
 
 ; Test: GUI retains hIconSmall and hIconBig properties across instance lifetime
-mockGui := MakeMockGui()
-mockGui.hIconSmall := 1111
-mockGui.hIconBig := 2222
-Assert(mockGui.HasProp("hIconSmall") && mockGui.hIconSmall == 1111, "GUI instance permanently retains hIconSmall handle")
-Assert(mockGui.HasProp("hIconBig") && mockGui.hIconBig == 2222, "GUI instance permanently retains hIconBig handle")
+gIcon := MakeMockGui()
+gIcon.hIconSmall := 1111
+gIcon.hIconBig := 2222
+Assert(gIcon.HasProp("hIconSmall") && gIcon.hIconSmall == 1111, "GUI instance permanently retains hIconSmall handle")
+Assert(gIcon.HasProp("hIconBig") && gIcon.hIconBig == 2222, "GUI instance permanently retains hIconBig handle")
 
 ; Test: ApplyWindowAndClassIcons handles null HWND safely
-Assert(ApplyWindowAndClassIcons(0, 1111, 2222) == false, "ApplyWindowAndClassIcons returns false on invalid HWND handle")
+Assert(ApplyWindowAndClassIcons(0, 1111, 2222) == false,
+"ApplyWindowAndClassIcons returns false on invalid HWND handle")
 
 ; Test: Window message and class icon dispatch simulation
 SimulateApplyWindowAndClassIcons(hwnd, hSmall, hBig, &sentMsgs, &setClassCalls) {
@@ -816,7 +828,8 @@ SimulateApplyWindowAndClassIcons(hwnd, hSmall, hBig, &sentMsgs, &setClassCalls) 
 sentMsgs := []
 setClassCalls := []
 SimulateApplyWindowAndClassIcons(9999, 1111, 2222, &sentMsgs, &setClassCalls)
-Assert(sentMsgs.Length == 2 && sentMsgs[1].msg == 0x80 && sentMsgs[1].wParam == 0 && sentMsgs[2].msg == 0x80 && sentMsgs[2].wParam == 1,
+Assert(sentMsgs.Length == 2 && sentMsgs[1].msg == 0x80 && sentMsgs[1].wParam == 0 && sentMsgs[2].msg == 0x80 &&
+    sentMsgs[2].wParam == 1,
     "ApplyWindowAndClassIcons dispatches WM_SETICON (0x80) for both small (0) and big (1) icon handles")
 Assert(setClassCalls.Length == 2 && setClassCalls[1].nIndex == -34 && setClassCalls[2].nIndex == -14,
     "ApplyWindowAndClassIcons registers class icon fallbacks for GCLP_HICONSM (-34) and GCLP_HICON (-14)")
