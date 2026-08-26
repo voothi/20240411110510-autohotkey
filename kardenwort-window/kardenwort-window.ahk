@@ -1647,7 +1647,6 @@ global G_SplitGapLimit := "60"
 global G_CloseDescendantsOnParentClose := 1
 global G_AutoCloseOnNewLaunch := 0
 global G_CascadeBatchWindows := 0
-global G_CascadeLayoutMode := "reverse_stack"
 global G_OverrideSeqNum := ""
 
 global G_PressCount := 0
@@ -1704,7 +1703,6 @@ LoadConfig() {
     global G_CloseDescendantsOnParentClose := IniRead(configPath, "Settings", "CloseDescendantsOnParentClose", 1)
     global G_AutoCloseOnNewLaunch := IniRead(configPath, "Settings", "AutoCloseOnNewLaunch", 0)
     global G_CascadeBatchWindows := IniRead(configPath, "Settings", "CascadeBatchWindows", 0)
-    global G_CascadeLayoutMode := StrLower(IniRead(configPath, "Settings", "CascadeLayoutMode", "reverse_stack"))
 
     if (G_DeskPythonPath == "" || !FileExist(G_DeskPythonPath)) {
         KardenMsgBox("Python interpreter not found: " G_DeskPythonPath, "Kardenwort Error", 16)
@@ -2422,7 +2420,6 @@ ProcessArgs(argsArray) {
     if (actions.Length == 0)
         return
 
-    firstHwnd := 0
     lastHwnd := 0
     for act in actions {
         if (act.seqNum != "")
@@ -2440,49 +2437,12 @@ ProcessArgs(argsArray) {
         }
 
         if (hwnd) {
-            if (!firstHwnd)
-                firstHwnd := hwnd
             lastHwnd := hwnd
         }
     }
 
-    global G_CascadeLayoutMode, G_ActiveWindows
-    if (G_CascadeLayoutMode == "front_first" || G_CascadeLayoutMode == "2") {
-        targetHwnd := 0
-        minSeq := 999999
-        minHwnd := 0
-
-        for sId, h in G_ActiveWindows {
-            if (!WinExist("ahk_id " h))
-                continue
-            seq := 0
-            if RegExMatch(sId, "#(\d+)$", &mSeq) {
-                seq := Integer(mSeq[1])
-            }
-            if (seq == 1) {
-                targetHwnd := h
-                break
-            }
-            if (seq > 0 && seq < minSeq) {
-                minSeq := seq
-                minHwnd := h
-            }
-        }
-
-        if (!targetHwnd && minHwnd)
-            targetHwnd := minHwnd
-        if (!targetHwnd && firstHwnd && WinExist("ahk_id " firstHwnd))
-            targetHwnd := firstHwnd
-
-        if (targetHwnd && WinExist("ahk_id " targetHwnd)) {
-            WinActivate("ahk_id " targetHwnd)
-        }
-    } else {
-        ; Reverse-stack mode: Window 1 stays at the bottom of the stack.
-        ; The top window (Window 2, spawned last) remains in the active foreground.
-        if (lastHwnd && WinExist("ahk_id " lastHwnd)) {
-            WinActivate("ahk_id " lastHwnd)
-        }
+    if (lastHwnd && WinExist("ahk_id " lastHwnd)) {
+        WinActivate("ahk_id " lastHwnd)
     }
 }
 
@@ -2768,14 +2728,8 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
     initW := Trim(StrSplit(IniRead(configPath, "Window", "Width", "1143"), ";")[1])
     initH := Trim(StrSplit(IniRead(configPath, "Window", "Height", "957"), ";")[1])
 
-    global G_WindowCount, G_CascadeIndex, G_BaseX, G_BaseY, G_CascadeBatchWindows, G_CascadeLayoutMode
-    if (G_CascadeLayoutMode == "front_first" || G_CascadeLayoutMode == "2") {
-        ; Front-first mode: Window 2 gets offset 1 (+30px), Window 3 gets offset 2 (+60px), etc.
-        effectiveIndex := (IsNumber(seqNum) && Integer(seqNum) > 1) ? (Integer(seqNum) - 1) : G_CascadeIndex
-    } else {
-        ; Reverse-stack mode (default): Monotonic cascade index as windows are spawned
-        effectiveIndex := G_CascadeIndex
-    }
+    global G_WindowCount, G_CascadeIndex, G_BaseX, G_BaseY, G_CascadeBatchWindows
+    effectiveIndex := G_CascadeIndex
     if (G_WindowCount == 0 || G_CascadeBatchWindows == 0 || G_CascadeBatchWindows == "0") {
         if (G_WindowCount == 0) {
             G_CascadeIndex := 0

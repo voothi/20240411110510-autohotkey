@@ -59,28 +59,6 @@ G_CascadeIndex := 15
 GetCascadeCoords(&x15, &y15) ; should wrap to 0 (50, 50)
 Assert(x14 == 470 && x15 == 50, "Coordinate wrap-around reset after 15 windows.")
 
-; Test 3b: Sequence-aware cascade offsets (front_first: Badge 2 -> offset 1 (+30px), Badge 3 -> offset 2, Badge 9 -> offset 8, Badge 16 -> offset 0)
-s2 := 2
-eff2 := (s2 > 1) ? (s2 - 1) : 0
-GetCascadeCoords(&xSeq2, &ySeq2, eff2)
-
-s3 := 3
-eff3 := (s3 > 1) ? (s3 - 1) : 0
-GetCascadeCoords(&xSeq3, &ySeq3, eff3)
-
-s9 := 9
-eff9 := (s9 > 1) ? (s9 - 1) : 0
-GetCascadeCoords(&xSeq9, &ySeq9, eff9)
-
-s16 := 16
-eff16 := (s16 > 1) ? (s16 - 1) : 0
-GetCascadeCoords(&xSeq16, &ySeq16, eff16)
-
-Assert(xSeq2 == 80 && ySeq2 == 80 && xSeq3 == 110 && ySeq3 == 110 && xSeq9 == 290 && ySeq9 == 290 && xSeq16 == 50 &&
-    ySeq16 == 50,
-    "front_first sequence-aware cascade offsets (Badge 2 at +30px, Badge 3 at +60px) calculated correctly without overlapping Window 1."
-)
-
 ; Test 4: Verify config file existence and format
 configPath := A_ScriptDir "\..\config.ini"
 if FileExist(configPath) {
@@ -88,8 +66,6 @@ if FileExist(configPath) {
     scriptPath := IniRead(configPath, "Paths", "DeskScriptPath", "")
     cascadeBatch := IniRead(configPath, "Settings", "CascadeBatchWindows", "")
     Assert(cascadeBatch != "", "CascadeBatchWindows setting is present in config.ini")
-    cascadeMode := IniRead(configPath, "Settings", "CascadeLayoutMode", "")
-    Assert(cascadeMode != "", "CascadeLayoutMode setting is present in config.ini")
 } else {
     Assert(false, "Config file not found at " configPath)
 }
@@ -504,47 +480,33 @@ Assert(!gW.FsmMemory["PendingUpdate"], "Watchdog timeout reset pending update fl
 ; Part 6: Cascade Indexing, Sequential Processing, and Descendant Closing Tests
 ; ===================================================================================
 
-; Test: CascadeBatchWindows = 1 calculation (front_first and reverse_stack modes)
+; Test: CascadeBatchWindows = 1 calculation (monotonic diagonal offset)
 baseX := 100, baseY := 100
-ComputeCascadeCoords(bX, bY, seq, cascadeIndex, cascadeEnabled, layoutMode := "reverse_stack") {
+ComputeCascadeCoords(bX, bY, cascadeIndex, cascadeEnabled) {
     if (!cascadeEnabled) {
         return { x: bX, y: bY }
     }
-    if (layoutMode == "front_first" || layoutMode == "2") {
-        eff := (seq > 1) ? (seq - 1) : 0
-    } else {
-        eff := cascadeIndex
-    }
-    off := Mod(eff, 15) * 30
+    off := Mod(cascadeIndex, 15) * 30
     return { x: bX + off, y: bY + off }
 }
 
-; Test front_first mode: Window 1 is at base, Window 2 is at +30 (non-overlapping), Window 3 at +60
-ff1 := ComputeCascadeCoords(baseX, baseY, 1, 0, true, "front_first")
-ff2 := ComputeCascadeCoords(baseX, baseY, 2, 1, true, "front_first")
-ff3 := ComputeCascadeCoords(baseX, baseY, 3, 2, true, "front_first")
-ff4 := ComputeCascadeCoords(baseX, baseY, 4, 3, true, "front_first")
-Assert(ff1.x == 100 && ff1.y == 100 && ff2.x == 130 && ff2.y == 130 && ff3.x == 160 && ff3.y == 160 && ff4.x == 190 &&
-    ff4.y == 190,
-    "front_first mode positions Window 2 at +30px without overlapping Window 1 at base coordinates.")
+c1 := ComputeCascadeCoords(baseX, baseY, 0, true)
+c2 := ComputeCascadeCoords(baseX, baseY, 1, true)
+c3 := ComputeCascadeCoords(baseX, baseY, 2, true)
+c4 := ComputeCascadeCoords(baseX, baseY, 3, true)
+Assert(c1.x == 100 && c1.y == 100 && c2.x == 130 && c2.y == 130 && c3.x == 160 && c3.y == 160 && c4.x == 190 &&
+    c4.y == 190,
+    "Monotonic cascading offsets windows diagonally with +30px step.")
 
-; Test reverse_stack mode: Window 1 at base, child windows cascade smoothly by spawn index
-rs1 := ComputeCascadeCoords(baseX, baseY, 1, 0, true, "reverse_stack")
-rsChild1 := ComputeCascadeCoords(baseX, baseY, 13, 1, true, "reverse_stack")
-rsChild2 := ComputeCascadeCoords(baseX, baseY, 12, 2, true, "reverse_stack")
-Assert(rs1.x == 100 && rs1.y == 100 && rsChild1.x == 130 && rsChild1.y == 130 && rsChild2.x == 160 && rsChild2.y == 160,
-    "reverse_stack mode positions Window 1 at base coordinates and cascades child windows monotonically.")
+; Test: CascadeBatchWindows = 0 calculation (stacked at base coords)
+s0_1 := ComputeCascadeCoords(baseX, baseY, 1, false)
+s0_2 := ComputeCascadeCoords(baseX, baseY, 2, false)
+Assert(s0_1.x == 100 && s0_1.y == 100 && s0_2.x == 100 && s0_2.y == 100,
+    "CascadeBatchWindows=0 stacks all windows cleanly at base coordinates without offset.")
 
-; Test: CascadeBatchWindows = 0 calculation (stacked)
-s2_0 := ComputeCascadeCoords(baseX, baseY, 2, 1, false, "front_first")
-s3_0 := ComputeCascadeCoords(baseX, baseY, 3, 2, false, "reverse_stack")
-Assert(s2_0.x == 100 && s2_0.y == 100 && s3_0.x == 100 && s3_0.y == 100,
-    "CascadeBatchWindows=0 stacks all child windows at base coordinates without offset regardless of layout mode.")
-
-; Test: Sequential argument processing and window activation according to CascadeLayoutMode
-SimulateProcessArgs(args, layoutMode := "reverse_stack", activeMap := Map()) {
+; Test: Sequential argument processing and window activation (last spawned window)
+SimulateProcessArgs(args, activeMap := Map()) {
     executed := []
-    firstHwnd := 0
     lastHwnd := 0
     currSeq := ""
     i := 1
@@ -553,11 +515,9 @@ SimulateProcessArgs(args, layoutMode := "reverse_stack", activeMap := Map()) {
             currSeq := args[i + 1]
             i += 2
         } else if (args[i] == "--desk" && i < args.Length) {
-            hwnd := 1000 + Integer(currSeq)
+            hwnd := 1000 + (currSeq != "" ? Integer(currSeq) : executed.Length + 1)
             executed.Push({ seq: currSeq, hwnd: hwnd })
             activeMap["session#" . currSeq] := hwnd
-            if (!firstHwnd)
-                firstHwnd := hwnd
             lastHwnd := hwnd
             currSeq := ""
             i += 2
@@ -566,68 +526,27 @@ SimulateProcessArgs(args, layoutMode := "reverse_stack", activeMap := Map()) {
         }
     }
 
-    activatedHwnd := 0
-    if (layoutMode == "front_first" || layoutMode == "2") {
-        targetHwnd := 0
-        minSeq := 999999
-        minHwnd := 0
-        for sId, h in activeMap {
-            seq := 0
-            if RegExMatch(sId, "#(\d+)$", &mSeq) {
-                seq := Integer(mSeq[1])
-            }
-            if (seq == 1) {
-                targetHwnd := h
-                break
-            }
-            if (seq > 0 && seq < minSeq) {
-                minSeq := seq
-                minHwnd := h
-            }
-        }
-        if (!targetHwnd && minHwnd)
-            targetHwnd := minHwnd
-        if (!targetHwnd && firstHwnd)
-            targetHwnd := firstHwnd
-        activatedHwnd := targetHwnd
-    } else {
-        activatedHwnd := lastHwnd
-    }
+    activatedHwnd := (lastHwnd && activeMap.Count > 0) ? lastHwnd : 0
     return { executed: executed, activated: activatedHwnd }
 }
 
-; Test: front_first activation with Master Window 1 active (Full parent mode)
-testMapFF_Full := Map("session#1", 1001)
-testArgsFF_Normal := ["--seq-num", "2", "--desk", "p1.txt", "--seq-num", "3", "--desk", "p2.txt", "--seq-num", "4",
-    "--desk", "p3.txt"]
-resProcFF_Full := SimulateProcessArgs(testArgsFF_Normal, "front_first", testMapFF_Full)
-Assert(resProcFF_Full.executed.Length == 3 && resProcFF_Full.executed[1].seq == "2" && resProcFF_Full.executed[2].seq ==
-    "3" && resProcFF_Full.executed[3].seq == "4",
-    "ProcessArgs parses and processes actions in natural sequential order (2 -> 3 -> 4).")
-Assert(resProcFF_Full.activated == 1001,
-    "ProcessArgs in front_first mode with parent full activates Window #1 (master window) in foreground.")
-
-testMapFF_Rev := Map("session#1", 1001)
-testArgsFF_Rev := ["--seq-num", "4", "--desk", "p3.txt", "--seq-num", "3", "--desk", "p2.txt", "--seq-num", "2",
+; Test: Reverse spawn order argument processing activates the last window spawned (Seq #2)
+testMapReverse := Map("session#1", 1001)
+testArgsReverse := ["--seq-num", "4", "--desk", "p3.txt", "--seq-num", "3", "--desk", "p2.txt", "--seq-num", "2",
     "--desk", "p1.txt"]
-resProcFF_Rev := SimulateProcessArgs(testArgsFF_Rev, "front_first", testMapFF_Rev)
-Assert(resProcFF_Rev.activated == 1001,
-    "ProcessArgs in front_first mode with reverse argument spawn activates Window #1 (master window) in foreground.")
+resProcReverse := SimulateProcessArgs(testArgsReverse, testMapReverse)
+Assert(resProcReverse.executed.Length == 3 && resProcReverse.executed[1].seq == "4" && resProcReverse.executed[2].seq ==
+    "3" && resProcReverse.executed[3].seq == "2",
+    "ProcessArgs parses and processes actions in CLI argument order (4 -> 3 -> 2).")
+Assert(resProcReverse.activated == 1002,
+    "ProcessArgs activates the last spawned window (#2) in foreground leaving it on top of the OS Z-order stack.")
 
-; Test: front_first activation without Window 1 (Stub parent mode) activates lowest child window (Window #2)
-testMapFF_Stub := Map()
-testArgsFF_Stub := ["--seq-num", "4", "--desk", "p3.txt", "--seq-num", "3", "--desk", "p2.txt", "--seq-num", "2",
-    "--desk", "p1.txt"]
-resProcFF_Stub := SimulateProcessArgs(testArgsFF_Stub, "front_first", testMapFF_Stub)
-Assert(resProcFF_Stub.activated == 1002,
-    "ProcessArgs in front_first mode without Window 1 activates lowest sequence child Window #2 in foreground.")
-
-testMapRS := Map("session#1", 1001)
-testArgsRS := ["--seq-num", "4", "--desk", "p3.txt", "--seq-num", "3", "--desk", "p2.txt", "--seq-num", "2", "--desk",
-    "p1.txt"]
-resProcRS := SimulateProcessArgs(testArgsRS, "reverse_stack", testMapRS)
-Assert(resProcRS.activated == 1002,
-    "ProcessArgs in reverse_stack mode activates Window #2 (top of stack) in foreground without raising Window #1.")
+; Test: Single window launch activates that window
+testMapSingle := Map()
+testArgsSingle := ["--seq-num", "1", "--desk", "p0.txt"]
+resProcSingle := SimulateProcessArgs(testArgsSingle, testMapSingle)
+Assert(resProcSingle.activated == 1001,
+    "ProcessArgs with single window activates the launched window.")
 
 ; Test: Parent Window 1 closing cleans up child descendant windows
 SimulateParentClose(parentChildren, activeMap, closeDescendants) {

@@ -33,8 +33,6 @@ CloseDescendantsOnParentClose = 1
 AutoCloseOnNewLaunch = 0
 ; Set to 1 to cascade restored batch windows diagonally, or 0 to stack cleanly at base position
 CascadeBatchWindows = 1
-; Set to reverse_stack (default) for natural cascade behind Window 1, or front_first for Sentence 1 front-activation with +30px offset
-CascadeLayoutMode = reverse_stack
 
 [Hotkey]
 TapSingleMode = single
