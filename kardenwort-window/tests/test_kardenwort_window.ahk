@@ -651,6 +651,59 @@ SimulateLaunchRestoreReturn(filePath, fileExists, mockHwnd) {
 Assert(SimulateLaunchRestoreReturn("C:\virtual\child.tsv", false, 9999) == 9999,
 "LaunchRestore in SQLite mode returns valid window HWND handle")
 
+; ===================================================================================
+; Part 8: Direct Child Session Return in HTTP Response & In-Process Dispatch
+; ===================================================================================
+
+; Test: Parse children array from HTTP JSON response
+SimulateParseChildrenJson(jsonText) {
+    outChildren := []
+    if RegExMatch(jsonText, 's)"children"\s*:\s*\[(.*?)\]', &mChildren) {
+        childrenText := mChildren[1]
+        pos := 1
+        while RegExMatch(childrenText, '"((?:[^"\\]|\\.)*)"', &mItem, pos) {
+            itemVal := mItem[1]
+            itemVal := StrReplace(itemVal, '\"', '"')
+            itemVal := StrReplace(itemVal, '\\', '\')
+            itemVal := StrReplace(itemVal, '\/', '/')
+            itemVal := StrReplace(itemVal, '\n', '`n')
+            itemVal := StrReplace(itemVal, '\r', '`r')
+            itemVal := StrReplace(itemVal, '\t', '`t')
+            outChildren.Push(itemVal)
+            pos := mItem.Pos + mItem.Len
+        }
+    }
+    return outChildren
+}
+
+sampleJson := '{"status":"success","data":{"ok":true,"zid":"20260826171838","html_b64":"PGh0bWw+","children":["--seq-num","4","--restore","C:\\results\\20260826171841-s3.de.tsv","--seq-num","3","--restore","C:\\results\\20260826171840-s2.de.tsv"]}}'
+parsedChildren := SimulateParseChildrenJson(sampleJson)
+Assert(parsedChildren.Length == 8, "SimulateParseChildrenJson parses all 8 child argument tokens from JSON response")
+Assert(parsedChildren[1] == "--seq-num" && parsedChildren[2] == "4", "SimulateParseChildrenJson extracts sequence number")
+Assert(parsedChildren[3] == "--restore" && parsedChildren[4] == "C:\results\20260826171841-s3.de.tsv", "SimulateParseChildrenJson unescapes file paths with backslashes correctly")
+Assert(parsedChildren[7] == "--restore" && parsedChildren[8] == "C:\results\20260826171840-s2.de.tsv", "SimulateParseChildrenJson extracts subsequent child entries")
+
+sampleEmptyJson := '{"status":"success","data":{"ok":true,"zid":"20260826171838","html_b64":"PGh0bWw+","children":[]}}'
+parsedEmpty := SimulateParseChildrenJson(sampleEmptyJson)
+Assert(parsedEmpty.Length == 0, "SimulateParseChildrenJson returns empty array when children is empty []")
+
+; Test: In-process dispatch triggers ProcessArgs simulation directly
+SimulateInProcessDispatch(outChildren, &dispatchedArgs) {
+    if (outChildren.Length > 0) {
+        dispatchedArgs := outChildren
+        return true
+    }
+    return false
+}
+
+dispatchedArgs := []
+didDispatch := SimulateInProcessDispatch(parsedChildren, &dispatchedArgs)
+Assert(didDispatch == true && dispatchedArgs.Length == 8, "In-process dispatch schedules ProcessArgs directly with non-empty children array")
+
+dispatchedEmpty := []
+didDispatchEmpty := SimulateInProcessDispatch(parsedEmpty, &dispatchedEmpty)
+Assert(didDispatchEmpty == false && dispatchedEmpty.Length == 0, "In-process dispatch does not schedule ProcessArgs when children array is empty")
+
 ; Write summary
 FileAppend("`nSummary: " (totalTests - failedTests) "/" totalTests " tests passed.`n", A_ScriptDir "\test_results.txt")
 ExitApp()

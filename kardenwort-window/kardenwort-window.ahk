@@ -1924,7 +1924,8 @@ SendControllerRequest(endpoint, payloadJson, &responseJson, timeoutSec := 3) {
     return false
 }
 
-FetchHtmlViaHttp(targetLang, zid, textMode, sourceText, tsvPath, seqNum, isBypass, &outB64, &errJSON) {
+FetchHtmlViaHttp(targetLang, zid, textMode, sourceText, tsvPath, seqNum, isBypass, &outB64, &errJSON, &outChildren := []) {
+    outChildren := []
     global G_ServerHost, G_ServerPort, G_ControllerPort, G_ServerApiKey, G_Theme, G_DefaultZoom, G_SplitGapLimit, G_WindowCount
     host := G_ServerHost ? G_ServerHost : "127.0.0.1"
     port := G_ControllerPort ? G_ControllerPort : (G_ServerPort ? G_ServerPort : 18335)
@@ -1964,6 +1965,21 @@ FetchHtmlViaHttp(targetLang, zid, textMode, sourceText, tsvPath, seqNum, isBypas
 
         if (http.Status == 200) {
             resp := http.ResponseText
+            if RegExMatch(resp, 's)"children"\s*:\s*\[(.*?)\]', &mChildren) {
+                childrenText := mChildren[1]
+                pos := 1
+                while RegExMatch(childrenText, '"((?:[^"\\]|\\.)*)"', &mItem, pos) {
+                    itemVal := mItem[1]
+                    itemVal := StrReplace(itemVal, '\"', '"')
+                    itemVal := StrReplace(itemVal, '\\', '\')
+                    itemVal := StrReplace(itemVal, '\/', '/')
+                    itemVal := StrReplace(itemVal, '\n', '`n')
+                    itemVal := StrReplace(itemVal, '\r', '`r')
+                    itemVal := StrReplace(itemVal, '\t', '`t')
+                    outChildren.Push(itemVal)
+                    pos := mItem.Pos + mItem.Len
+                }
+            }
             if RegExMatch(resp, '"html_b64":\s*"([^"]+)"', &mB64) {
                 outB64 := mB64[1]
                 return 0
@@ -2806,12 +2822,13 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
     exitCode := 1
     outB64 := ""
     errJSON := ""
+    outChildren := []
 
     global G_ServerEnabled, G_ServerStatus
     isServerActive := G_ServerEnabled || (G_ServerStatus == "Running" || G_ServerStatus == "Running (Unconfirmed)")
 
     if (isServerActive) {
-        httpExit := FetchHtmlViaHttp(lang, ZID, textMode, sourceText, tsvPath, seqNum, false, &outB64, &errJSON)
+        httpExit := FetchHtmlViaHttp(lang, ZID, textMode, sourceText, tsvPath, seqNum, false, &outB64, &errJSON, &outChildren)
         if (httpExit == 0) {
             exitCode := 0
         } else {
@@ -2848,7 +2865,7 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
             MyGui.Title := "Kardenwort - " lang " (" textMode ")"
             UpdateStatus(MyGui, "Invoking backend analysis (" lang ")...")
             if (isServerActive) {
-                httpExit := FetchHtmlViaHttp(lang, ZID, textMode, sourceText, tsvPath, seqNum, false, &outB64, &errJSON)
+                httpExit := FetchHtmlViaHttp(lang, ZID, textMode, sourceText, tsvPath, seqNum, false, &outB64, &errJSON, &outChildren)
                 if (httpExit == 0) {
                     exitCode := 0
                 } else {
@@ -2864,7 +2881,7 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
             }
         } else if (choice == "No") {
             if (isServerActive) {
-                httpExit := FetchHtmlViaHttp(lang, ZID, textMode, sourceText, tsvPath, seqNum, true, &outB64, &errJSON)
+                httpExit := FetchHtmlViaHttp(lang, ZID, textMode, sourceText, tsvPath, seqNum, true, &outB64, &errJSON, &outChildren)
                 if (httpExit == 0) {
                     exitCode := 0
                 } else {
@@ -2894,6 +2911,9 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
         FsmDispatch(MyGui, EV_RENDER_FAILED, errJSON)
     } else {
         FsmDispatch(MyGui, EV_RENDER_DONE, { outB64: outB64 })
+        if (outChildren.Length > 0) {
+            SetTimer(ProcessArgs.Bind(outChildren), -10)
+        }
     }
     return MyGui.Hwnd
 }
