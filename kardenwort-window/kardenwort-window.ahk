@@ -2718,7 +2718,7 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
         }
     }
 
-    MyGui.Show("Hide " showStr)
+    MyGui.Show(showStr)
     MyGui.GetClientPos(, , &clientWidth, &clientHeight)
     GuiSize(MyGui, 0, clientWidth, clientHeight)
     if (G_WindowCount == 0) {
