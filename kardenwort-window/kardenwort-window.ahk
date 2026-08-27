@@ -2656,6 +2656,17 @@ BuildDeskBrowserUrl(sessionIdentifier, seqNum := 1) {
     return url
 }
 
+BuildVerifyLanguageUrl(sessionIdentifier) {
+    global G_ServerHost, G_ServerPort, G_ControllerPort, G_ServerApiKey, G_Theme
+    host := G_ServerHost ? G_ServerHost : "127.0.0.1"
+    port := G_ControllerPort ? G_ControllerPort : (G_ServerPort ? G_ServerPort : 18335)
+    url := "http://" . host . ":" . port . "/verify-language?session_zid=" . sessionIdentifier . "&theme=" . G_Theme
+    if (G_ServerApiKey != "") {
+        url .= "&token=" . G_ServerApiKey
+    }
+    return url
+}
+
 LaunchBrowserTab(sourceText, textMode, presetZID := "") {
     if (textMode == "single") {
         sourceText := CleanClipboardText(sourceText)
@@ -2685,9 +2696,9 @@ LaunchBrowserTab(sourceText, textMode, presetZID := "") {
     status := FetchHtmlViaHttp(G_CurrentLang, ZID, textMode, sourceText, "", 1, false, &outB64, &errJSON, &outChildren)
     if (status != 0 && status != 200) {
         if (status == 422 && InStr(errJSON, "LANGUAGE_MISMATCH")) {
-            ; Language mismatch detected: Open the web view immediately so the web verification modal prompts the user
-            mainUrl := BuildDeskBrowserUrl(ZID, 1)
-            Run(mainUrl)
+            ; Language mismatch detected: Open dedicated standalone language verification page
+            verifyUrl := BuildVerifyLanguageUrl(ZID)
+            Run(verifyUrl)
             return true
         }
         TrayTip("Failed to initialize session: " . errJSON, "Kardenwort Error", 16)
