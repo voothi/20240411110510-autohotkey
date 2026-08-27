@@ -2409,7 +2409,10 @@ ProcessArgs(argsArray) {
     i := 1
     while (i <= argsArray.Length) {
         arg := argsArray[i]
-        if (arg == "--seq-num" && i < argsArray.Length) {
+        if (arg == "--set-language" && i < argsArray.Length) {
+            SetLanguage(argsArray[i + 1])
+            i += 2
+        } else if (arg == "--seq-num" && i < argsArray.Length) {
             currSeqNum := argsArray[i + 1]
             i += 2
         } else if (arg == "--zid" && i < argsArray.Length) {
