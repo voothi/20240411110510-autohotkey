@@ -2694,14 +2694,11 @@ LaunchBrowserTab(sourceText, textMode, presetZID := "") {
         return false
     }
 
-    ; Construct target URL and invoke Run(url) for master tab
-    mainUrl := BuildDeskBrowserUrl(ZID, 1)
-    Run(mainUrl)
-
-    ; Open each decomposed child session tab in the browser
+    ; If child sessions were generated (Sentences Mode), spawn all child tabs via controller API
     if (outChildren.Length > 0) {
         childSeq := 2
         i := 1
+        childUrls := []
         while (i <= outChildren.Length) {
             arg := outChildren[i]
             if (arg == "--seq-num" && i < outChildren.Length) {
@@ -2711,15 +2708,34 @@ LaunchBrowserTab(sourceText, textMode, presetZID := "") {
                 targetPath := outChildren[i + 1]
                 childZid := ExtractZidFromPath(targetPath)
                 childUrl := BuildDeskBrowserUrl(childZid, childSeq)
-                Run(childUrl)
+                childUrls.Push(childUrl)
                 childSeq += 1
                 i += 2
             } else {
                 i += 1
             }
         }
+
+        if (childUrls.Length > 0) {
+            spawnPayload := '{"urls": ['
+            for idx, u in childUrls {
+                spawnPayload .= (idx > 1 ? ', ' : '') . JSON_Stringify(u)
+            }
+            spawnPayload .= ']}'
+            resJson := ""
+            if (!SendControllerRequest("/api/v1/spawn-tabs", spawnPayload, &resJson, 5)) {
+                for u in childUrls {
+                    Sleep(100)
+                    Run(u)
+                }
+            }
+            return true
+        }
     }
 
+    ; Otherwise, construct target URL and invoke Run(url) for master tab
+    mainUrl := BuildDeskBrowserUrl(ZID, 1)
+    Run(mainUrl)
     return true
 }
 
