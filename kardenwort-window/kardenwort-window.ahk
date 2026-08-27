@@ -2223,10 +2223,38 @@ CreateIconFromText(text, bgColor, textColor) {
     return hIcon
 }
 
-SetLanguage(lang) {
+SetLanguage(lang, notifyServer := true) {
     global G_CurrentLang := lang
     UpdateTrayMenu()
     UpdateTrayIcon()
+
+    ; 1. Persist to AHK's own config.ini
+    configPath := A_ScriptDir . "\config.ini"
+    if FileExist(configPath) {
+        try {
+            IniWrite(lang, configPath, "Settings", "DefaultLanguage")
+        }
+    }
+
+    ; 2. Synchronize with Desk / Controller
+    if (notifyServer) {
+        global G_DeskScriptPath
+        ; Attempt to update controller via REST API
+        payload := '{"language": ' JSON_Stringify(lang) '}'
+        dummyResp := ""
+        serverUpdated := SendControllerRequest("/api/v1/set-language", payload, &dummyResp, 2)
+
+        ; Fallback: update desk config.ini directly if server is offline or failed
+        if (!serverUpdated && G_DeskScriptPath != "") {
+            deskDir := RegExReplace(G_DeskScriptPath, "\\[^\\]+$")
+            deskConfigPath := deskDir . "\config.ini"
+            if FileExist(deskConfigPath) {
+                try {
+                    IniWrite(lang, deskConfigPath, "settings", "default_language")
+                }
+            }
+        }
+    }
 }
 
 CycleLanguage() {
@@ -2410,7 +2438,7 @@ ProcessArgs(argsArray) {
     while (i <= argsArray.Length) {
         arg := argsArray[i]
         if (arg == "--set-language" && i < argsArray.Length) {
-            SetLanguage(argsArray[i + 1])
+            SetLanguage(argsArray[i + 1], false)
             i += 2
         } else if (arg == "--seq-num" && i < argsArray.Length) {
             currSeqNum := argsArray[i + 1]
