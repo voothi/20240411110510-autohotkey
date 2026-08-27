@@ -2694,11 +2694,14 @@ LaunchBrowserTab(sourceText, textMode, presetZID := "") {
         return false
     }
 
-    ; If child sessions were generated (Sentences Mode), spawn all child tabs via controller API
+    ; Construct target URL for master tab (Window 1)
+    mainUrl := BuildDeskBrowserUrl(ZID, 1)
+    allUrls := [mainUrl]
+
+    ; If child sessions were generated (Sentences Mode), add all child tabs
     if (outChildren.Length > 0) {
         childSeq := 2
         i := 1
-        childUrls := []
         while (i <= outChildren.Length) {
             arg := outChildren[i]
             if (arg == "--seq-num" && i < outChildren.Length) {
@@ -2708,34 +2711,28 @@ LaunchBrowserTab(sourceText, textMode, presetZID := "") {
                 targetPath := outChildren[i + 1]
                 childZid := ExtractZidFromPath(targetPath)
                 childUrl := BuildDeskBrowserUrl(childZid, childSeq)
-                childUrls.Push(childUrl)
+                allUrls.Push(childUrl)
                 childSeq += 1
                 i += 2
             } else {
                 i += 1
             }
         }
-
-        if (childUrls.Length > 0) {
-            spawnPayload := '{"urls": ['
-            for idx, u in childUrls {
-                spawnPayload .= (idx > 1 ? ', ' : '') . JSON_Stringify(u)
-            }
-            spawnPayload .= ']}'
-            resJson := ""
-            if (!SendControllerRequest("/api/v1/spawn-tabs", spawnPayload, &resJson, 5)) {
-                for u in childUrls {
-                    Sleep(100)
-                    Run(u)
-                }
-            }
-            return true
-        }
     }
 
-    ; Otherwise, construct target URL and invoke Run(url) for master tab
-    mainUrl := BuildDeskBrowserUrl(ZID, 1)
-    Run(mainUrl)
+    ; Spawn all tabs (Master window 1 + daughter windows) via controller API
+    spawnPayload := '{"urls": ['
+    for idx, u in allUrls {
+        spawnPayload .= (idx > 1 ? ', ' : '') . JSON_Stringify(u)
+    }
+    spawnPayload .= ']}'
+    resJson := ""
+    if (!SendControllerRequest("/api/v1/spawn-tabs", spawnPayload, &resJson, 5)) {
+        for u in allUrls {
+            Sleep(80)
+            Run(u)
+        }
+    }
     return true
 }
 
