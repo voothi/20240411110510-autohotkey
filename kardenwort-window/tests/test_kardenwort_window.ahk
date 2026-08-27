@@ -67,7 +67,8 @@ if FileExist(configPath) {
     cascadeBatch := IniRead(configPath, "Settings", "CascadeBatchWindows", "")
     Assert(cascadeBatch != "", "CascadeBatchWindows setting is present in config.ini")
     launchInBrowserVal := IniRead(configPath, "Window", "LaunchInBrowser", "")
-    Assert(launchInBrowserVal == "0" || launchInBrowserVal == "1", "LaunchInBrowser setting is present and valid in config.ini")
+    Assert(launchInBrowserVal == "0" || launchInBrowserVal == "1",
+        "LaunchInBrowser setting is present and valid in config.ini")
     Assert(IsSet(G_LaunchInBrowser), "G_LaunchInBrowser global variable is defined")
 } else {
     Assert(false, "Config file not found at " configPath)
@@ -844,9 +845,12 @@ Assert(setClassCalls.Length == 2 && setClassCalls[1].nIndex == -34 && setClassCa
 ; Test: ExtractZidFromPath extraction accuracy
 Assert(ExtractZidFromPath("20260826230451") == "20260826230451", "ExtractZidFromPath extracts standard 14-digit ZID")
 Assert(ExtractZidFromPath("20260826230451-01") == "20260826230451-01", "ExtractZidFromPath extracts child indexed ZID")
-Assert(ExtractZidFromPath("U:\voothi\20260629183335-kardenwort-desk\results\20260826230451-02.de.tsv") == "20260826230451-02", "ExtractZidFromPath extracts child ZID from full file path")
-Assert(ExtractZidFromPath("U:\voothi\20260629183335-kardenwort-desk\results\20260826234818-01.de.tsv") == "20260826234818-01", "ExtractZidFromPath ignores timestamp in folder name and extracts filename child ZID")
-Assert(ExtractZidFromPath("custom_target_name") == "custom_target_name", "ExtractZidFromPath returns fallback string if no regex match")
+Assert(ExtractZidFromPath("U:\voothi\20260629183335-kardenwort-desk\results\20260826230451-02.de.tsv") ==
+"20260826230451-02", "ExtractZidFromPath extracts child ZID from full file path")
+Assert(ExtractZidFromPath("U:\voothi\20260629183335-kardenwort-desk\results\20260826234818-01.de.tsv") ==
+"20260826234818-01", "ExtractZidFromPath ignores timestamp in folder name and extracts filename child ZID")
+Assert(ExtractZidFromPath("custom_target_name") == "custom_target_name",
+"ExtractZidFromPath returns fallback string if no regex match")
 
 ; Test: BuildDeskBrowserUrl formatting
 testUrl := BuildDeskBrowserUrl("20260826230451-01", 2)
@@ -882,8 +886,10 @@ if (mockOutChildren.Length > 0) {
     }
 }
 Assert(childUrls.Length == 3, "Iterating mockOutChildren produced 3 child tab URLs")
-Assert(InStr(childUrls[1], "20260826230451-01") > 0 && InStr(childUrls[1], "seq_num=2") > 0, "Child tab 1 URL contains 20260826230451-01 and seq_num=2")
-Assert(InStr(childUrls[2], "20260826230451-02") > 0 && InStr(childUrls[2], "seq_num=3") > 0, "Child tab 2 URL contains 20260826230451-02 and seq_num=3")
+Assert(InStr(childUrls[1], "20260826230451-01") > 0 && InStr(childUrls[1], "seq_num=2") > 0,
+"Child tab 1 URL contains 20260826230451-01 and seq_num=2")
+Assert(InStr(childUrls[2], "20260826230451-02") > 0 && InStr(childUrls[2], "seq_num=3") > 0,
+"Child tab 2 URL contains 20260826230451-02 and seq_num=3")
 Assert(InStr(childUrls[3], "20260826230451-03") > 0, "Child tab 3 URL contains 20260826230451-03")
 
 ; Write summary
