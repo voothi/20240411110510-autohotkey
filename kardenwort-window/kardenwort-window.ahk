@@ -1707,6 +1707,7 @@ LoadConfig() {
     global G_AutoCloseOnNewLaunch := IniRead(configPath, "Settings", "AutoCloseOnNewLaunch", 0)
     global G_CascadeBatchWindows := IniRead(configPath, "Settings", "CascadeBatchWindows", 0)
     global G_LaunchInBrowser := IniRead(configPath, "Window", "LaunchInBrowser", 0)
+    global G_WebTabMode := "container"
 
     if (G_DeskPythonPath == "" || !FileExist(G_DeskPythonPath)) {
         KardenMsgBox("Python interpreter not found: " G_DeskPythonPath, "Kardenwort Error", 16)
@@ -1896,6 +1897,7 @@ LoadServerConfig() {
         G_ServerPort := IniRead(deskConfigPath, "server", "port", 18335)
         G_ControllerPort := IniRead(deskConfigPath, "server", "controller_port", G_ServerPort)
         G_ServerApiKey := IniRead(deskConfigPath, "server", "api_key", "")
+        G_WebTabMode := StrLower(IniRead(deskConfigPath, "sentences_mode", "web_tab_mode", "container"))
     }
 
     if (!G_ServerEnabled) {
@@ -2737,8 +2739,9 @@ LaunchBrowserTab(sourceText, textMode, presetZID := "") {
     mainUrl := BuildDeskBrowserUrl(ZID, 1)
     allUrls := [mainUrl]
 
-    ; If child sessions were generated (Sentences Mode), add all child tabs
-    if (outChildren.Length > 0) {
+    ; If child sessions were generated (Sentences Mode) and web_tab_mode != "container", add all child tabs
+    webTabMode := (IsSet(G_WebTabMode) && G_WebTabMode != "") ? G_WebTabMode : "container"
+    if (outChildren.Length > 0 && webTabMode != "container") {
         childSeq := 2
         i := 1
         while (i <= outChildren.Length) {
