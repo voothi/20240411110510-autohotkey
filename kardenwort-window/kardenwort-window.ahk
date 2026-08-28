@@ -1897,7 +1897,14 @@ LoadServerConfig() {
         G_ServerPort := IniRead(deskConfigPath, "server", "port", 18335)
         G_ControllerPort := IniRead(deskConfigPath, "server", "controller_port", G_ServerPort)
         G_ServerApiKey := IniRead(deskConfigPath, "server", "api_key", "")
-        G_WebTabMode := StrLower(IniRead(deskConfigPath, "sentences_mode", "web_tab_mode", "container"))
+        rawDeliveryMode := StrLower(IniRead(deskConfigPath, "sentences_mode", "delivery_mode", ""))
+        if (rawDeliveryMode == "") {
+            rawWtm := StrLower(IniRead(deskConfigPath, "sentences_mode", "web_tab_mode", "container"))
+            G_DeliveryMode := (rawWtm == "tabs") ? "multi_window" : "container"
+        } else {
+            G_DeliveryMode := (rawDeliveryMode == "multi_window") ? "multi_window" : "container"
+        }
+        G_WebTabMode := (G_DeliveryMode == "container") ? "container" : "tabs"
     }
 
     if (!G_ServerEnabled) {
@@ -2739,9 +2746,9 @@ LaunchBrowserTab(sourceText, textMode, presetZID := "") {
     mainUrl := BuildDeskBrowserUrl(ZID, 1)
     allUrls := [mainUrl]
 
-    ; If child sessions were generated (Sentences Mode) and web_tab_mode != "container", add all child tabs
-    webTabMode := (IsSet(G_WebTabMode) && G_WebTabMode != "") ? G_WebTabMode : "container"
-    if (outChildren.Length > 0 && webTabMode != "container") {
+    ; If child sessions were generated (Sentences Mode) and delivery_mode != "container", add all child tabs
+    deliveryMode := (IsSet(G_DeliveryMode) && G_DeliveryMode != "") ? G_DeliveryMode : ((IsSet(G_WebTabMode) && G_WebTabMode == "tabs") ? "multi_window" : "container")
+    if (outChildren.Length > 0 && deliveryMode != "container") {
         childSeq := 2
         i := 1
         while (i <= outChildren.Length) {
