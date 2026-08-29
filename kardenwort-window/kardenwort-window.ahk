@@ -2742,12 +2742,14 @@ LaunchBrowserTab(sourceText, textMode, presetZID := "") {
         return false
     }
 
-    ; Construct target URL for master tab (Window 1)
-    mainUrl := BuildDeskBrowserUrl(ZID, 1)
-    allUrls := [mainUrl]
-
     ; If child sessions were generated (Sentences Mode) and delivery_mode != "container", add all child tabs
     deliveryMode := (IsSet(G_DeliveryMode) && G_DeliveryMode != "") ? G_DeliveryMode : ((IsSet(G_WebTabMode) && G_WebTabMode == "tabs") ? "multi_window" : "container")
+
+    ; Construct target URL for master tab (Window 1) or container tab (Sentence 1 = 2)
+    initialSeq := (deliveryMode == "container" && outChildren.Length > 0) ? 2 : 1
+    mainUrl := BuildDeskBrowserUrl(ZID, initialSeq)
+    allUrls := [mainUrl]
+
     if (outChildren.Length > 0 && deliveryMode != "container") {
         childSeq := 2
         i := 1
