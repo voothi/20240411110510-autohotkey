@@ -4001,7 +4001,7 @@ TriggerSmartAction() {
 }
 
 ; Register GUI hotkeys Ctrl+S and F5 for saving/updating in active Kardenwort windows
-#HotIf WinActive("Kardenwort - ")
+#HotIf WinActive("Kardenwort - ahk_class AutoHotkeyGUI")
 ^s::
 F5:: {
     activeHwnd := WinActive("A")
@@ -4055,7 +4055,7 @@ GuiEscape(thisGui) {
     } catch {
     }
 }
-#HotIf WinActive("Kardenwort - ")
+#HotIf WinActive("Kardenwort - ahk_class AutoHotkeyGUI")
 $Enter::
 {
     activeHwnd := WinActive("A")
