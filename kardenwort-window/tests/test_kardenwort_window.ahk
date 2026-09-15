@@ -894,4 +894,4 @@ Assert(InStr(childUrls[3], "20260826230451-03") > 0, "Child tab 3 URL contains 2
 
 ; Write summary
 FileAppend("`nSummary: " (totalTests - failedTests) "/" totalTests " tests passed.`n", A_ScriptDir "\test_results.txt")
-ExitApp()
+ExitApp(failedTests > 0 ? 1 : 0)

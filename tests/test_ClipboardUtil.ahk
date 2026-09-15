@@ -5,6 +5,8 @@
  * Automated tests for ClipboardUtil.ahk (ZID: 20260515094621)
  */
 
+failed := 0
+
 ; Test 1: Hyphenation and Conjunctions
 test_data := "This is a compo-`r`nund compositional word.`r`nAnd this is a simple hyphen-`r`nated word."
 cleaned := CleanClipboardText(test_data)
@@ -13,6 +15,7 @@ expected := "This is a compo- und compositional word. And this is a simple hyphe
 if (cleaned == expected) {
     FileAppend("SUCCESS: Text cleaned correctly.`n", "*")
 } else {
+    failed += 1
     FileAppend("FAILURE: Text cleaning failed.`nExpected: " . expected . "`nGot:      " . cleaned . "`n", "*")
 }
 
@@ -24,6 +27,7 @@ expected_html := "Word with tags and multiple spaces."
 if (cleaned_html == expected_html) {
     FileAppend("SUCCESS: HTML and spaces cleaned correctly.`n", "*")
 } else {
+    failed += 1
     FileAppend("FAILURE: HTML cleaning failed.`nGot: " . cleaned_html . "`n", "*")
 }
 
@@ -35,6 +39,7 @@ expected_np := "Clean: Text!"
 if (cleaned_np == expected_np) {
     FileAppend("SUCCESS: Non-printable and punctuation cleaned correctly.`n", "*")
 } else {
+    failed += 1
     FileAppend("FAILURE: Non-printable cleaning failed.`nGot: " . cleaned_np . "`n", "*")
 }
 
@@ -46,5 +51,8 @@ expected_case := "helllo world"
 if (cleaned_case == expected_case) {
     FileAppend("SUCCESS: Case conversion worked.`n", "*")
 } else {
+    failed += 1
     FileAppend("FAILURE: Case conversion failed.`nGot: " . cleaned_case . "`n", "*")
 }
+
+ExitApp(failed > 0 ? 1 : 0)
