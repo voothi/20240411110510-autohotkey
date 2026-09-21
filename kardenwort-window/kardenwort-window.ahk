@@ -1679,25 +1679,85 @@ LoadConfig() {
 
     global G_DeskPythonPath := IniRead(configPath, "Paths", "DeskPythonPath", "")
     global G_DeskScriptPath := IniRead(configPath, "Paths", "DeskScriptPath", "")
-    global G_DefaultLanguage := IniRead(configPath, "Settings", "DefaultLanguage", "en")
-    global G_CurrentLang := IniRead(configPath, "Settings", "DefaultLanguage", "en")
+
+    ; Resolve backend kardenwort-desk config.ini location
+    deskConfigPath := A_ScriptDir "\..\..\20260629183335-kardenwort-desk\config.ini"
+    if (!FileExist(deskConfigPath) && G_DeskScriptPath != "") {
+        deskDir := RegExReplace(G_DeskScriptPath, "\\[^\\]+$")
+        deskConfigPath := deskDir "\config.ini"
+    }
+    hasDeskConfig := FileExist(deskConfigPath)
+
+    ; 1. DefaultLanguage (canonical: desk [settings] default_language)
+    defaultLang := hasDeskConfig ? IniRead(deskConfigPath, "settings", "default_language", "") : ""
+    if (defaultLang == "") {
+        defaultLang := IniRead(configPath, "Settings", "DefaultLanguage", "en")
+    }
+    global G_DefaultLanguage := defaultLang
+    global G_CurrentLang := defaultLang
+
     global G_FileWatcherIntervalMs := IniRead(configPath, "Settings", "FileWatcherIntervalMs", 1000)
-    global G_AutoUpdate := IniRead(configPath, "Settings", "AutoUpdate", 0)
+
+    ; 2. AutoUpdate (canonical: desk [rendering] auto_inject_updates)
+    autoUpVal := hasDeskConfig ? StrLower(IniRead(deskConfigPath, "rendering", "auto_inject_updates", "")) : ""
+    if (autoUpVal == "true" || autoUpVal == "1") {
+        global G_AutoUpdate := 1
+    } else if (autoUpVal == "false" || autoUpVal == "0") {
+        global G_AutoUpdate := 0
+    } else {
+        global G_AutoUpdate := IniRead(configPath, "Settings", "AutoUpdate", 0)
+    }
+
     global G_AutoInjectGracePeriodSec := IniRead(configPath, "Settings", "AutoInjectGracePeriodSec", 6)
     global G_AutoInjectMaxFileAgeDiffSec := IniRead(configPath, "Settings", "AutoInjectMaxFileAgeDiffSec", 10)
-    global G_AutoSave := IniRead(configPath, "Settings", "AutoSaveOnEdit", 0)
-    global G_AutoSaveOnClose := IniRead(configPath, "Settings", "AutoSaveOnClose", 0)
+
+    ; 3. AutoSaveOnEdit (canonical: desk [ui] auto_save_on_edit)
+    asEditVal := hasDeskConfig ? StrLower(IniRead(deskConfigPath, "ui", "auto_save_on_edit", "")) : ""
+    if (asEditVal == "true" || asEditVal == "1") {
+        global G_AutoSave := 1
+    } else if (asEditVal == "false" || asEditVal == "0") {
+        global G_AutoSave := 0
+    } else {
+        global G_AutoSave := IniRead(configPath, "Settings", "AutoSaveOnEdit", 0)
+    }
+
+    ; 4. AutoSaveOnClose (canonical: desk [ui] auto_save_on_close)
+    asCloseVal := hasDeskConfig ? StrLower(IniRead(deskConfigPath, "ui", "auto_save_on_close", "")) : ""
+    if (asCloseVal == "true" || asCloseVal == "1") {
+        global G_AutoSaveOnClose := 1
+    } else if (asCloseVal == "false" || asCloseVal == "0") {
+        global G_AutoSaveOnClose := 0
+    } else {
+        global G_AutoSaveOnClose := IniRead(configPath, "Settings", "AutoSaveOnClose", 0)
+    }
+
     global G_ShowInfoWindows := IniRead(configPath, "Settings", "ShowInfoWindows", 1)
     global G_MultiTapTimeout := IniRead(configPath, "Settings", "MultiTapTimeout", 300)
     global G_TapSingleMode := IniRead(configPath, "Hotkey", "TapSingleMode", "single")
     global G_TapDoubleMode := IniRead(configPath, "Hotkey", "TapDoubleMode", "multi")
     global G_OrdinaryColor := IniRead(configPath, "Highlight", "OrdinaryColor", "#ffd700")
     global G_PairedColor := IniRead(configPath, "Highlight", "PairedColor", "#9370db")
-    global G_DefaultZoom := IniRead(configPath, "Settings", "DefaultZoom", "100")
-    global G_Theme := StrLower(IniRead(configPath, "Settings", "Theme", "dark"))
+
+    ; 5. DefaultZoom (canonical: desk [rendering] default_zoom or [ui] default_zoom)
+    zoomVal := hasDeskConfig ? IniRead(deskConfigPath, "rendering", "default_zoom", "") : ""
+    if (zoomVal == "" && hasDeskConfig) {
+        zoomVal := IniRead(deskConfigPath, "ui", "default_zoom", "")
+    }
+    if (zoomVal == "") {
+        zoomVal := IniRead(configPath, "Settings", "DefaultZoom", "100")
+    }
+    global G_DefaultZoom := zoomVal
+
+    ; 6. Theme (canonical: desk [ui] theme)
+    themeVal := hasDeskConfig ? IniRead(deskConfigPath, "ui", "theme", "") : ""
+    if (themeVal == "") {
+        themeVal := IniRead(configPath, "Settings", "Theme", "dark")
+    }
+    global G_Theme := StrLower(themeVal)
     global G_GuiBgColor := (G_Theme == "light" || G_Theme == "white") ? "F6F8FA" : "0D0F12"
     global G_GuiTextColor := (G_Theme == "light" || G_Theme == "white") ? "c0x24292F" : "c0xE3E6EB"
     global G_DwmDark := (G_Theme == "light" || G_Theme == "white") ? 0 : 1
+
     global G_HoverHighlightMvp := IniRead(configPath, "Settings", "HoverHighlightMvp", "0")
     global G_HoverHighlightMvpBookmarks := IniRead(configPath, "Settings", "HoverHighlightMvpBookmarks", "3")
     global G_HoverHighlightMvpRainbow := IniRead(configPath, "Settings", "HoverHighlightMvpRainbow", "0")
@@ -1706,7 +1766,16 @@ LoadConfig() {
     global G_CloseDescendantsOnParentClose := IniRead(configPath, "Settings", "CloseDescendantsOnParentClose", 1)
     global G_AutoCloseOnNewLaunch := IniRead(configPath, "Settings", "AutoCloseOnNewLaunch", 0)
     global G_CascadeBatchWindows := IniRead(configPath, "Settings", "CascadeBatchWindows", 0)
-    global G_LaunchInBrowser := IniRead(configPath, "Window", "LaunchInBrowser", 0)
+
+    ; 7. LaunchInBrowser (canonical: desk [ui] launch_in_browser)
+    libVal := hasDeskConfig ? StrLower(IniRead(deskConfigPath, "ui", "launch_in_browser", "")) : ""
+    if (libVal == "true" || libVal == "1") {
+        global G_LaunchInBrowser := 1
+    } else if (libVal == "false" || libVal == "0") {
+        global G_LaunchInBrowser := 0
+    } else {
+        global G_LaunchInBrowser := IniRead(configPath, "Window", "LaunchInBrowser", 0)
+    }
     global G_WebTabMode := "container"
 
     if (G_DeskPythonPath == "" || !FileExist(G_DeskPythonPath)) {

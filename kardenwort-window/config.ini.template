@@ -3,12 +3,17 @@ DeskPythonPath = ../20260629183335-kardenwort-desk/venv/Scripts/python.exe
 DeskScriptPath = ../20260629183335-kardenwort-desk/kardenwort_desk.py
 
 [Settings]
+; [DEPRECATED] Canonical location is kardenwort-desk/config.ini [settings] default_language
+; Kept below as fallback if backend config is missing
 DefaultLanguage = en
 FileWatcherIntervalMs = 1000
 MultiTapTimeout = 300
+; [DEPRECATED] Canonical location is kardenwort-desk/config.ini [rendering] or [ui] default_zoom
 DefaultZoom = 150
+; [DEPRECATED] Canonical location is kardenwort-desk/config.ini [ui] theme
 Theme = dark
 ; Set to 1 to auto-reload UI when backend TSV changes, or 0 to show an Update button instead
+; [DEPRECATED] Canonical location is kardenwort-desk/config.ini [rendering] auto_inject_updates
 AutoUpdate = 0
 ; Maximum number of seconds to suppress the Update button while waiting for a background task to finish saving its Javascript update payload.
 AutoInjectGracePeriodSec = 10
@@ -23,9 +28,9 @@ HoverHighlightMvpBookmarks = 3
 HoverHighlightMvpRainbow = 1
 ; Maximum source-word index distance allowed between parts of a split/separable verb construct
 ; SplitGapLimit = 60
-; Set to 1 to auto-save the TSV immediately after every inline cell edit, or 0 to disable
+; [DEPRECATED] Canonical location is kardenwort-desk/config.ini [ui] auto_save_on_edit
 AutoSaveOnEdit = 0
-; Set to 1 to automatically save unsaved edits when closing the window (no prompt shown)
+; [DEPRECATED] Canonical location is kardenwort-desk/config.ini [ui] auto_save_on_close
 AutoSaveOnClose = 1
 ; Set to 1 to close all single-sentence child windows when closing the parent window, or 0 to keep them open
 CloseDescendantsOnParentClose = 1
@@ -48,6 +53,7 @@ en = English
 de = German
 
 [Window]
+; [DEPRECATED] Canonical location is kardenwort-desk/config.ini [ui] launch_in_browser
 LaunchInBrowser = 0
 X = Center
 Y = 36
