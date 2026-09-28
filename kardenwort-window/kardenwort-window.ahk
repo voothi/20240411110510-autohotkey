@@ -295,13 +295,6 @@ ActionRenderDoneIO(guiObj, payload) {
         isStubDiv := guiObj.wb.document.getElementById("kardenwort-is-stub")
         if (isStubDiv) {
             guiObj.IsStub := true
-            guiObj.SaveBtn.Visible := false
-            guiObj.UpdateBtn.Visible := false
-            guiObj.RetextBtn.Visible := false
-            guiObj.ReprocBtn.Visible := false
-            guiObj.SendBtn.Visible := false
-            guiObj.PointerBtn.Visible := false
-            guiObj.DeleteBtn.Visible := false
             guiObj.GetClientPos(, , &clientWidth, &clientHeight)
             LayoutButtons(guiObj, clientWidth, clientHeight)
         }
@@ -2946,28 +2939,12 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
     MyGui.OnEvent("Escape", GuiEscape)
 
     ; ActiveX Explorer
-    wvc := MyGui.Add("ActiveX", "x10 y10 w800 h600 +Hidden -E0x200", "Shell.Explorer")
+    wvc := MyGui.Add("ActiveX", "x0 y0 w800 h600 +Hidden -E0x200", "Shell.Explorer")
     wb := wvc.Value
-
-    ; Native Footer Buttons
-    SaveBtn := MyGui.Add("Text", "x15 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor " Disabled", "Save (Ctrl+S)")
-    UpdateBtn := MyGui.Add("Text", "x114 y615 w100 h30 Center +Border +0x200 +Hidden " G_GuiTextColor, "Update")
-    RetextBtn := MyGui.Add("Text", "x224 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Re-text")
-    ReprocBtn := MyGui.Add("Text", "x323 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Re-word")
-    SendBtn := MyGui.Add("Text", "x433 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Send to Anki")
-    PointerBtn := MyGui.Add("Text", "x543 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Hand Tool")
-    DeleteBtn := MyGui.Add("Text", "x653 y615 w100 h30 Center +Border +0x200 " G_GuiTextColor, "Delete")
 
     ; Store references on GUI object
     MyGui.wb := wb
     MyGui.wvc := wvc
-    MyGui.SaveBtn := SaveBtn
-    MyGui.UpdateBtn := UpdateBtn
-    MyGui.SendBtn := SendBtn
-    MyGui.DeleteBtn := DeleteBtn
-    MyGui.RetextBtn := RetextBtn
-    MyGui.ReprocBtn := ReprocBtn
-    MyGui.PointerBtn := PointerBtn
 
     MyGui.ZID := ZID
     MyGui.Lang := lang
@@ -2979,14 +2956,6 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
     MyGui.selectableTextMode := false
     MyGui.persistentSelectableTextMode := false
     FsmInit(MyGui)
-
-    SaveBtn.OnEvent("Click", OnSaveClick.Bind(MyGui))
-    UpdateBtn.OnEvent("Click", OnUpdateClick.Bind(MyGui))
-    SendBtn.OnEvent("Click", OnSendToAnkiClick.Bind(MyGui))
-    DeleteBtn.OnEvent("Click", OnDeleteClick.Bind(MyGui))
-    RetextBtn.OnEvent("Click", OnRetextClick.Bind(MyGui))
-    ReprocBtn.OnEvent("Click", OnReprocessClick.Bind(MyGui))
-    PointerBtn.OnEvent("Click", OnPointerToggleClick.Bind(MyGui))
 
     configPath := A_ScriptDir "\config.ini"
     initX := Trim(StrSplit(IniRead(configPath, "Window", "X", ""), ";")[1])
@@ -3264,58 +3233,23 @@ UpdateButtonState(guiObj) {
     try {
         if (guiObj.FsmState == FSM_RELOADING || guiObj.FsmState == FSM_REPROCESSING || guiObj.FsmState == FSM_RETEXTING ||
             guiObj.FsmState == FSM_LOADING || guiObj.FsmState == FSM_SAVING || guiObj.FsmState == FSM_CLOSING) {
-            guiObj.UpdateBtn.Visible := false
-            guiObj.SaveBtn.Enabled := false
-            guiObj.SendBtn.Enabled := false
-            guiObj.DeleteBtn.Enabled := false
-            guiObj.RetextBtn.Enabled := false
-            guiObj.ReprocBtn.Enabled := false
             guiObj.GetClientPos(, , &clientWidth, &clientHeight)
             LayoutButtons(guiObj, clientWidth, clientHeight)
             return
         }
 
         if (guiObj.FsmState == FSM_EXPORTING) {
-            guiObj.UpdateBtn.Visible := false
-            guiObj.SaveBtn.Enabled := false
-            guiObj.SendBtn.Enabled := false
-            guiObj.DeleteBtn.Enabled := false
-            guiObj.RetextBtn.Enabled := false
-            guiObj.ReprocBtn.Enabled := false
             UpdateStatus(guiObj, "Exporting favorites...")
             guiObj.GetClientPos(, , &clientWidth, &clientHeight)
             LayoutButtons(guiObj, clientWidth, clientHeight)
             return
         }
-
-        isDirty := guiObj.FsmMemory["IsDirty"]
-        pending := guiObj.FsmMemory["PendingUpdate"]
-
-        if (guiObj.HasProp("IsStub") && guiObj.IsStub) {
-            guiObj.SaveBtn.Visible := false
-            guiObj.UpdateBtn.Visible := false
-            guiObj.SendBtn.Visible := false
-            guiObj.DeleteBtn.Visible := false
-            guiObj.RetextBtn.Visible := false
-            guiObj.ReprocBtn.Visible := false
-            guiObj.PointerBtn.Visible := false
-        } else {
-            guiObj.SaveBtn.Enabled := isDirty
-            guiObj.SendBtn.Enabled := true
-            guiObj.DeleteBtn.Enabled := true
-            guiObj.RetextBtn.Enabled := true
-            guiObj.ReprocBtn.Enabled := true
-
-            if (pending) {
-                guiObj.UpdateBtn.Visible := true
-                guiObj.UpdateBtn.Enabled := true
-            } else {
-                guiObj.UpdateBtn.Visible := false
-            }
-        }
     } catch {
         return ; Ignore if window is destroyed
     }
+
+    isDirty := guiObj.FsmMemory.Has("IsDirty") && guiObj.FsmMemory["IsDirty"]
+    pending := guiObj.FsmMemory.Has("PendingUpdate") && guiObj.FsmMemory["PendingUpdate"]
 
     if (guiObj.FsmMemory.Has("ActiveReprocess") && guiObj.FsmMemory["ActiveReprocess"]) {
         UpdateStatus(guiObj, "Re-processing...")
@@ -3461,15 +3395,6 @@ ToggleSelectableTextMode(guiObj, state := "", isPersistent := false) {
 }
 
 UpdateButtonText(guiObj, state) {
-    try {
-        if (state) {
-            guiObj.PointerBtn.Text := "Select Text"
-        } else {
-            guiObj.PointerBtn.Text := "Hand Tool"
-        }
-    } catch {
-        ; Ignore errors if control is destroyed (e.g. during Alt+F4 window close)
-    }
 }
 
 UpdateWebViewMode(guiObj, state) {
@@ -3873,121 +3798,8 @@ GuiClose(thisGui) {
 }
 
 LayoutButtons(thisGui, Width, Height) {
-    allButtons := [
-        thisGui.SaveBtn,
-        thisGui.UpdateBtn,
-        thisGui.RetextBtn,
-        thisGui.ReprocBtn,
-        thisGui.SendBtn,
-        thisGui.PointerBtn,
-        thisGui.DeleteBtn
-    ]
-
-    visibleButtons := []
-    for btn in allButtons {
-        try {
-            if (btn.Visible)
-                visibleButtons.Push(btn)
-        }
-    }
-
-    if (visibleButtons.Length == 0) {
-        try {
-            thisGui.wvc.Move(, , Width - 20, Height - 20)
-        }
-        return
-    }
-
-    ; Calculate widths of all visible buttons
-    btnWidths := []
-    for btn in visibleButtons {
-        w := 100
-        try {
-            btn.GetPos(, , &tempW)
-            w := tempW
-        }
-        btnWidths.Push(w)
-    }
-
-    ; Define the gap before each button (except the first one)
-    gaps := []
-    if (visibleButtons.Length > 1) {
-        loop visibleButtons.Length - 1 {
-            i := A_Index + 1
-            btnPrev := visibleButtons[i - 1]
-            btnCurr := visibleButtons[i]
-
-            if ((btnPrev == thisGui.SaveBtn && btnCurr == thisGui.UpdateBtn) ||
-            (btnPrev == thisGui.RetextBtn && btnCurr == thisGui.ReprocBtn)) {
-                gaps.Push(-1)
-            } else {
-                gaps.Push(10)
-            }
-        }
-    }
-
-    ; Calculate total width
-    totalWidth := btnWidths[1]
-    if (visibleButtons.Length > 1) {
-        loop visibleButtons.Length - 1 {
-            i := A_Index + 1
-            totalWidth += gaps[i - 1] + btnWidths[i]
-        }
-    }
-
-    totalRows := 1
-    btnPositions := []
-
-    if (totalWidth <= Width - 30) {
-        ; All fit on one line, so center them
-        startX := (Width - totalWidth) / 2
-        currX := startX
-        btnPositions.Push({ x: currX, row: 1 })
-        if (visibleButtons.Length > 1) {
-            loop visibleButtons.Length - 1 {
-                i := A_Index + 1
-                currX += gaps[i - 1] + btnWidths[i - 1]
-                btnPositions.Push({ x: currX, row: 1 })
-            }
-        }
-    } else {
-        ; Wrap buttons, align to the left (starting at x=15)
-        currX := 15
-        currentRow := 1
-        btnPositions.Push({ x: currX, row: currentRow })
-
-        if (visibleButtons.Length > 1) {
-            loop visibleButtons.Length - 1 {
-                i := A_Index + 1
-                w := btnWidths[i]
-                gap := gaps[i - 1]
-
-                rightEdge := currX + btnWidths[i - 1] + gap + w
-                if (currX > 15 && rightEdge > Width - 15) {
-                    currentRow += 1
-                    currX := 15
-                    btnPositions.Push({ x: currX, row: currentRow })
-                } else {
-                    currX := currX + btnWidths[i - 1] + gap
-                    btnPositions.Push({ x: currX, row: currentRow })
-                }
-            }
-        }
-        totalRows := currentRow
-    }
-
-    wvcHeight := Height - 25 - totalRows * 40
     try {
-        thisGui.wvc.Move(, , Width - 20, wvcHeight)
-    }
-
-    for i, btn in visibleButtons {
-        pos := btnPositions[i]
-        btnY := Height - (totalRows - pos.row + 1) * 40
-        try {
-            btn.Move(pos.x, btnY)
-            WinRedraw(btn.Hwnd)
-        }
+        thisGui.wvc.Move(0, 0, Width, Height)
     }
 }
 
