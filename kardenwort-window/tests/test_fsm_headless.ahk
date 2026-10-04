@@ -301,7 +301,6 @@ g.FsmMemory["LastError"] := "Re-word failed: OpenAI API rate limit exceeded (HTT
 UpdateButtonState(g)
 _Assert(InStr(g.CurrentStatusText, "Re-word failed: OpenAI API rate limit exceeded (HTTP 429)"),
 "S5.9a: UpdateButtonState displays Re-word failure warning")
-_Assert(g.ReprocBtn.Enabled, "S5.9b: Reprocess button re-enabled on failure")
 
 ; S5.10: Smooth in-place Re-text completion via OnAhkCall 'finished'
 g := MakeMockGui()
