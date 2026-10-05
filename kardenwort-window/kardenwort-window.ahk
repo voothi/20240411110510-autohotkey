@@ -2302,9 +2302,7 @@ SetLanguage(lang, notifyServer := true) {
     ; 1. Persist to AHK's own config.ini
     configPath := A_ScriptDir . "\config.ini"
     if FileExist(configPath) {
-        try {
-            IniWrite(lang, configPath, "Settings", "DefaultLanguage")
-        }
+        PersistIniLanguage(configPath, "DefaultLanguage", lang)
     }
 
     ; 2. Synchronize with Desk / Controller
@@ -2320,11 +2318,31 @@ SetLanguage(lang, notifyServer := true) {
             deskDir := RegExReplace(G_DeskScriptPath, "\\[^\\]+$")
             deskConfigPath := deskDir . "\config.ini"
             if FileExist(deskConfigPath) {
-                try {
-                    IniWrite(lang, deskConfigPath, "settings", "default_language")
-                }
+                PersistIniLanguage(deskConfigPath, "default_language", lang)
             }
         }
+    }
+}
+
+PersistIniLanguage(filePath, keyName, lang) {
+    if (!FileExist(filePath))
+        return false
+    try {
+        content := FileRead(filePath, "UTF-8")
+        pattern := "mi)^([ \t]*)" . keyName . "[ \t]*=.*$"
+        if RegExMatch(content, pattern) {
+            newContent := RegExReplace(content, pattern, "$1" . keyName . " = " . lang)
+            f := FileOpen(filePath, "w", "UTF-8")
+            f.Write(newContent)
+            f.Close()
+            return true
+        } else {
+            section := (keyName == "default_language") ? "settings" : "Settings"
+            IniWrite(lang, filePath, section, keyName)
+            return true
+        }
+    } catch {
+        return false
     }
 }
 
