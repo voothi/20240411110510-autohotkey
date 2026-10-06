@@ -2332,7 +2332,7 @@ PersistIniLanguage(filePath, keyName, lang) {
         pattern := "mi)^([ \t]*)" . keyName . "[ \t]*=.*$"
         if RegExMatch(content, pattern) {
             newContent := RegExReplace(content, pattern, "$1" . keyName . " = " . lang)
-            f := FileOpen(filePath, "w", "UTF-8")
+            f := FileOpen(filePath, "w", "UTF-8-RAW")
             f.Write(newContent)
             f.Close()
             return true
