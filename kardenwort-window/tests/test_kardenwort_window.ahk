@@ -886,11 +886,27 @@ if (mockOutChildren.Length > 0) {
     }
 }
 Assert(childUrls.Length == 3, "Iterating mockOutChildren produced 3 child tab URLs")
-Assert(InStr(childUrls[1], "20260826230451-01") > 0 && InStr(childUrls[1], "seq_num=2") > 0,
-"Child tab 1 URL contains 20260826230451-01 and seq_num=2")
-Assert(InStr(childUrls[2], "20260826230451-02") > 0 && InStr(childUrls[2], "seq_num=3") > 0,
-"Child tab 2 URL contains 20260826230451-02 and seq_num=3")
+Assert(InStr(childUrls[1], "20260826230451-01") > 0 && InStr(childUrls[1], "seq_num=2") > 0, "Child tab 1 URL contains 20260826230451-01 and seq_num=2")
+Assert(InStr(childUrls[2], "20260826230451-02") > 0 && InStr(childUrls[2], "seq_num=3") > 0, "Child tab 2 URL contains 20260826230451-02 and seq_num=3")
 Assert(InStr(childUrls[3], "20260826230451-03") > 0, "Child tab 3 URL contains 20260826230451-03")
+
+; ===================================================================================
+; Part 11: Thin WinHTTP Client & Offline Fallback Tests
+; ===================================================================================
+
+; Test 1: Empty text handling does not dispatch HTTP request
+Assert(SendSessionRequest("") == false, "SendSessionRequest returns false on empty string without dispatching")
+Assert(SendSessionRequest("   ") == false, "SendSessionRequest returns false on whitespace without dispatching")
+
+; Test 2: Offline daemon handling gracefully returns false without unhandled exceptions
+offlineHandled := false
+try {
+    res := SendSessionRequest("Valid source text sent while daemon is offline")
+    offlineHandled := (res == false)
+} catch {
+    offlineHandled := false
+}
+Assert(offlineHandled, "SendSessionRequest catches connection refusal gracefully and returns false without exceptions")
 
 ; Write summary
 FileAppend("`nSummary: " (totalTests - failedTests) "/" totalTests " tests passed.`n", A_ScriptDir "\test_results.txt")
