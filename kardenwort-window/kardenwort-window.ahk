@@ -1673,56 +1673,21 @@ LoadConfig() {
     global G_DeskPythonPath := IniRead(configPath, "Paths", "DeskPythonPath", "")
     global G_DeskScriptPath := IniRead(configPath, "Paths", "DeskScriptPath", "")
 
-    ; Resolve backend kardenwort-desk config.ini location
-    deskConfigPath := A_ScriptDir "\..\..\20260629183335-kardenwort-desk\config.ini"
-    if (!FileExist(deskConfigPath) && G_DeskScriptPath != "") {
-        deskDir := RegExReplace(G_DeskScriptPath, "\\[^\\]+$")
-        deskConfigPath := deskDir "\config.ini"
-    }
-    hasDeskConfig := FileExist(deskConfigPath)
-
-    ; 1. DefaultLanguage (canonical: desk [settings] default_language)
-    defaultLang := hasDeskConfig ? IniRead(deskConfigPath, "settings", "default_language", "") : ""
-    if (defaultLang == "") {
-        defaultLang := IniRead(configPath, "Settings", "DefaultLanguage", "en")
-    }
+    ; 1. DefaultLanguage
+    defaultLang := IniRead(configPath, "Settings", "DefaultLanguage", "en")
     global G_DefaultLanguage := defaultLang
     global G_CurrentLang := defaultLang
 
     global G_FileWatcherIntervalMs := IniRead(configPath, "Settings", "FileWatcherIntervalMs", 1000)
 
-    ; 2. AutoUpdate (canonical: desk [rendering] auto_inject_updates)
-    autoUpVal := hasDeskConfig ? StrLower(IniRead(deskConfigPath, "rendering", "auto_inject_updates", "")) : ""
-    if (autoUpVal == "true" || autoUpVal == "1") {
-        global G_AutoUpdate := 1
-    } else if (autoUpVal == "false" || autoUpVal == "0") {
-        global G_AutoUpdate := 0
-    } else {
-        global G_AutoUpdate := IniRead(configPath, "Settings", "AutoUpdate", 0)
-    }
-
+    ; 2. AutoUpdate
+    global G_AutoUpdate := IniRead(configPath, "Settings", "AutoUpdate", 0)
     global G_AutoInjectGracePeriodSec := IniRead(configPath, "Settings", "AutoInjectGracePeriodSec", 6)
     global G_AutoInjectMaxFileAgeDiffSec := IniRead(configPath, "Settings", "AutoInjectMaxFileAgeDiffSec", 10)
 
-    ; 3. AutoSaveOnEdit (canonical: desk [ui] auto_save_on_edit)
-    asEditVal := hasDeskConfig ? StrLower(IniRead(deskConfigPath, "ui", "auto_save_on_edit", "")) : ""
-    if (asEditVal == "true" || asEditVal == "1") {
-        global G_AutoSave := 1
-    } else if (asEditVal == "false" || asEditVal == "0") {
-        global G_AutoSave := 0
-    } else {
-        global G_AutoSave := IniRead(configPath, "Settings", "AutoSaveOnEdit", 0)
-    }
-
-    ; 4. AutoSaveOnClose (canonical: desk [ui] auto_save_on_close)
-    asCloseVal := hasDeskConfig ? StrLower(IniRead(deskConfigPath, "ui", "auto_save_on_close", "")) : ""
-    if (asCloseVal == "true" || asCloseVal == "1") {
-        global G_AutoSaveOnClose := 1
-    } else if (asCloseVal == "false" || asCloseVal == "0") {
-        global G_AutoSaveOnClose := 0
-    } else {
-        global G_AutoSaveOnClose := IniRead(configPath, "Settings", "AutoSaveOnClose", 0)
-    }
+    ; 3. AutoSave
+    global G_AutoSave := IniRead(configPath, "Settings", "AutoSaveOnEdit", 0)
+    global G_AutoSaveOnClose := IniRead(configPath, "Settings", "AutoSaveOnClose", 0)
 
     global G_ShowInfoWindows := IniRead(configPath, "Settings", "ShowInfoWindows", 1)
     global G_MultiTapTimeout := IniRead(configPath, "Settings", "MultiTapTimeout", 300)
@@ -1731,22 +1696,11 @@ LoadConfig() {
     global G_OrdinaryColor := IniRead(configPath, "Highlight", "OrdinaryColor", "#ffd700")
     global G_PairedColor := IniRead(configPath, "Highlight", "PairedColor", "#9370db")
 
-    ; 5. DefaultZoom (canonical: desk [rendering] default_zoom or [ui] default_zoom)
-    zoomVal := hasDeskConfig ? IniRead(deskConfigPath, "rendering", "default_zoom", "") : ""
-    if (zoomVal == "" && hasDeskConfig) {
-        zoomVal := IniRead(deskConfigPath, "ui", "default_zoom", "")
-    }
-    if (zoomVal == "") {
-        zoomVal := IniRead(configPath, "Settings", "DefaultZoom", "100")
-    }
-    global G_DefaultZoom := zoomVal
+    ; 4. DefaultZoom
+    global G_DefaultZoom := IniRead(configPath, "Settings", "DefaultZoom", "100")
 
-    ; 6. Theme (canonical: desk [ui] theme)
-    themeVal := hasDeskConfig ? IniRead(deskConfigPath, "ui", "theme", "") : ""
-    if (themeVal == "") {
-        themeVal := IniRead(configPath, "Settings", "Theme", "dark")
-    }
-    global G_Theme := StrLower(themeVal)
+    ; 5. Theme
+    global G_Theme := StrLower(IniRead(configPath, "Settings", "Theme", "dark"))
     global G_GuiBgColor := (G_Theme == "light" || G_Theme == "white") ? "F6F8FA" : "0D0F12"
     global G_GuiTextColor := (G_Theme == "light" || G_Theme == "white") ? "c0x24292F" : "c0xE3E6EB"
     global G_DwmDark := (G_Theme == "light" || G_Theme == "white") ? 0 : 1
@@ -1760,15 +1714,8 @@ LoadConfig() {
     global G_AutoCloseOnNewLaunch := IniRead(configPath, "Settings", "AutoCloseOnNewLaunch", 0)
     global G_CascadeBatchWindows := IniRead(configPath, "Settings", "CascadeBatchWindows", 0)
 
-    ; 7. LaunchInBrowser (canonical: desk [ui] launch_in_browser)
-    libVal := hasDeskConfig ? StrLower(IniRead(deskConfigPath, "ui", "launch_in_browser", "")) : ""
-    if (libVal == "true" || libVal == "1") {
-        global G_LaunchInBrowser := 1
-    } else if (libVal == "false" || libVal == "0") {
-        global G_LaunchInBrowser := 0
-    } else {
-        global G_LaunchInBrowser := IniRead(configPath, "Window", "LaunchInBrowser", 0)
-    }
+    ; 6. LaunchInBrowser
+    global G_LaunchInBrowser := IniRead(configPath, "Window", "LaunchInBrowser", 1)
     global G_WebTabMode := "container"
 
     if (G_DeskPythonPath == "" || !FileExist(G_DeskPythonPath)) {
@@ -1946,27 +1893,16 @@ global G_ServerPID := 0
 global G_ServerStatus := "Disabled"
 
 LoadServerConfig() {
-    global G_DeskScriptPath, G_ServerEnabled, G_ServerHost, G_ServerPort, G_ControllerPort, G_ServerApiKey, G_ServerStatus
-    if (G_DeskScriptPath == "")
-        return
-    deskDir := RegExReplace(G_DeskScriptPath, "\\[^\\]+$")
-    deskConfigPath := deskDir . "\config.ini"
+    global G_ServerEnabled, G_ServerHost, G_ServerPort, G_ControllerPort, G_ServerApiKey, G_ServerStatus
+    configPath := A_ScriptDir "\config.ini"
 
-    if FileExist(deskConfigPath) {
-        enabledStr := StrLower(IniRead(deskConfigPath, "server", "enabled", "false"))
+    if FileExist(configPath) {
+        enabledStr := StrLower(IniRead(configPath, "Server", "enabled", "true"))
         G_ServerEnabled := (enabledStr == "true" || enabledStr == "1")
-        G_ServerHost := IniRead(deskConfigPath, "server", "host", "127.0.0.1")
-        G_ServerPort := IniRead(deskConfigPath, "server", "port", 18335)
-        G_ControllerPort := IniRead(deskConfigPath, "server", "controller_port", G_ServerPort)
-        G_ServerApiKey := IniRead(deskConfigPath, "server", "api_key", "")
-        rawDeliveryMode := StrLower(IniRead(deskConfigPath, "sentences_mode", "delivery_mode", ""))
-        if (rawDeliveryMode == "") {
-            rawWtm := StrLower(IniRead(deskConfigPath, "sentences_mode", "web_tab_mode", "container"))
-            G_DeliveryMode := (rawWtm == "tabs") ? "multi_window" : "container"
-        } else {
-            G_DeliveryMode := (rawDeliveryMode == "multi_window") ? "multi_window" : "container"
-        }
-        G_WebTabMode := (G_DeliveryMode == "container") ? "container" : "tabs"
+        G_ServerHost := IniRead(configPath, "Server", "host", "127.0.0.1")
+        G_ServerPort := IniRead(configPath, "Server", "port", 8080)
+        G_ControllerPort := IniRead(configPath, "Server", "controller_port", G_ServerPort)
+        G_ServerApiKey := IniRead(configPath, "Server", "api_key", "")
     }
 
     if (!G_ServerEnabled) {
@@ -2302,47 +2238,17 @@ SetLanguage(lang, notifyServer := true) {
     ; 1. Persist to AHK's own config.ini
     configPath := A_ScriptDir . "\config.ini"
     if FileExist(configPath) {
-        PersistIniLanguage(configPath, "DefaultLanguage", lang)
+        try {
+            IniWrite(lang, configPath, "Settings", "DefaultLanguage")
+        } catch {
+        }
     }
 
-    ; 2. Synchronize with Desk / Controller
+    ; 2. Synchronize with Controller if online
     if (notifyServer) {
-        global G_DeskScriptPath
-        ; Attempt to update controller via REST API
         payload := '{"language": ' JSON_Stringify(lang) '}'
         dummyResp := ""
-        serverUpdated := SendControllerRequest("/api/v1/set-language", payload, &dummyResp, 2)
-
-        ; Fallback: update desk config.ini directly if server is offline or failed
-        if (!serverUpdated && G_DeskScriptPath != "") {
-            deskDir := RegExReplace(G_DeskScriptPath, "\\[^\\]+$")
-            deskConfigPath := deskDir . "\config.ini"
-            if FileExist(deskConfigPath) {
-                PersistIniLanguage(deskConfigPath, "default_language", lang)
-            }
-        }
-    }
-}
-
-PersistIniLanguage(filePath, keyName, lang) {
-    if (!FileExist(filePath))
-        return false
-    try {
-        content := FileRead(filePath, "UTF-8")
-        pattern := "mi)^([ \t]*)" . keyName . "[ \t]*=.*$"
-        if RegExMatch(content, pattern) {
-            newContent := RegExReplace(content, pattern, "$1" . keyName . " = " . lang)
-            f := FileOpen(filePath, "w", "UTF-8-RAW")
-            f.Write(newContent)
-            f.Close()
-            return true
-        } else {
-            section := (keyName == "default_language") ? "settings" : "Settings"
-            IniWrite(lang, filePath, section, keyName)
-            return true
-        }
-    } catch {
-        return false
+        SendControllerRequest("/api/v1/set-language", payload, &dummyResp, 2)
     }
 }
 
@@ -2784,87 +2690,45 @@ BuildVerifyLanguageUrl(sessionIdentifier) {
     return url
 }
 
-LaunchBrowserTab(sourceText, textMode, presetZID := "") {
+SendSessionRequest(text) {
+    cleanText := Trim(text)
+    if (cleanText == "")
+        return false
+
+    global G_ServerHost, G_ServerPort
+    host := (IsSet(G_ServerHost) && G_ServerHost != "") ? G_ServerHost : "127.0.0.1"
+    port := (IsSet(G_ServerPort) && G_ServerPort != "") ? G_ServerPort : 8080
+    url := "http://" . host . ":" . port . "/api/v1/sessions"
+    payload := '{"source_text": ' JSON_Stringify(cleanText) '}'
+
+    try {
+        http := ComObject("WinHttp.WinHttpRequest.5.1")
+        http.Open("POST", url, false)
+        http.SetTimeouts(1000, 1000, 3000, 3000)
+        http.SetRequestHeader("Content-Type", "application/json; charset=utf-8")
+        http.Send(payload)
+
+        if (http.Status == 200 || http.Status == 201) {
+            resp := http.ResponseText
+            if RegExMatch(resp, 'i)"zid"\s*:\s*"([^"]+)"', &mZid) {
+                zid := mZid[1]
+                Run("http://" . host . ":" . port . "/?session=" . zid)
+                return true
+            }
+        }
+        TrayTip("Kardenwort daemon is offline", "Kardenwort", 16)
+        return false
+    } catch {
+        TrayTip("Kardenwort daemon is offline", "Kardenwort", 16)
+        return false
+    }
+}
+
+LaunchBrowserTab(sourceText, textMode := "single", presetZID := "") {
     if (textMode == "single") {
         sourceText := CleanClipboardText(sourceText)
     }
-    ZID := presetZID != "" ? presetZID : A_Now
-
-    global G_ServerHost, G_ServerPort, G_ControllerPort, G_ServerApiKey, G_Theme, G_CurrentLang, G_ServerEnabled
-    host := G_ServerHost ? G_ServerHost : "127.0.0.1"
-    port := G_ControllerPort ? G_ControllerPort : (G_ServerPort ? G_ServerPort : 18335)
-
-    ; Server availability check / failover notification
-    if (!CheckServerHealth(host, port)) {
-        if (G_ServerEnabled) {
-            StartServerProcess()
-            if (!CheckServerHealth(host, port)) {
-                TrayTip("Local controller server is not responding at " . host . ":" . port, "Kardenwort Error", 16)
-                return false
-            }
-        } else {
-            TrayTip("Desk server is disabled or offline. Cannot open in browser.", "Kardenwort Error", 16)
-            return false
-        }
-    }
-
-    ; Initialize session via HTTP render fast-path so session data and tsv are prepared
-    local outB64 := "", errJSON := "", outChildren := []
-    status := FetchHtmlViaHttp(G_CurrentLang, ZID, textMode, sourceText, "", 1, false, &outB64, &errJSON, &outChildren)
-    if (status != 0 && status != 200) {
-        if (status == 422 && InStr(errJSON, "LANGUAGE_MISMATCH")) {
-            ; Language mismatch detected: Open dedicated standalone language verification page
-            verifyUrl := BuildVerifyLanguageUrl(ZID)
-            Run(verifyUrl)
-            return true
-        }
-        TrayTip("Failed to initialize session: " . errJSON, "Kardenwort Error", 16)
-        return false
-    }
-
-    ; If child sessions were generated (Sentences Mode) and delivery_mode != "container", add all child tabs
-    deliveryMode := (IsSet(G_DeliveryMode) && G_DeliveryMode != "") ? G_DeliveryMode : ((IsSet(G_WebTabMode) && G_WebTabMode == "tabs") ? "multi_window" : "container")
-
-    ; Construct target URL for master tab (Window 1) or container tab (Sentence 1 = 2)
-    initialSeq := (deliveryMode == "container" && outChildren.Length > 0) ? 2 : 1
-    mainUrl := BuildDeskBrowserUrl(ZID, initialSeq)
-    allUrls := [mainUrl]
-
-    if (outChildren.Length > 0 && deliveryMode != "container") {
-        childSeq := 2
-        i := 1
-        while (i <= outChildren.Length) {
-            arg := outChildren[i]
-            if (arg == "--seq-num" && i < outChildren.Length) {
-                childSeq := outChildren[i + 1]
-                i += 2
-            } else if (arg == "--restore" && i < outChildren.Length) {
-                targetPath := outChildren[i + 1]
-                childZid := ExtractZidFromPath(targetPath)
-                childUrl := BuildDeskBrowserUrl(childZid, childSeq)
-                allUrls.Push(childUrl)
-                childSeq += 1
-                i += 2
-            } else {
-                i += 1
-            }
-        }
-    }
-
-    ; Spawn all tabs (Master window 1 + daughter windows) via controller API
-    spawnPayload := '{"urls": ['
-    for idx, u in allUrls {
-        spawnPayload .= (idx > 1 ? ', ' : '') . JSON_Stringify(u)
-    }
-    spawnPayload .= ']}'
-    resJson := ""
-    if (!SendControllerRequest("/api/v1/spawn-tabs", spawnPayload, &resJson, 5)) {
-        for u in allUrls {
-            Sleep(80)
-            Run(u)
-        }
-    }
-    return true
+    return SendSessionRequest(sourceText)
 }
 
 LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
