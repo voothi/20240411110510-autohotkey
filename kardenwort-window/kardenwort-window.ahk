@@ -1,4 +1,4 @@
-#Requires AutoHotkey v2.0
+﻿#Requires AutoHotkey v2.0
 #SingleInstance Off
 #NoTrayIcon
 #Include ..\Lib\WatchFolder.ahk
@@ -443,7 +443,7 @@ ActionSaveStartIO(guiObj, payload) {
     }
     UpdateStatus(guiObj, "Saving...")
     try {
-        deltasJSON := guiObj.wb.document.parentWindow.getDeltas()
+        deltasJSON := guiObj.wb.document.parentWindow.captureSaveSnapshot()
     } catch as e {
         KardenMsgBox("Failed to retrieve deltas from page: " e.Message, "Kardenwort Error", 16)
         FsmDispatch(guiObj, EV_SAVE_FAILED, e.Message)
@@ -451,7 +451,7 @@ ActionSaveStartIO(guiObj, payload) {
     }
 
     if (deltasJSON == "" || deltasJSON == "[]") {
-        FsmDispatch(guiObj, EV_SAVE_SUCCESS)
+        FsmDispatch(guiObj, EV_SAVE_SUCCESS, { snapshot: deltasJSON })
         return
     }
 
@@ -477,7 +477,7 @@ ActionSaveStartIO(guiObj, payload) {
             FileDelete(tmpTextFile)
         } catch {
         }
-        FsmDispatch(guiObj, EV_SAVE_SUCCESS)
+        FsmDispatch(guiObj, EV_SAVE_SUCCESS, { snapshot: deltasJSON })
         return
     }
 
@@ -496,18 +496,27 @@ ActionSaveStartIO(guiObj, payload) {
     }
 
     if (exitCode == 0) {
-        FsmDispatch(guiObj, EV_SAVE_SUCCESS)
+        FsmDispatch(guiObj, EV_SAVE_SUCCESS, { snapshot: deltasJSON })
     } else {
         FsmDispatch(guiObj, EV_SAVE_FAILED, errJSON)
     }
 }
 
 ActionSaveSuccessApply(guiObj, payload) {
-    try {
-        guiObj.wb.document.parentWindow.clearDirty()
-    } catch {
+    if (!G_FsmTestMode) {
+        try {
+            guiObj.FsmMemory["IsDirty"] := guiObj.wb.document.parentWindow.acknowledgeSaveSnapshot(payload.snapshot)
+        } catch as err {
+            guiObj.FsmMemory["IsDirty"] := true
+            UpdateStatus(guiObj, "Save acknowledgment failed; changes retained")
+            return FSM_IDLE
+        }
+        if (guiObj.FsmMemory["IsDirty"]) {
+            return FSM_IDLE
+        }
+    } else {
+        guiObj.FsmMemory["IsDirty"] := false
     }
-    guiObj.FsmMemory["IsDirty"] := false
     if (FileExist(guiObj.TsvPath)) {
         try {
             guiObj.FsmMemory["LastMTime"] := FileGetTime(guiObj.TsvPath)
@@ -537,6 +546,12 @@ ActionSaveSuccessApply(guiObj, payload) {
     return FSM_IDLE
 }
 ActionSaveSuccessIO(guiObj, payload) {
+    if (!G_FsmTestMode && guiObj.FsmMemory["IsDirty"]) {
+        UpdateStatus(guiObj, "Submitted changes saved; newer changes remain pending")
+        UpdateButtonState(guiObj)
+        return
+    }
+
     if (guiObj.FsmState == FSM_CLOSING) {
         ActionCloseIO(guiObj, "")
     } else if (guiObj.FsmState == FSM_RETEXTING) {
@@ -3166,6 +3181,13 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
 }
 
 OnAhkCall(guiObj, action, value) {
+    if (action == "persist_selection") {
+        if (SendControllerRequest("/session/save", value, &response, 2)) {
+            return response
+        }
+        return '{"ok":false,"error":"Selection persistence failed; changes retained"}'
+    }
+
     if (action == "close") {
         GuiClose(guiObj)
         return
