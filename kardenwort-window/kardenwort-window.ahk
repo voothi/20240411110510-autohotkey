@@ -277,6 +277,7 @@ ActionRenderDoneIO(guiObj, payload) {
     }
 
     guiObj.wb.document.parentWindow.ahkCall := OnAhkCall.Bind(guiObj)
+        guiObj.wb.document.parentWindow.startSelectionBridge()
     if (G_HoverHighlightMvp == "1") {
         InjectHoverHighlightMvp(guiObj, G_HoverHighlightMvpBookmarks)
     }
@@ -477,7 +478,7 @@ ActionSaveStartIO(guiObj, payload) {
             FileDelete(tmpTextFile)
         } catch {
         }
-        FsmDispatch(guiObj, EV_SAVE_SUCCESS, { snapshot: deltasJSON })
+        FsmDispatch(guiObj, EV_SAVE_SUCCESS, { snapshot: deltasJSON, response: resText })
         return
     }
 
@@ -496,7 +497,7 @@ ActionSaveStartIO(guiObj, payload) {
     }
 
     if (exitCode == 0) {
-        FsmDispatch(guiObj, EV_SAVE_SUCCESS, { snapshot: deltasJSON })
+        FsmDispatch(guiObj, EV_SAVE_SUCCESS, { snapshot: deltasJSON, response: B64Decode(outB64) })
     } else {
         FsmDispatch(guiObj, EV_SAVE_FAILED, errJSON)
     }
@@ -505,7 +506,7 @@ ActionSaveStartIO(guiObj, payload) {
 ActionSaveSuccessApply(guiObj, payload) {
     if (!G_FsmTestMode) {
         try {
-            guiObj.FsmMemory["IsDirty"] := guiObj.wb.document.parentWindow.acknowledgeSaveSnapshot(payload.snapshot)
+            guiObj.FsmMemory["IsDirty"] := guiObj.wb.document.parentWindow.acknowledgeSaveSnapshot(payload.snapshot, payload.HasProp("response") ? payload.response : "")
         } catch as err {
             guiObj.FsmMemory["IsDirty"] := true
             UpdateStatus(guiObj, "Save acknowledgment failed; changes retained")
@@ -549,6 +550,9 @@ ActionSaveSuccessIO(guiObj, payload) {
     if (!G_FsmTestMode && guiObj.FsmMemory["IsDirty"]) {
         UpdateStatus(guiObj, "Submitted changes saved; newer changes remain pending")
         UpdateButtonState(guiObj)
+        if (guiObj.FsmMemory["PendingClose"] || guiObj.FsmMemory["PendingExport"] || guiObj.FsmMemory["PendingRetext"] || guiObj.FsmMemory["PendingReprocess"] || guiObj.FsmMemory["PendingUpdate"]) {
+            FsmDispatch(guiObj, EV_SAVE_CLICK)
+        }
         return
     }
 
@@ -567,6 +571,10 @@ ActionSaveSuccessIO(guiObj, payload) {
 }
 
 ActionSaveFailedApply(guiObj, payload) {
+    if (!G_FsmTestMode) {
+        try guiObj.wb.document.parentWindow.abortSaveSnapshot()
+    }
+
     guiObj.FsmMemory["PendingClose"] := false
     guiObj.FsmMemory["PendingExport"] := false
     guiObj.FsmMemory["PendingRetext"] := false
@@ -753,6 +761,7 @@ ActionReloadDoneIO(guiObj, payload) {
     }
     try {
         guiObj.wb.document.parentWindow.ahkCall := OnAhkCall.Bind(guiObj)
+        guiObj.wb.document.parentWindow.startSelectionBridge()
         if (G_HoverHighlightMvp == "1") {
             InjectHoverHighlightMvp(guiObj, G_HoverHighlightMvpBookmarks)
         }
@@ -3181,6 +3190,13 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
 }
 
 OnAhkCall(guiObj, action, value) {
+    if (action == "get_shared_selection") {
+        if (SendControllerRequest("/internal/selection", value, &response, 2)) {
+            return response
+        }
+        return '{"ok":false,"error":"Selection synchronization unavailable"}'
+    }
+
     if (action == "persist_selection") {
         if (SendControllerRequest("/session/save", value, &response, 2)) {
             return response
