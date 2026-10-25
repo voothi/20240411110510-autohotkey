@@ -245,6 +245,7 @@ ActionRenderDoneIO(guiObj, payload) {
     FileAppend(htmlContent, tmpHtmlFile, "UTF-8-RAW")
 
     try {
+        StopNativeSelectionSubscription(guiObj)
         guiObj.wb.Navigate(tmpHtmlFile)
         while guiObj.wb.ReadyState != 4
             Sleep(10)
@@ -277,7 +278,7 @@ ActionRenderDoneIO(guiObj, payload) {
     }
 
     guiObj.wb.document.parentWindow.ahkCall := OnAhkCall.Bind(guiObj)
-        guiObj.wb.document.parentWindow.startSelectionBridge()
+    guiObj.wb.document.parentWindow.startSelectionBridge(guiObj.SelectionConsumerID, G_FileWatcherIntervalMs > 0 ? G_FileWatcherIntervalMs : 1000)
     if (G_HoverHighlightMvp == "1") {
         InjectHoverHighlightMvp(guiObj, G_HoverHighlightMvpBookmarks)
     }
@@ -726,6 +727,7 @@ ActionReloadDoneIO(guiObj, payload) {
     FileAppend(htmlContent, tmpHtmlFile, "UTF-8-RAW")
 
     try {
+        StopNativeSelectionSubscription(guiObj)
         guiObj.wb.Navigate(tmpHtmlFile)
         while guiObj.wb.ReadyState != 4
             Sleep(10)
@@ -761,7 +763,7 @@ ActionReloadDoneIO(guiObj, payload) {
     }
     try {
         guiObj.wb.document.parentWindow.ahkCall := OnAhkCall.Bind(guiObj)
-        guiObj.wb.document.parentWindow.startSelectionBridge()
+        guiObj.wb.document.parentWindow.startSelectionBridge(guiObj.SelectionConsumerID, G_FileWatcherIntervalMs > 0 ? G_FileWatcherIntervalMs : 1000)
         if (G_HoverHighlightMvp == "1") {
             InjectHoverHighlightMvp(guiObj, G_HoverHighlightMvpBookmarks)
         }
@@ -1571,6 +1573,7 @@ ActionCloseIO(guiObj, payload) {
             }
         }
     }
+    StopNativeSelectionSubscription(guiObj)
     guiObj.wb := ""
     guiObj.Destroy()
     global G_WindowCount
@@ -2994,6 +2997,7 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
     MyGui.SourceText := sourceText
     MyGui.TsvPath := tsvPath
     MyGui.SessionID := sessionID
+    MyGui.SelectionConsumerID := CreateSelectionConsumerID(MyGui.Hwnd)
     MyGui.SeqNum := seqNum
     MyGui.selectableTextMode := false
     MyGui.persistentSelectableTextMode := false
@@ -3187,6 +3191,29 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
         }
     }
     return MyGui.Hwnd
+}
+
+CreateSelectionConsumerID(windowHwnd) {
+    static windowSequence := 0
+    windowSequence += 1
+    return DllCall("GetCurrentProcessId") ":" windowHwnd ":" A_TickCount ":" windowSequence
+}
+
+StopNativeSelectionSubscription(guiObj) {
+    if (!guiObj.HasProp("SelectionConsumerID")) {
+        return
+    }
+    try {
+        if (guiObj.wb.document.parentWindow.stopSelectionBridge()) {
+            return
+        }
+    } catch as err {
+        OutputDebug("Selection bridge unavailable during disposal: " err.Message)
+    }
+    payload := '{"session_zid":"' guiObj.ZID '","client_id":"' guiObj.SelectionConsumerID '","close":true}'
+    if (!SendControllerRequest("/internal/selection", payload, &response, 2)) {
+        UpdateStatus(guiObj, "Subscription disposal failed; server expiry will clean up")
+    }
 }
 
 OnAhkCall(guiObj, action, value) {
