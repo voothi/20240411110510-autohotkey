@@ -1708,48 +1708,15 @@ LoadConfig() {
     }
     hasDeskConfig := FileExist(deskConfigPath)
 
-    ; 1. DefaultLanguage (canonical: desk [settings] default_language)
-    defaultLang := hasDeskConfig ? IniRead(deskConfigPath, "settings", "default_language", "") : ""
-    if (defaultLang == "") {
-        defaultLang := IniRead(configPath, "Settings", "DefaultLanguage", "en")
-    }
-    global G_DefaultLanguage := defaultLang
-    global G_CurrentLang := defaultLang
-
+    ; Mutable preferences are projected only from committed backend state.
+    global G_CurrentLang := ""
+    global G_DefaultLanguage := ""
+    global G_AutoUpdate := 0
+    global G_AutoSave := 0
+    global G_AutoSaveOnClose := 0
     global G_FileWatcherIntervalMs := IniRead(configPath, "Settings", "FileWatcherIntervalMs", 1000)
-
-    ; 2. AutoUpdate (canonical: desk [rendering] auto_inject_updates)
-    autoUpVal := hasDeskConfig ? StrLower(IniRead(deskConfigPath, "rendering", "auto_inject_updates", "")) : ""
-    if (autoUpVal == "true" || autoUpVal == "1") {
-        global G_AutoUpdate := 1
-    } else if (autoUpVal == "false" || autoUpVal == "0") {
-        global G_AutoUpdate := 0
-    } else {
-        global G_AutoUpdate := IniRead(configPath, "Settings", "AutoUpdate", 0)
-    }
-
     global G_AutoInjectGracePeriodSec := IniRead(configPath, "Settings", "AutoInjectGracePeriodSec", 6)
     global G_AutoInjectMaxFileAgeDiffSec := IniRead(configPath, "Settings", "AutoInjectMaxFileAgeDiffSec", 10)
-
-    ; 3. AutoSaveOnEdit (canonical: desk [ui] auto_save_on_edit)
-    asEditVal := hasDeskConfig ? StrLower(IniRead(deskConfigPath, "ui", "auto_save_on_edit", "")) : ""
-    if (asEditVal == "true" || asEditVal == "1") {
-        global G_AutoSave := 1
-    } else if (asEditVal == "false" || asEditVal == "0") {
-        global G_AutoSave := 0
-    } else {
-        global G_AutoSave := IniRead(configPath, "Settings", "AutoSaveOnEdit", 0)
-    }
-
-    ; 4. AutoSaveOnClose (canonical: desk [ui] auto_save_on_close)
-    asCloseVal := hasDeskConfig ? StrLower(IniRead(deskConfigPath, "ui", "auto_save_on_close", "")) : ""
-    if (asCloseVal == "true" || asCloseVal == "1") {
-        global G_AutoSaveOnClose := 1
-    } else if (asCloseVal == "false" || asCloseVal == "0") {
-        global G_AutoSaveOnClose := 0
-    } else {
-        global G_AutoSaveOnClose := IniRead(configPath, "Settings", "AutoSaveOnClose", 0)
-    }
 
     global G_ShowInfoWindows := IniRead(configPath, "Settings", "ShowInfoWindows", 1)
     global G_MultiTapTimeout := IniRead(configPath, "Settings", "MultiTapTimeout", 300)
@@ -1757,26 +1724,6 @@ LoadConfig() {
     global G_TapDoubleMode := IniRead(configPath, "Hotkey", "TapDoubleMode", "multi")
     global G_OrdinaryColor := IniRead(configPath, "Highlight", "OrdinaryColor", "#ffd700")
     global G_PairedColor := IniRead(configPath, "Highlight", "PairedColor", "#9370db")
-
-    ; 5. DefaultZoom (canonical: desk [rendering] default_zoom or [ui] default_zoom)
-    zoomVal := hasDeskConfig ? IniRead(deskConfigPath, "rendering", "default_zoom", "") : ""
-    if (zoomVal == "" && hasDeskConfig) {
-        zoomVal := IniRead(deskConfigPath, "ui", "default_zoom", "")
-    }
-    if (zoomVal == "") {
-        zoomVal := IniRead(configPath, "Settings", "DefaultZoom", "100")
-    }
-    global G_DefaultZoom := zoomVal
-
-    ; 6. Theme (canonical: desk [ui] theme)
-    themeVal := hasDeskConfig ? IniRead(deskConfigPath, "ui", "theme", "") : ""
-    if (themeVal == "") {
-        themeVal := IniRead(configPath, "Settings", "Theme", "dark")
-    }
-    global G_Theme := StrLower(themeVal)
-    global G_GuiBgColor := (G_Theme == "light" || G_Theme == "white") ? "F6F8FA" : "0D0F12"
-    global G_GuiTextColor := (G_Theme == "light" || G_Theme == "white") ? "c0x24292F" : "c0xE3E6EB"
-    global G_DwmDark := (G_Theme == "light" || G_Theme == "white") ? 0 : 1
 
     global G_HoverHighlightMvp := IniRead(configPath, "Settings", "HoverHighlightMvp", "0")
     global G_HoverHighlightMvpBookmarks := IniRead(configPath, "Settings", "HoverHighlightMvpBookmarks", "3")
@@ -1807,6 +1754,7 @@ LoadConfig() {
         ExitApp()
     }
     LoadServerConfig()
+    LoadCommittedPreferences()
 }
 
 RegisterPointerToggleHotkeys() {
@@ -2003,14 +1951,14 @@ LoadServerConfig() {
     }
 }
 
-SendControllerRequest(endpoint, payloadJson, &responseJson, timeoutSec := 3) {
+SendControllerRequest(endpoint, payloadJson, &responseJson, timeoutSec := 3, method := "POST") {
     global G_ServerHost, G_ServerPort, G_ControllerPort, G_ServerApiKey
     host := G_ServerHost ? G_ServerHost : "127.0.0.1"
     port := G_ControllerPort ? G_ControllerPort : (G_ServerPort ? G_ServerPort : 18335)
     url := "http://" . host . ":" . port . endpoint
     try {
         http := ComObject("WinHttp.WinHttpRequest.5.1")
-        http.Open("POST", url, false)
+        http.Open(method, url, false)
         http.SetTimeouts(1000, 1000, timeoutSec * 1000, timeoutSec * 1000)
         if (G_ServerApiKey != "") {
             http.SetRequestHeader("X-API-Token", G_ServerApiKey)
@@ -2162,6 +2110,7 @@ StartServerProcess() {
         Sleep(300)
         if CheckServerHealth(G_ServerHost, G_ServerPort) {
             G_ServerStatus := "Running"
+            LoadCommittedPreferences()
             UpdateTrayMenu()
             return
         }
@@ -2321,35 +2270,81 @@ CreateIconFromText(text, bgColor, textColor) {
     return hIcon
 }
 
-SetLanguage(lang, notifyServer := true) {
-    global G_CurrentLang := lang
-    UpdateTrayMenu()
-    UpdateTrayIcon()
+CommittedPrimitive(response, key, pattern) {
+    if !RegExMatch(response, '"' key '"\s*:\s*(' pattern ')(?=\s*[,}])', &match)
+        throw Error("Missing or invalid committed preference: " key)
+    return match[1]
+}
 
-    ; 1. Persist to AHK's own config.ini
-    configPath := A_ScriptDir . "\config.ini"
-    if FileExist(configPath) {
-        PersistIniLanguage(configPath, "DefaultLanguage", lang)
+LoadCommittedPreferences() {
+    global G_CurrentLang, G_DefaultLanguage, G_AutoUpdate, G_AutoSave, G_AutoSaveOnClose
+    global G_DefaultZoom, G_Theme, G_GuiBgColor, G_GuiTextColor, G_DwmDark, G_ServerStatus
+    response := ""
+    if !SendControllerRequest("/api/v1/config", "", &response, 2, "GET") {
+        G_ServerStatus := "Preferences unavailable"
+        return false
     }
+    try {
+        CommittedPrimitive(response, "state_authority", '"sqlite"')
+        lang := Trim(CommittedPrimitive(response, "default_language", '"[a-z]{2,3}(-[a-z0-9]{2,8})*"'), '"')
+        theme := Trim(CommittedPrimitive(response, "theme", '"(dark|light|white|compact)"'), '"')
+        zoom := Integer(CommittedPrimitive(response, "default_zoom", "[0-9]+"))
+        autoUpdate := CommittedPrimitive(response, "auto_inject_updates", "true|false") == "true"
+        autoSave := CommittedPrimitive(response, "auto_save_on_edit", "true|false") == "true"
+        autoClose := CommittedPrimitive(response, "auto_save_on_close", "true|false") == "true"
+        if (zoom < 10 || zoom > 500 || lang == "und")
+            throw Error("Invalid committed preference")
+    } catch {
+        G_ServerStatus := "Preferences unavailable"
+        return false
+    }
+    G_DefaultLanguage := lang
+    G_CurrentLang := lang
+    G_Theme := theme
+    G_DefaultZoom := zoom
+    G_AutoUpdate := autoUpdate
+    G_AutoSave := autoSave
+    G_AutoSaveOnClose := autoClose
+    ProjectCommittedTheme(theme)
+    return true
+}
 
-    ; 2. Synchronize with Desk / Controller
+ProjectCommittedTheme(theme) {
+    global G_GuiBgColor, G_GuiTextColor, G_DwmDark
+    light := theme == "light" || theme == "white"
+    G_GuiBgColor := light ? "F6F8FA" : "0D0F12"
+    G_GuiTextColor := light ? "c0x24292F" : "c0xE3E6EB"
+    G_DwmDark := light ? 0 : 1
+    return true
+}
+
+SetLanguage(lang, notifyServer := true) {
+    global G_CurrentLang, G_DefaultLanguage, G_ServerStatus
     if (notifyServer) {
-        global G_DeskScriptPath
-        ; Attempt to update controller via REST API
+        response := ""
         payload := '{"language": ' JSON_Stringify(lang) '}'
-        dummyResp := ""
-        serverUpdated := SendControllerRequest("/api/v1/set-language", payload, &dummyResp, 2)
-
-        ; Fallback: update desk config.ini directly if server is offline or failed
-        if (!serverUpdated && G_DeskScriptPath != "") {
-            deskDir := RegExReplace(G_DeskScriptPath, "\\[^\\]+$")
-            deskConfigPath := deskDir . "\config.ini"
-            if FileExist(deskConfigPath) {
-                PersistIniLanguage(deskConfigPath, "default_language", lang)
-            }
+        if !SendControllerRequest("/api/v1/set-language", payload, &response, 2) {
+            G_ServerStatus := "Language not saved"
+            UpdateTrayMenu()
+            return false
+        }
+        try lang := Trim(CommittedPrimitive(response, "language", '"[a-z]{2,3}(-[a-z0-9]{2,8})*"'), '"')
+        catch {
+            G_ServerStatus := "Language acknowledgment invalid"
+            UpdateTrayMenu()
+            return false
         }
     }
+    if !LoadCommittedPreferences() {
+        UpdateTrayMenu()
+        return false
+    }
+    UpdateTrayMenu()
+    UpdateTrayIcon()
+    return true
 }
+
+; Deprecated file-host helper only. Canonical commands never call this writer.
 
 PersistIniLanguage(filePath, keyName, lang) {
     if (!FileExist(filePath))
