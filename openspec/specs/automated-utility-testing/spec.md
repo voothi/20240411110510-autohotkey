@@ -1,5 +1,9 @@
-## ADDED Requirements
+# automated-utility-testing Specification
 
+## Purpose
+Describe the test directory, execution conventions and verification of AutoHotkey utilities.
+
+## Requirements
 ### Requirement: Standardized Test Directory
 The project SHALL maintain a dedicated `tests/` directory at the repository root for all automated and semi-automated verification scripts.
 

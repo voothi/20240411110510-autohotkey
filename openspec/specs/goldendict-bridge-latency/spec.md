@@ -1,5 +1,9 @@
-## ADDED Requirements
+# goldendict-bridge-latency Specification
 
+## Purpose
+Describe change notification and timing at the retained GoldenDict bridge boundary.
+
+## Requirements
 ### Requirement: Layout-Agnostic Change Notification
 The bridge SHALL utilize a layout-independent notification mechanism (e.g., Virtual Key signals) to ensure the observer (AHK) is triggered reliably across different system keyboard layouts (EN/RU).
 
