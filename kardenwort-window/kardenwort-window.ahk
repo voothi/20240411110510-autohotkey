@@ -2,6 +2,7 @@
 #SingleInstance Off
 #NoTrayIcon
 #Include ..\Lib\WatchFolder.ahk
+#Include ..\Lib\DeskStartup.ahk
 
 if (A_ScriptFullPath = A_LineFile && !IsSet(G_FsmTestMode)) {
     existingHwnd := 0
@@ -1715,6 +1716,8 @@ LoadConfig() {
     global G_AutoSave := 0
     global G_AutoSaveOnClose := 0
     global G_FileWatcherIntervalMs := IniRead(configPath, "Settings", "FileWatcherIntervalMs", 1000)
+    global G_StartupTimeoutMs := Integer(IniRead(configPath, "Settings", "ControllerStartupTimeoutMs", 30000))
+    global G_StartupPollMs := Integer(IniRead(configPath, "Settings", "ControllerStartupPollMs", 250))
     global G_AutoInjectGracePeriodSec := IniRead(configPath, "Settings", "AutoInjectGracePeriodSec", 6)
     global G_AutoInjectMaxFileAgeDiffSec := IniRead(configPath, "Settings", "AutoInjectMaxFileAgeDiffSec", 10)
 
@@ -1754,7 +1757,6 @@ LoadConfig() {
         ExitApp()
     }
     LoadServerConfig()
-    LoadCommittedPreferences()
 }
 
 RegisterPointerToggleHotkeys() {
@@ -1919,6 +1921,9 @@ global G_ControllerPort := 18335
 global G_ServerApiKey := ""
 global G_ServerPID := 0
 global G_ServerStatus := "Disabled"
+global G_Startup := 0
+global G_StartupTimeoutMs := 30000
+global G_StartupPollMs := 250
 
 LoadServerConfig() {
     global G_DeskScriptPath, G_ServerEnabled, G_ServerHost, G_ServerPort, G_ControllerPort, G_ServerApiKey, G_ServerStatus
@@ -2090,10 +2095,25 @@ ShutdownServerHttp(host, port, apiKey) {
 }
 
 StartServerProcess() {
-    global G_ServerEnabled, G_DeskPythonPath, G_DeskScriptPath, G_ServerPID, G_ServerHost, G_ServerPort, G_ServerStatus
+    global G_ServerEnabled, G_ServerHost, G_ControllerPort, G_ServerApiKey
+    global G_Startup, G_StartupTimeoutMs, G_StartupPollMs
+    StopStartupReadiness()
     if (!G_ServerEnabled)
         return
+    G_Startup := DeskStartup(G_ServerHost, G_ControllerPort, G_ServerApiKey, G_StartupTimeoutMs, G_StartupPollMs, CompleteStartupInitialization)
+    if !EnsureControllerProcess() {
+        G_Startup.Fail("Failed to start controller")
+        return
+    }
+    G_Startup.Start()
+}
 
+EnsureControllerProcess() {
+    global G_DeskPythonPath, G_DeskScriptPath, G_ServerPID, G_ServerHost, G_ControllerPort
+    if CheckServerHealth(G_ServerHost, G_ControllerPort)
+        return true
+    if (G_ServerPID && ProcessExist(G_ServerPID))
+        return true
     deskDir := RegExReplace(G_DeskScriptPath, "\\[^\\]+$")
     cmd := '"' . G_DeskPythonPath . '" "' . G_DeskScriptPath . '" controller'
 
@@ -2101,26 +2121,33 @@ StartServerProcess() {
         Run(cmd, deskDir, "Hide", &pid)
         G_ServerPID := pid
     } catch as e {
-        G_ServerStatus := "Failed to Start"
-        return
+        return false
     }
+    return true
+}
 
-    ; Bounded readiness polling (10 x 300ms)
-    loop 10 {
-        Sleep(300)
-        if CheckServerHealth(G_ServerHost, G_ServerPort) {
-            G_ServerStatus := "Running"
-            LoadCommittedPreferences()
-            UpdateTrayMenu()
-            return
-        }
-    }
-    G_ServerStatus := "Running (Unconfirmed)"
-    UpdateTrayMenu()
+StopStartupReadiness() {
+    global G_Startup
+    if IsObject(G_Startup)
+        G_Startup.Stop()
+}
+
+RetryStartupPreferences() {
+    StartServerProcess()
+}
+
+CompleteStartupInitialization() {
+    global G_Initialized, G_BufferedArgs
+    G_Initialized := true
+    pending := G_BufferedArgs
+    G_BufferedArgs := []
+    for args in pending
+        ProcessArgs(args)
 }
 
 RestartServerProcess() {
     global G_ServerEnabled, G_ServerHost, G_ServerPort, G_ServerApiKey, G_ServerPID, G_ServerStatus
+    StopStartupReadiness()
     LoadServerConfig()
     if (!G_ServerEnabled) {
         MsgBox("HTTP Server is disabled in Kardenwort Desk config.ini", "Kardenwort Desk", "Iconi")
@@ -2174,6 +2201,7 @@ OpenAdminPanel() {
 
 OnScriptExit(ExitReason, ExitCode) {
     global G_ServerEnabled, G_ServerHost, G_ServerPort, G_ServerApiKey, G_ServerPID
+    StopStartupReadiness()
     if (G_ServerEnabled) {
         if (!ShutdownServerHttp(G_ServerHost, G_ServerPort, G_ServerApiKey)) {
             if (G_ServerPID) {
@@ -2186,13 +2214,15 @@ OnScriptExit(ExitReason, ExitCode) {
 UpdateTrayMenu() {
     global G_CurrentLang, langNames, langCodes, G_ServerEnabled, G_ServerStatus
     A_TrayMenu.Delete()
-    A_TrayMenu.Add("Current Language: " . G_CurrentLang, (*) => 0)
+    label := G_CurrentLang != "" ? G_CurrentLang : "Unavailable"
+    A_TrayMenu.Add("Current Language: " . label, (*) => 0)
     A_TrayMenu.Disable("1&")
     A_TrayMenu.Add("HTTP Server: " . G_ServerStatus, (*) => 0)
     A_TrayMenu.Disable("2&")
 
     if (G_ServerEnabled) {
         A_TrayMenu.Add("Open Admin Panel", (*) => OpenAdminPanel())
+        A_TrayMenu.Add("Retry Loading Preferences", (*) => RetryStartupPreferences())
         A_TrayMenu.Add("Restart HTTP Server", (*) => RestartServerProcess())
         A_TrayMenu.Add("View Desk Logs", (*) => OpenServerLogsDir())
     }
@@ -2211,7 +2241,7 @@ UpdateTrayMenu() {
 UpdateTrayIcon() {
     global G_CurrentLang, G_CurrentHIcon, langInfo
 
-    info := { text: StrUpper(G_CurrentLang), bg: 0x808080, fg: 0xFFFFFF }
+    info := { text: G_CurrentLang != "" ? StrUpper(G_CurrentLang) : "?", bg: 0x808080, fg: 0xFFFFFF }
     if langInfo.Has(G_CurrentLang) {
         info := langInfo[G_CurrentLang]
     }
@@ -2276,13 +2306,15 @@ CommittedPrimitive(response, key, pattern) {
     return match[1]
 }
 
-LoadCommittedPreferences() {
+LoadCommittedPreferences(response?) {
     global G_CurrentLang, G_DefaultLanguage, G_AutoUpdate, G_AutoSave, G_AutoSaveOnClose
     global G_DefaultZoom, G_Theme, G_GuiBgColor, G_GuiTextColor, G_DwmDark, G_ServerStatus
-    response := ""
-    if !SendControllerRequest("/api/v1/config", "", &response, 2, "GET") {
-        G_ServerStatus := "Preferences unavailable"
-        return false
+    if !IsSet(response) {
+        response := ""
+        if !SendControllerRequest("/api/v1/config", "", &response, 2, "GET") {
+            G_ServerStatus := "Preferences unavailable"
+            return false
+        }
     }
     try {
         CommittedPrimitive(response, "state_authority", '"sqlite"')
@@ -2319,29 +2351,43 @@ ProjectCommittedTheme(theme) {
 }
 
 SetLanguage(lang, notifyServer := true) {
-    global G_CurrentLang, G_DefaultLanguage, G_ServerStatus
-    if (notifyServer) {
-        response := ""
-        payload := '{"language": ' JSON_Stringify(lang) '}'
-        if !SendControllerRequest("/api/v1/set-language", payload, &response, 2) {
-            G_ServerStatus := "Language not saved"
-            UpdateTrayMenu()
-            return false
-        }
-        try lang := Trim(CommittedPrimitive(response, "language", '"[a-z]{2,3}(-[a-z0-9]{2,8})*"'), '"')
-        catch {
-            G_ServerStatus := "Language acknowledgment invalid"
-            UpdateTrayMenu()
-            return false
-        }
+    global G_Startup
+    startup := 0
+    if (IsSet(G_Startup) && IsObject(G_Startup) && G_Startup.phase == "waiting") {
+        startup := G_Startup
+        startup.Stop()
     }
-    if !LoadCommittedPreferences() {
+    try return CommitLanguage(lang, notifyServer)
+    finally {
+        if IsObject(startup)
+            G_Startup.Start()
+    }
+
+    CommitLanguage(lang, notifyServer) {
+        global G_CurrentLang, G_DefaultLanguage, G_ServerStatus
+        if (notifyServer) {
+            response := ""
+            payload := '{"language": ' JSON_Stringify(lang) '}'
+            if !SendControllerRequest("/api/v1/set-language", payload, &response, 2) {
+                G_ServerStatus := "Language not saved"
+                UpdateTrayMenu()
+                return false
+            }
+            try lang := Trim(CommittedPrimitive(response, "language", '"[a-z]{2,3}(-[a-z0-9]{2,8})*"'), '"')
+            catch {
+                G_ServerStatus := "Language acknowledgment invalid"
+                UpdateTrayMenu()
+                return false
+            }
+        }
+        if !LoadCommittedPreferences() {
+            UpdateTrayMenu()
+            return false
+        }
         UpdateTrayMenu()
-        return false
+        UpdateTrayIcon()
+        return true
     }
-    UpdateTrayMenu()
-    UpdateTrayIcon()
-    return true
 }
 
 ; Deprecated file-host helper only. Canonical commands never call this writer.
@@ -2507,16 +2553,9 @@ if (A_ScriptFullPath = A_LineFile) {
     RegisterPointerToggleHotkeys()
     InitializeTrayMenu()
     OnExit(OnScriptExit)
+    if (A_Args.Length > 0)
+        G_BufferedArgs.Push(A_Args)
     StartServerProcess()
-
-    global G_Initialized := true
-
-    ProcessArgs(A_Args)
-
-    if (G_BufferedArgs.Length > 0) {
-        ProcessArgs(G_BufferedArgs)
-        G_BufferedArgs := []
-    }
 }
 
 Receive_WM_COPYDATA(wParam, lParam, msg, hwnd) {
