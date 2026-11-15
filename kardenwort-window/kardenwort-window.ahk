@@ -2127,7 +2127,9 @@ EnsureControllerProcess() {
 }
 
 StopStartupReadiness() {
-    global G_Startup
+    global G_Startup, G_Initialized
+    G_Initialized := false
+    SetTimer(CompleteStartupInitialization, 0)
     if IsObject(G_Startup)
         G_Startup.Stop()
 }
@@ -2137,12 +2139,22 @@ RetryStartupPreferences() {
 }
 
 CompleteStartupInitialization() {
-    global G_Initialized, G_BufferedArgs
-    G_Initialized := true
-    pending := G_BufferedArgs
-    G_BufferedArgs := []
-    for args in pending
+    global G_Initialized, G_BufferedArgs, G_Startup
+    G_Initialized := false
+    loop {
+        prior := A_IsCritical
+        Critical
+        try {
+            if IsObject(G_Startup) && G_Startup.phase != "ready"
+                return
+            if !G_BufferedArgs.Length {
+                G_Initialized := true
+                return
+            }
+            args := G_BufferedArgs.RemoveAt(1)
+        } finally Critical(prior ? prior : "Off")
         ProcessArgs(args)
+    }
 }
 
 RestartServerProcess() {
@@ -2564,13 +2576,15 @@ Receive_WM_COPYDATA(wParam, lParam, msg, hwnd) {
     payload := StrGet(strPtr, "UTF-16")
     args := StrSplit(Trim(payload, "`n"), "`n")
 
-    if (!G_Initialized) {
-        for arg in args {
-            G_BufferedArgs.Push(arg)
+    prior := A_IsCritical
+    Critical
+    try {
+        G_BufferedArgs.Push(args)
+        if G_Initialized {
+            G_Initialized := false
+            SetTimer(CompleteStartupInitialization, -10)
         }
-    } else {
-        SetTimer(ProcessArgs.Bind(args), -10)
-    }
+    } finally Critical(prior ? prior : "Off")
     return true
 }
 
