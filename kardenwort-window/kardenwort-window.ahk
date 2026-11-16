@@ -1,4 +1,4 @@
-﻿#Requires AutoHotkey v2.0
+#Requires AutoHotkey v2.0
 #SingleInstance Off
 #NoTrayIcon
 #Include ..\Lib\WatchFolder.ahk
@@ -1922,8 +1922,17 @@ global G_ServerApiKey := ""
 global G_ServerPID := 0
 global G_ServerStatus := "Disabled"
 global G_Startup := 0
+global G_StartupGen := 0
+global G_PendingBrowserLaunches := []
 global G_StartupTimeoutMs := 30000
 global G_StartupPollMs := 250
+
+ResolveControllerEndpoint() {
+    global G_ServerHost, G_ServerPort, G_ControllerPort, G_ServerApiKey
+    host := Trim(G_ServerHost) != "" ? Trim(G_ServerHost) : "127.0.0.1"
+    port := G_ControllerPort ? Integer(G_ControllerPort) : (G_ServerPort ? Integer(G_ServerPort) : 18335)
+    return { host: host, port: port, token: G_ServerApiKey, baseUrl: "http://" . host . ":" . port }
+}
 
 LoadServerConfig() {
     global G_DeskScriptPath, G_ServerEnabled, G_ServerHost, G_ServerPort, G_ControllerPort, G_ServerApiKey, G_ServerStatus
@@ -1957,16 +1966,14 @@ LoadServerConfig() {
 }
 
 SendControllerRequest(endpoint, payloadJson, &responseJson, timeoutSec := 3, method := "POST") {
-    global G_ServerHost, G_ServerPort, G_ControllerPort, G_ServerApiKey
-    host := G_ServerHost ? G_ServerHost : "127.0.0.1"
-    port := G_ControllerPort ? G_ControllerPort : (G_ServerPort ? G_ServerPort : 18335)
-    url := "http://" . host . ":" . port . endpoint
+    ep := ResolveControllerEndpoint()
+    url := ep.baseUrl . endpoint
     try {
         http := ComObject("WinHttp.WinHttpRequest.5.1")
         http.Open(method, url, false)
         http.SetTimeouts(1000, 1000, timeoutSec * 1000, timeoutSec * 1000)
-        if (G_ServerApiKey != "") {
-            http.SetRequestHeader("X-API-Token", G_ServerApiKey)
+        if (ep.token != "") {
+            http.SetRequestHeader("X-API-Token", ep.token)
         }
         http.SetRequestHeader("Content-Type", "application/json; charset=utf-8")
         http.Send(payloadJson)
@@ -1981,10 +1988,13 @@ SendControllerRequest(endpoint, payloadJson, &responseJson, timeoutSec := 3, met
 
 FetchHtmlViaHttp(targetLang, zid, textMode, sourceText, tsvPath, seqNum, isBypass, &outB64, &errJSON, &outChildren := []) {
     outChildren := []
-    global G_ServerHost, G_ServerPort, G_ControllerPort, G_ServerApiKey, G_Theme, G_DefaultZoom, G_SplitGapLimit, G_WindowCount
-    host := G_ServerHost ? G_ServerHost : "127.0.0.1"
-    port := G_ControllerPort ? G_ControllerPort : (G_ServerPort ? G_ServerPort : 18335)
-    url := "http://" . host . ":" . port . "/api/v1/render"
+    global G_Theme, G_DefaultZoom, G_SplitGapLimit, G_WindowCount
+    if (Trim(targetLang) == "") {
+        errJSON := "Committed language is unavailable"
+        return 1
+    }
+    ep := ResolveControllerEndpoint()
+    url := ep.baseUrl . "/api/v1/render"
 
     payload := "{"
         . '"session_zid": ' JSON_Stringify(zid)
@@ -2012,8 +2022,8 @@ FetchHtmlViaHttp(targetLang, zid, textMode, sourceText, tsvPath, seqNum, isBypas
         http := ComObject("WinHttp.WinHttpRequest.5.1")
         http.Open("POST", url, false)
         http.SetTimeouts(1000, 1000, 10000, recvTimeout)
-        if (G_ServerApiKey != "") {
-            http.SetRequestHeader("X-API-Token", G_ServerApiKey)
+        if (ep.token != "") {
+            http.SetRequestHeader("X-API-Token", ep.token)
         }
         http.SetRequestHeader("Content-Type", "application/json; charset=utf-8")
         http.Send(payload)
@@ -2095,12 +2105,14 @@ ShutdownServerHttp(host, port, apiKey) {
 }
 
 StartServerProcess() {
-    global G_ServerEnabled, G_ServerHost, G_ControllerPort, G_ServerApiKey
-    global G_Startup, G_StartupTimeoutMs, G_StartupPollMs
+    global G_ServerEnabled, G_Startup, G_StartupTimeoutMs, G_StartupPollMs
     StopStartupReadiness()
-    if (!G_ServerEnabled)
+    ep := ResolveControllerEndpoint()
+    G_Startup := DeskStartup(ep.host, ep.port, ep.token, G_StartupTimeoutMs, G_StartupPollMs, CompleteStartupInitialization)
+    if (!G_ServerEnabled) {
+        G_Startup.Fail("Preferences unavailable (server disabled)")
         return
-    G_Startup := DeskStartup(G_ServerHost, G_ControllerPort, G_ServerApiKey, G_StartupTimeoutMs, G_StartupPollMs, CompleteStartupInitialization)
+    }
     if !EnsureControllerProcess() {
         G_Startup.Fail("Failed to start controller")
         return
@@ -2109,8 +2121,9 @@ StartServerProcess() {
 }
 
 EnsureControllerProcess() {
-    global G_DeskPythonPath, G_DeskScriptPath, G_ServerPID, G_ServerHost, G_ControllerPort
-    if CheckServerHealth(G_ServerHost, G_ControllerPort)
+    global G_DeskPythonPath, G_DeskScriptPath, G_ServerPID
+    ep := ResolveControllerEndpoint()
+    if CheckServerHealth(ep.host, ep.port)
         return true
     if (G_ServerPID && ProcessExist(G_ServerPID))
         return true
@@ -2127,38 +2140,58 @@ EnsureControllerProcess() {
 }
 
 StopStartupReadiness() {
-    global G_Startup, G_Initialized
+    global G_Startup, G_Initialized, G_StartupGen, G_PendingBrowserLaunches
+    G_StartupGen += 1
     G_Initialized := false
+    G_PendingBrowserLaunches := []
     SetTimer(CompleteStartupInitialization, 0)
     if IsObject(G_Startup)
         G_Startup.Stop()
 }
 
 RetryStartupPreferences() {
-    StartServerProcess()
+    global G_ServerEnabled, G_Startup, G_StartupTimeoutMs, G_StartupPollMs
+    if (G_ServerEnabled) {
+        StartServerProcess()
+        return
+    }
+    StopStartupReadiness()
+    ep := ResolveControllerEndpoint()
+    G_Startup := DeskStartup(ep.host, ep.port, ep.token, G_StartupTimeoutMs, G_StartupPollMs, CompleteStartupInitialization)
+    G_Startup.Start()
 }
 
 CompleteStartupInitialization() {
-    global G_Initialized, G_BufferedArgs, G_Startup
+    global G_Initialized, G_BufferedArgs, G_PendingBrowserLaunches, G_Startup, G_StartupGen, G_CurrentLang
     G_Initialized := false
+    gen := G_StartupGen
     loop {
         prior := A_IsCritical
         Critical
         try {
-            if IsObject(G_Startup) && G_Startup.phase != "ready"
+            if (!IsObject(G_Startup) || G_Startup.phase != "ready" || gen != G_StartupGen || Trim(G_CurrentLang) == "")
                 return
-            if !G_BufferedArgs.Length {
+            if (G_BufferedArgs.Length) {
+                itemKind := "args"
+                payload := G_BufferedArgs.RemoveAt(1)
+            } else if (G_PendingBrowserLaunches.Length) {
+                itemKind := "browser"
+                payload := G_PendingBrowserLaunches.RemoveAt(1)
+            } else {
                 G_Initialized := true
                 return
             }
-            args := G_BufferedArgs.RemoveAt(1)
         } finally Critical(prior ? prior : "Off")
-        ProcessArgs(args)
+        if (itemKind == "args") {
+            ProcessArgs(payload)
+        } else if (payload.gen == G_StartupGen && IsObject(G_Startup) && G_Startup.phase == "ready") {
+            _ExecuteBrowserLaunch(payload.text, payload.mode, payload.zid)
+        }
     }
 }
 
 RestartServerProcess() {
-    global G_ServerEnabled, G_ServerHost, G_ServerPort, G_ServerApiKey, G_ServerPID, G_ServerStatus
+    global G_ServerEnabled, G_ServerPID, G_ServerStatus
     StopStartupReadiness()
     LoadServerConfig()
     if (!G_ServerEnabled) {
@@ -2167,7 +2200,8 @@ RestartServerProcess() {
     }
 
     ; Graceful HTTP shutdown
-    if (!ShutdownServerHttp(G_ServerHost, G_ServerPort, G_ServerApiKey)) {
+    ep := ResolveControllerEndpoint()
+    if (!ShutdownServerHttp(ep.host, ep.port, ep.token)) {
         if (G_ServerPID) {
             try Run('taskkill /F /PID ' . G_ServerPID, , "Hide")
         }
@@ -2180,7 +2214,7 @@ RestartServerProcess() {
     ; Wait for port release (up to 30s)
     loop 30 {
         Sleep(1000)
-        if !CheckServerHealth(G_ServerHost, G_ServerPort)
+        if !CheckServerHealth(ep.host, ep.port)
             break
     }
 
@@ -2201,21 +2235,20 @@ OpenServerLogsDir() {
 }
 
 OpenAdminPanel() {
-    global G_ServerHost, G_ServerPort, G_ServerApiKey
-    host := G_ServerHost ? G_ServerHost : "127.0.0.1"
-    port := G_ServerPort ? G_ServerPort : 18335
-    adminUrl := "http://" . host . ":" . port . "/admin"
-    if (G_ServerApiKey != "") {
-        adminUrl .= "?token=" . G_ServerApiKey
+    ep := ResolveControllerEndpoint()
+    adminUrl := ep.baseUrl . "/admin"
+    if (ep.token != "") {
+        adminUrl .= "?token=" . ep.token
     }
     Run(adminUrl)
 }
 
 OnScriptExit(ExitReason, ExitCode) {
-    global G_ServerEnabled, G_ServerHost, G_ServerPort, G_ServerApiKey, G_ServerPID
+    global G_ServerEnabled, G_ServerPID
     StopStartupReadiness()
     if (G_ServerEnabled) {
-        if (!ShutdownServerHttp(G_ServerHost, G_ServerPort, G_ServerApiKey)) {
+        ep := ResolveControllerEndpoint()
+        if (!ShutdownServerHttp(ep.host, ep.port, ep.token)) {
             if (G_ServerPID) {
                 try Run('taskkill /F /PID ' . G_ServerPID, , "Hide")
             }
@@ -2232,9 +2265,9 @@ UpdateTrayMenu() {
     A_TrayMenu.Add("HTTP Server: " . G_ServerStatus, (*) => 0)
     A_TrayMenu.Disable("2&")
 
+    A_TrayMenu.Add("Retry Loading Preferences", (*) => RetryStartupPreferences())
     if (G_ServerEnabled) {
         A_TrayMenu.Add("Open Admin Panel", (*) => OpenAdminPanel())
-        A_TrayMenu.Add("Retry Loading Preferences", (*) => RetryStartupPreferences())
         A_TrayMenu.Add("Restart HTTP Server", (*) => RestartServerProcess())
         A_TrayMenu.Add("View Desk Logs", (*) => OpenServerLogsDir())
     }
@@ -2463,7 +2496,12 @@ LaunchRestore(filePath) {
         lang := mLang[1]
     }
 
-    global G_CurrentLang := lang
+    global G_CurrentLang
+    if (Trim(lang) == "") {
+        TrayTip("Committed language is unavailable. Cannot restore session.", "Kardenwort Error", 16)
+        return 0
+    }
+    G_CurrentLang := lang
     UpdateTrayMenu()
     UpdateTrayIcon()
 
@@ -2545,7 +2583,12 @@ LaunchDesk(filePath, textMode) {
         }
     }
 
-    global G_CurrentLang := lang
+    global G_CurrentLang
+    if (Trim(lang) == "") {
+        TrayTip("Committed language is unavailable. Cannot launch session.", "Kardenwort Error", 16)
+        return 0
+    }
+    G_CurrentLang := lang
     UpdateTrayMenu()
     UpdateTrayIcon()
 
@@ -2838,49 +2881,59 @@ ExtractZidFromPath(pathOrZid) {
 }
 
 BuildDeskBrowserUrl(sessionIdentifier, seqNum := 1) {
-    global G_ServerHost, G_ServerPort, G_ControllerPort, G_ServerApiKey, G_Theme
-    host := G_ServerHost ? G_ServerHost : "127.0.0.1"
-    port := G_ControllerPort ? G_ControllerPort : (G_ServerPort ? G_ServerPort : 18335)
-    url := "http://" . host . ":" . port . "/?session_zid=" . sessionIdentifier . "&seq_num=" . seqNum . "&theme=" . G_Theme
-    if (G_ServerApiKey != "") {
-        url .= "&token=" . G_ServerApiKey
+    global G_Theme
+    ep := ResolveControllerEndpoint()
+    url := ep.baseUrl . "/?session_zid=" . sessionIdentifier . "&seq_num=" . seqNum . "&theme=" . G_Theme
+    if (ep.token != "") {
+        url .= "&token=" . ep.token
     }
     return url
 }
 
 BuildVerifyLanguageUrl(sessionIdentifier) {
-    global G_ServerHost, G_ServerPort, G_ControllerPort, G_ServerApiKey, G_Theme
-    host := G_ServerHost ? G_ServerHost : "127.0.0.1"
-    port := G_ControllerPort ? G_ControllerPort : (G_ServerPort ? G_ServerPort : 18335)
-    url := "http://" . host . ":" . port . "/verify-language?session_zid=" . sessionIdentifier . "&theme=" . G_Theme
-    if (G_ServerApiKey != "") {
-        url .= "&token=" . G_ServerApiKey
+    global G_Theme
+    ep := ResolveControllerEndpoint()
+    url := ep.baseUrl . "/verify-language?session_zid=" . sessionIdentifier . "&theme=" . G_Theme
+    if (ep.token != "") {
+        url .= "&token=" . ep.token
     }
     return url
 }
 
 LaunchBrowserTab(sourceText, textMode, presetZID := "") {
+    global G_Startup, G_StartupGen, G_PendingBrowserLaunches, G_CurrentLang, G_ServerEnabled
     if (textMode == "single") {
         sourceText := CleanClipboardText(sourceText)
     }
     ZID := presetZID != "" ? presetZID : A_Now
-
-    global G_ServerHost, G_ServerPort, G_ControllerPort, G_ServerApiKey, G_Theme, G_CurrentLang, G_ServerEnabled
-    host := G_ServerHost ? G_ServerHost : "127.0.0.1"
-    port := G_ControllerPort ? G_ControllerPort : (G_ServerPort ? G_ServerPort : 18335)
-
-    ; Server availability check / failover notification
-    if (!CheckServerHealth(host, port)) {
-        if (G_ServerEnabled) {
-            StartServerProcess()
-            if (!CheckServerHealth(host, port)) {
-                TrayTip("Local controller server is not responding at " . host . ":" . port, "Kardenwort Error", 16)
-                return false
-            }
-        } else {
+    ep := ResolveControllerEndpoint()
+    ready := IsObject(G_Startup) && G_Startup.phase == "ready" && Trim(G_CurrentLang) != "" && CheckServerHealth(ep.host, ep.port)
+    if (!ready) {
+        if (!G_ServerEnabled) {
             TrayTip("Desk server is disabled or offline. Cannot open in browser.", "Kardenwort Error", 16)
             return false
         }
+        if (!IsObject(G_Startup) || G_Startup.phase != "waiting") {
+            StartServerProcess()
+        }
+        if (IsObject(G_Startup) && G_Startup.phase == "ready" && Trim(G_CurrentLang) != "") {
+            return _ExecuteBrowserLaunch(sourceText, textMode, ZID)
+        }
+        if (!IsObject(G_Startup) || G_Startup.phase != "waiting") {
+            TrayTip("Local controller server is not responding at " . ep.host . ":" . ep.port, "Kardenwort Error", 16)
+            return false
+        }
+        G_PendingBrowserLaunches.Push({ text: sourceText, mode: textMode, zid: ZID, gen: G_StartupGen })
+        return true
+    }
+    return _ExecuteBrowserLaunch(sourceText, textMode, ZID)
+}
+
+_ExecuteBrowserLaunch(sourceText, textMode, ZID) {
+    global G_CurrentLang
+    if (Trim(G_CurrentLang) == "") {
+        TrayTip("Committed language is unavailable. Cannot open in browser.", "Kardenwort Error", 16)
+        return false
     }
 
     ; Initialize session via HTTP render fast-path so session data and tsv are prepared
@@ -2947,6 +3000,11 @@ LaunchKardenwortWindow(sourceText, textMode, presetZID := "", tsvPath := "") {
 }
 
 _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath := "") {
+    global G_CurrentLang
+    if (Trim(G_CurrentLang) == "") {
+        TrayTip("Committed language is unavailable. Cannot render session.", "Kardenwort Error", 16)
+        return 0
+    }
     if (textMode == "single") {
         sourceText := CleanClipboardText(sourceText)
     }
@@ -3117,6 +3175,9 @@ _LaunchKardenwortWindowInternal(sourceText, textMode, presetZID := "", tsvPath :
     }
 
     BuildRenderCmd(targetLang, isBypass := false) {
+        if (Trim(targetLang) == "") {
+            throw ValueError("Committed language is unavailable")
+        }
         c := '"' G_DeskPythonPath '" "' G_DeskScriptPath '" render --language ' targetLang ' --zid ' ZID ' --trace-id ' ZID ':render:init' ' --text-mode ' textMode ' --zoom ' G_DefaultZoom ' --theme ' G_Theme ' --split-gap-limit ' G_SplitGapLimit ' --seq-num ' seqNum
         if (tsvPath != "") {
             c .= ' --tsv "' tsvPath '"'
@@ -3953,9 +4014,13 @@ GuiSize(thisGui, MinMax, Width, Height) {
 ; Hotkey & SmartAction Routing
 ; ===================================================================================
 HandleSmartAction() {
-    global G_PressCount, G_CapturedText, G_TapSingleMode, G_TapDoubleMode, G_LaunchInBrowser
+    global G_PressCount, G_CapturedText, G_TapSingleMode, G_TapDoubleMode, G_LaunchInBrowser, G_CurrentLang
     Taps := G_PressCount
     G_PressCount := 0
+    if (Trim(G_CurrentLang) == "") {
+        TrayTip("Committed language is unavailable. Launch cancelled.", "Kardenwort Error", 16)
+        return false
+    }
 
     textMode := G_TapSingleMode
     if (Taps >= 2) {
@@ -3968,11 +4033,20 @@ HandleSmartAction() {
     KeyWait "Shift"
 
     if (G_LaunchInBrowser == 1 || G_LaunchInBrowser == "1") {
-        LaunchBrowserTab(G_CapturedText, textMode)
-        return
+        return LaunchBrowserTab(G_CapturedText, textMode)
     }
 
     LaunchKardenwortWindow(G_CapturedText, textMode)
+    return true
+}
+
+TriggerLanguageCapture(lang) {
+    global G_CurrentLang
+    if (!SetLanguage(lang) || Trim(G_CurrentLang) == "") {
+        TrayTip("Failed to switch language to " lang ". Capture cancelled.", "Kardenwort Error", 16)
+        return false
+    }
+    return TriggerSmartAction()
 }
 
 #MaxThreadsPerHotkey 2
@@ -3985,31 +4059,36 @@ HandleSmartAction() {
 ; Register global hotkey Ctrl+Alt+Shift+F2 (English)
 ^+!F2::
 {
-    SetLanguage("en")
-    TriggerSmartAction()
+    TriggerLanguageCapture("en")
 }
 
 ; Register global hotkey Ctrl+Alt+Shift+F3 (German)
 ^+!F3::
 {
-    SetLanguage("de")
-    TriggerSmartAction()
+    TriggerLanguageCapture("de")
 }
 #MaxThreadsPerHotkey 1
 
 TriggerSmartAction() {
-    global G_PressCount, G_CapturedText, G_MultiTapTimeout
+    global G_PressCount, G_CapturedText, G_MultiTapTimeout, G_CurrentLang
+    if (Trim(G_CurrentLang) == "") {
+        TrayTip("Committed language is unavailable. Capture cancelled.", "Kardenwort Error", 16)
+        return false
+    }
     G_PressCount += 1
     if (G_PressCount == 1) {
         ; Use SmartCopy to securely grab selected text
         if SmartCopy(0.5, true) {
             G_CapturedText := A_Clipboard
             SetTimer(HandleSmartAction, -G_MultiTapTimeout)
+            return true
         } else {
             G_PressCount := 0
             TrayTip("No text selected", "Kardenwort", 16)
+            return false
         }
     }
+    return true
 }
 
 ; Register GUI hotkeys Ctrl+S and F5 for saving/updating in active Kardenwort windows
